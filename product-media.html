@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>BoardScope Product Media</title>
+<style>
+  body { background: #0b0d0f; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; font-family: -apple-system, sans-serif; }
+  canvas { border-radius: 8px; box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
+  .controls { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 12px; }
+  button { background: #00d9a6; color: #000; border: none; padding: 10px 24px; border-radius: 6px; font-weight: 700; cursor: pointer; font-size: 14px; }
+  button:hover { opacity: 0.9; }
+  .loading { color: #9aa0b0; font-size: 14px; }
+</style>
+</head>
+<body>
+<canvas id="canvas" width="1920" height="1080"></canvas>
+<div class="controls">
+  <button onclick="download()">Download PNG</button>
+</div>
+<div class="loading" id="loading">Loading screenshots...</div>
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const loading = document.getElementById('loading');
+
+// Screenshot files - using the best ones
+const screenshots = [
+  'screenshots/Screenshot 2026-04-21 at 9.40.12 AM.png',
+  'screenshots/Screenshot 2026-04-21 at 9.40.37 AM.png',
+  'screenshots/Screenshot 2026-04-21 at 9.40.46 AM.png',
+  'screenshots/Screenshot 2026-04-21 at 9.40.55 AM.png',
+  'screenshots/Screenshot 2026-04-21 at 9.41.22 AM.png',
+  'screenshots/Screenshot 2026-04-21 at 9.41.31 AM.png',
+  'screenshots/Screenshot 2026-04-21 at 9.42.41 AM.png',
+  'screenshots/Screenshot 2026-04-21 at 9.44.32 AM.png',
+];
+
+const images = [];
+let loaded = 0;
+
+function loadImage(src) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = src;
+  });
+}
+
+async function init() {
+  try {
+    for (const src of screenshots) {
+      const img = await loadImage(src);
+      images.push(img);
+      loaded++;
+      loading.textContent = `Loaded ${loaded}/${screenshots.length} screenshots...`;
+    }
+    loading.style.display = 'none';
+    render();
+  } catch (e) {
+    loading.textContent = 'Error loading screenshots: ' + e.message;
+    console.error(e);
+  }
+}
+
+function render() {
+  // Background
+  ctx.fillStyle = '#0d0f12';
+  ctx.fillRect(0, 0, 1920, 1080);
+
+  // Subtle gradient
+  const grad = ctx.createRadialGradient(960, 540, 100, 960, 540, 800);
+  grad.addColorStop(0, 'rgba(0,217,166,0.04)');
+  grad.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, 1920, 1080);
+
+  // Main screenshot - large, centered
+  if (images[0]) {
+    const mainImg = images[0];
+    const scale = Math.min(1400 / mainImg.width, 800 / mainImg.height);
+    const w = mainImg.width * scale;
+    const h = mainImg.height * scale;
+    const x = (1920 - w) / 2;
+    const y = 100;
+    
+    // Shadow
+    ctx.shadowColor = 'rgba(0,0,0,0.5)';
+    ctx.shadowBlur = 40;
+    ctx.shadowOffsetY = 20;
+    
+    ctx.drawImage(mainImg, x, y, w, h);
+    
+    ctx.shadowColor = 'transparent';
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetY = 0;
+  }
+
+  // Thumbnail row at bottom
+  const thumbY = 940;
+  const thumbH = 100;
+  const thumbGap = 16;
+  const totalThumbW = images.length * 200 + (images.length - 1) * thumbGap;
+  const thumbStartX = (1920 - totalThumbW) / 2;
+
+  images.forEach((img, i) => {
+    const tx = thumbStartX + i * (200 + thumbGap);
+    const scale = 200 / img.width;
+    const tw = 200;
+    const th = img.height * scale;
+    const ty = thumbY + (thumbH - th) / 2;
+    
+    // Thumbnail background
+    ctx.fillStyle = '#161920';
+    ctx.beginPath();
+    ctx.roundRect(tx - 4, ty - 4, tw + 8, th + 8, 8);
+    ctx.fill();
+    
+    // Thumbnail image
+    ctx.drawImage(img, tx, ty, tw, th);
+    
+    // Active indicator on first
+    if (i === 0) {
+      ctx.strokeStyle = '#00d9a6';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.roundRect(tx - 4, ty - 4, tw + 8, th + 8, 8);
+      ctx.stroke();
+    }
+  });
+
+  // Brand text
+  ctx.fillStyle = '#00d9a6';
+  ctx.font = 'bold 24px -apple-system, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('BOARDSCOPE', 960, 60);
+  
+  ctx.fillStyle = '#9aa0b0';
+  ctx.font = '14px -apple-system, sans-serif';
+  ctx.fillText('Professional PCB Boardview & Repair Analysis', 960, 85);
+}
+
+function download() {
+  const link = document.createElement('a');
+  link.download = 'boardscope-product-media.png';
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+}
+
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BoardScope — Pricing</title>
+<meta name="description" content="Choose your BoardScope plan. Free core features or Pro with AI diagnosis, macro recorder, and more.">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:      #0b0d0f;
+    --bg2:     #111418;
+    --bg3:     #181c22;
+    --border:  #1e2430;
+    --accent:  #00d9a6;
+    --accent2: #5294f8;
+    --text:    #e8edf5;
+    --text2:   #9aa3b5;
+    --text3:   #5a6276;
+    --amber:   #f5a623;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    overflow-x: hidden;
+    min-height: 100vh;
+  }
+
+  /* ── NAV ─ */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 40px; height: 60px;
+    background: rgba(11,13,15,0.9);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .nav-logo {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 15px; font-weight: 700; letter-spacing: .5px; color: var(--text);
+    text-decoration: none;
+  }
+  .nav-logo-mark {
+    width: 28px; height: 28px; background: var(--accent);
+    border-radius: 6px; display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 900; color: #000; letter-spacing: -1px;
+  }
+  .nav-links { display: flex; align-items: center; gap: 32px; }
+  .nav-links a {
+    font-size: 13px; color: var(--text2); text-decoration: none; letter-spacing: .3px;
+    transition: color .2s;
+  }
+  .nav-links a:hover { color: var(--text); }
+
+  /* ── HERO ─ */
+  .pricing-hero {
+    padding: 140px 40px 60px;
+    text-align: center;
+    max-width: 700px;
+    margin: 0 auto;
+  }
+  .pricing-hero h1 {
+    font-size: clamp(32px, 5vw, 52px);
+    font-weight: 800;
+    letter-spacing: -1.5px;
+    margin-bottom: 16px;
+  }
+  .pricing-hero h1 span { color: var(--accent); }
+  .pricing-hero p {
+    font-size: 17px;
+    color: var(--text2);
+    line-height: 1.6;
+  }
+
+  /* ── PRICING CARDS ── */
+  .pricing-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 24px;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 40px 80px;
+  }
+  .pricing-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 40px 32px;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    transition: border-color .2s, transform .2s;
+  }
+  .pricing-card:hover {
+    border-color: rgba(0,217,166,0.3);
+    transform: translateY(-4px);
+  }
+  .pricing-card.featured {
+    border-color: var(--accent);
+    background: linear-gradient(135deg, rgba(0,217,166,0.05) 0%, var(--bg2) 100%);
+  }
+  .pricing-card.featured::before {
+    content: 'MOST POPULAR';
+    position: absolute;
+    top: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--accent);
+    color: #000;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    padding: 4px 16px;
+    border-radius: 20px;
+  }
+  .card-tier {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: var(--text3);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .card-name {
+    font-size: 24px;
+    font-weight: 800;
+    letter-spacing: -.5px;
+    margin-bottom: 8px;
+  }
+  .card-price {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+    margin-bottom: 4px;
+  }
+  .card-price .amount {
+    font-size: 48px;
+    font-weight: 800;
+    letter-spacing: -2px;
+    color: var(--text);
+  }
+  .card-price .currency {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--text2);
+  }
+  .card-price .period {
+    font-size: 14px;
+    color: var(--text3);
+  }
+  .card-desc {
+    font-size: 14px;
+    color: var(--text2);
+    margin-bottom: 28px;
+    line-height: 1.5;
+  }
+  .card-features {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 32px;
+    flex: 1;
+  }
+  .card-features li {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 14px;
+    color: var(--text2);
+    line-height: 1.4;
+  }
+  .card-features li::before {
+    content: '✓';
+    color: var(--accent);
+    font-weight: 700;
+    font-size: 12px;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .card-features li.disabled {
+    color: var(--text3);
+  }
+  .card-features li.disabled::before {
+    content: '—';
+    color: var(--text3);
+  }
+  .card-cta {
+    display: block;
+    width: 100%;
+    padding: 14px;
+    text-align: center;
+    font-size: 14px;
+    font-weight: 700;
+    border-radius: 8px;
+    text-decoration: none;
+    letter-spacing: .3px;
+    transition: all .2s;
+    border: none;
+    cursor: pointer;
+  }
+  .card-cta.primary {
+    background: var(--accent);
+    color: #000;
+  }
+  .card-cta.primary:hover {
+    opacity: .9;
+    transform: translateY(-1px);
+  }
+  .card-cta.secondary {
+    background: rgba(255,255,255,0.07);
+    color: var(--text);
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+  .card-cta.secondary:hover {
+    background: rgba(255,255,255,0.11);
+  }
+
+  /* ── FAQ ── */
+  .faq-section {
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 60px 40px 100px;
+  }
+  .faq-section h2 {
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -1px;
+    margin-bottom: 40px;
+    text-align: center;
+  }
+  .faq-item {
+    border-bottom: 1px solid var(--border);
+    padding: 20px 0;
+  }
+  .faq-question {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 8px;
+  }
+  .faq-answer {
+    font-size: 14px;
+    color: var(--text2);
+    line-height: 1.6;
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    background: var(--bg2);
+    border-top: 1px solid var(--border);
+    padding: 32px 40px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  .footer-logo { font-size: 14px; font-weight: 700; color: var(--text); }
+  .footer-logo span { color: var(--accent); }
+  footer p { font-size: 12px; color: var(--text3); }
+  .footer-links { display: flex; gap: 24px; }
+  .footer-links a { font-size: 12px; color: var(--text3); text-decoration: none; transition: color .2s; }
+  .footer-links a:hover { color: var(--text2); }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 768px) {
+    nav { padding: 0 20px; }
+    .nav-links { display: none; }
+    .pricing-hero { padding: 120px 24px 40px; }
+    .pricing-grid { padding: 0 24px 60px; }
+    .faq-section { padding: 40px 24px 80px; }
+    footer { flex-direction: column; text-align: center; padding: 24px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ── NAV ─ -->
+<nav>
+  <a class="nav-logo" href="index.html">
+    <div class="nav-logo-mark">Bs</div>
+    BoardScope
+  </a>
+  <div class="nav-links">
+    <a href="index.html#features">Features</a>
+    <a href="manual.html">Manual</a>
+    <a href="pricing.html">Pricing</a>
+  </div>
+</nav>
+
+<!-- ── HERO ── -->
+<div class="pricing-hero">
+  <h1>Simple, transparent <span>pricing</span></h1>
+  <p>Start free. Upgrade when you need AI diagnosis, macro recording, and advanced repair tools.</p>
+</div>
+
+<!-- ── PRICING CARDS ── -->
+<div class="pricing-grid">
+
+  <!-- FREE TIER -->
+  <div class="pricing-card">
+    <div class="card-tier">Free</div>
+    <div class="card-name">BoardScope Free</div>
+    <div class="card-price">
+      <span class="currency">$</span>
+      <span class="amount">0</span>
+    </div>
+    <div class="card-desc">Core boardview and diagnostic tools. No account required.</div>
+    <ul class="card-features">
+      <li>Interactive boardview (.brd, .bvr, .brd2)</li>
+      <li>Schematic PDF viewer</li>
+      <li>Cross-reference (board ↔ schematic)</li>
+      <li>Net highlighting & constellation</li>
+      <li>OpenBoardData integration</li>
+      <li>Voltage Map & Diode Map</li>
+      <li>Continuity Checker</li>
+      <li>Photo Overlay</li>
+      <li class="disabled">AI-powered diagnosis</li>
+      <li class="disabled">Multi-board tabs</li>
+      <li class="disabled">Short Circuit Finder</li>
+      <li class="disabled">Fault Tree diagnostics</li>
+      <li class="disabled">Macro Recorder</li>
+      <li class="disabled">Test Suite automation</li>
+    </ul>
+    <a class="card-cta secondary" href="../boardview.html">Open in Browser</a>
+  </div>
+
+  <!-- PRO LIFETIME -->
+  <div class="pricing-card featured">
+    <div class="card-tier">Pro</div>
+    <div class="card-name">Lifetime License</div>
+    <div class="card-price">
+      <span class="currency">$</span>
+      <span class="amount">129</span>
+      <span class="period">USD</span>
+    </div>
+    <div class="card-desc">One-time payment. Permanent access to all Pro features. No expiration.</div>
+    <ul class="card-features">
+      <li>Everything in Free, plus:</li>
+      <li>AI-powered diagnosis (Claude, GPT-4, Gemini)</li>
+      <li>Multi-board tabs</li>
+      <li>Short Circuit Finder</li>
+      <li>Fault Tree diagnostics</li>
+      <li>Repair Log & Component Notes</li>
+      <li>Macro Recorder</li>
+      <li>Post-Repair Test Suite</li>
+      <li>Priority support</li>
+      <li>1 license per email address</li>
+    </ul>
+    <!-- REPLACE with your actual Polar checkout link -->
+    <a class="card-cta primary" href="https://buy.polar.sh/placeholder-lifetime" target="_blank" rel="noopener">Buy Lifetime — $129</a>
+  </div>
+
+  <!-- PRO YEARLY -->
+  <div class="pricing-card">
+    <div class="card-tier">Pro</div>
+    <div class="card-name">Yearly License</div>
+    <div class="card-price">
+      <span class="currency">$</span>
+      <span class="amount">59</span>
+      <span class="period">/year</span>
+    </div>
+    <div class="card-desc">Annual subscription. Includes updates and support for the subscription period.</div>
+    <ul class="card-features">
+      <li>Everything in Free, plus:</li>
+      <li>AI-powered diagnosis (Claude, GPT-4, Gemini)</li>
+      <li>Multi-board tabs</li>
+      <li>Short Circuit Finder</li>
+      <li>Fault Tree diagnostics</li>
+      <li>Repair Log & Component Notes</li>
+      <li>Macro Recorder</li>
+      <li>Post-Repair Test Suite</li>
+      <li>Priority support</li>
+      <li>1 license per email address</li>
+    </ul>
+    <!-- REPLACE with your actual Polar checkout link -->
+    <a class="card-cta secondary" href="https://buy.polar.sh/placeholder-yearly" target="_blank" rel="noopener">Subscribe — $59/year</a>
+  </div>
+
+</div>
+
+<!-- ── FAQ ── -->
+<div class="faq-section">
+  <h2>Frequently Asked Questions</h2>
+
+  <div class="faq-item">
+    <div class="faq-question">What's included in the free version?</div>
+    <div class="faq-answer">The free version includes all core boardview features: loading .brd files, schematic PDF viewing, cross-reference between board and schematic, net highlighting, OpenBoardData integration, Voltage Map, Diode Map, Continuity Checker, and Photo Overlay. No account or payment required.</div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-question">What's the difference between Lifetime and Yearly?</div>
+    <div class="faq-answer">Both give you access to all Pro features. Lifetime is a one-time payment with permanent access. Yearly is an annual subscription that includes updates and support for as long as you're subscribed. Choose Lifetime if you want to pay once and own it forever.</div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-question">How does the license work?</div>
+    <div class="faq-answer">Each license is tied to one email address. You can use BoardScope on multiple devices with the same email. If you need to transfer a license to a different email, contact support.</div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-question">Which AI providers are supported?</div>
+    <div class="faq-answer">BoardScope supports Anthropic Claude, OpenAI GPT-4, Google Gemini, OpenRouter (access any model through one key), and Ollama (run AI locally on your machine). You'll need your own API key for paid providers.</div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-question">Can I get a refund?</div>
+    <div class="faq-answer">Yes. If you're not satisfied with your Pro license, contact us within 14 days of purchase for a full refund. No questions asked.</div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-question">Do you offer team or volume licenses?</div>
+    <div class="faq-answer">Yes. For teams of 5 or more, contact us for volume pricing. Each team member gets their own license tied to their email.</div>
+  </div>
+</div>
+
+<!-- ── FOOTER ── -->
+<footer>
+  <div class="footer-logo">Board<span>Scope</span></div>
+  <p>© 2025 BoardScope. Professional PCB Boardview & Repair Analysis.</p>
+  <div class="footer-links">
+    <a href="../boardview.html">Launch App</a>
+    <a href="manual.html">Manual</a>
+    <a href="index.html">Home</a>
+  </div>
+</footer>
+
+</body>
+</html>

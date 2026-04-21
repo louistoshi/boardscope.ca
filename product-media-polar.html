@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>BoardScope — Polar Product Media 1920×1080</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #050608;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 40px 24px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    gap: 24px;
+  }
+  canvas {
+    border-radius: 6px;
+    box-shadow: 0 24px 96px rgba(0,0,0,0.9);
+    max-width: 95vw;
+    height: auto;
+    display: block;
+  }
+  .controls { display: flex; gap: 12px; }
+  button {
+    background: #00d9a6; color: #000; border: none;
+    padding: 11px 28px; border-radius: 7px; font-weight: 700;
+    cursor: pointer; font-size: 14px; letter-spacing: .3px;
+  }
+  button:hover { opacity: .88; }
+  #status { color: #4a5268; font-size: 13px; min-height: 18px; }
+</style>
+</head>
+<body>
+
+<canvas id="canvas" width="1920" height="1080"></canvas>
+
+<div class="controls">
+  <button onclick="download()">⬇ Download PNG</button>
+</div>
+<div id="status">Loading screenshots…</div>
+
+<script>
+const canvas = document.getElementById('canvas');
+const ctx    = canvas.getContext('2d');
+const status = document.getElementById('status');
+
+const W = 1920, H = 1080;
+
+// Screenshot order: best hero first, then supporting features
+const SRCS = [
+  'screenshots/Screenshot 2026-04-21 at 9.40.12 AM.png',  // split schematic + board (hero)
+  'screenshots/Screenshot 2026-04-21 at 9.41.22 AM.png',  // full board multi-net traces
+  'screenshots/Screenshot 2026-04-21 at 9.40.46 AM.png',  // board component selected
+  'screenshots/Screenshot 2026-04-21 at 9.44.32 AM.png',  // thermal overlay dark
+];
+
+function loadImg(src) {
+  return new Promise((res, rej) => {
+    const i = new Image();
+    i.onload = () => res(i);
+    i.onerror = () => res(null);
+    i.src = src;
+  });
+}
+
+function rr(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.roundRect(x, y, w, h, r);
+}
+
+function drawScreenshot(img, x, y, w, h, radii) {
+  if (!img) return;
+  ctx.save();
+  ctx.beginPath();
+  ctx.roundRect(x, y, w, h, radii);
+  ctx.clip();
+  const scale = Math.max(w / img.width, h / img.height);
+  const sw = img.width  * scale;
+  const sh = img.height * scale;
+  ctx.drawImage(img, x + (w - sw) / 2, y + (h - sh) / 2, sw, sh);
+  ctx.restore();
+}
+
+async function init() {
+  const imgs = [];
+  for (let i = 0; i < SRCS.length; i++) {
+    imgs.push(await loadImg(SRCS[i]));
+    status.textContent = `Loading ${i + 1}/${SRCS.length}…`;
+  }
+  status.textContent = '';
+  render(imgs);
+}
+
+function render(imgs) {
+
+  // ── Background ────────────────────────────────────────────────────────────
+  ctx.fillStyle = '#090b0f';
+  ctx.fillRect(0, 0, W, H);
+
+  // Subtle dot grid
+  ctx.fillStyle = 'rgba(255,255,255,0.018)';
+  for (let gx = 60; gx < W; gx += 80) {
+    for (let gy = 40; gy < H; gy += 80) {
+      ctx.beginPath();
+      ctx.arc(gx, gy, 1, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  // Ambient teal glow — right-center
+  const g1 = ctx.createRadialGradient(1240, 520, 60, 1240, 520, 820);
+  g1.addColorStop(0, 'rgba(0,217,166,0.09)');
+  g1.addColorStop(0.5, 'rgba(0,217,166,0.03)');
+  g1.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = g1;
+  ctx.fillRect(0, 0, W, H);
+
+  // Ambient blue glow — bottom-left
+  const g2 = ctx.createRadialGradient(200, 900, 0, 200, 900, 600);
+  g2.addColorStop(0, 'rgba(82,148,248,0.06)');
+  g2.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = g2;
+  ctx.fillRect(0, 0, W, H);
+
+
+  // ── Main hero card (browser-framed) ──────────────────────────────────────
+  const CARD_X = 640, CARD_Y = 64;
+  const CARD_W = 1230, CARD_H = 938;
+  const CHROME  = 38;
+
+  // Drop shadow
+  ctx.save();
+  ctx.shadowColor   = 'rgba(0,0,0,0.75)';
+  ctx.shadowBlur    = 100;
+  ctx.shadowOffsetY = 40;
+  rr(CARD_X, CARD_Y, CARD_W, CARD_H, 14);
+  ctx.fillStyle = '#0d1117';
+  ctx.fill();
+  ctx.restore();
+
+  // Chrome bar
+  rr(CARD_X, CARD_Y, CARD_W, CHROME, [14, 14, 0, 0]);
+  ctx.fillStyle = '#141920';
+  ctx.fill();
+
+  // Traffic-light dots
+  const dotCy = CARD_Y + CHROME / 2;
+  [
+    [CARD_X + 22, '#ff5f57'],
+    [CARD_X + 42, '#febc2e'],
+    [CARD_X + 62, '#28c840'],
+  ].forEach(([dx, col]) => {
+    ctx.beginPath();
+    ctx.arc(dx, dotCy, 6, 0, Math.PI * 2);
+    ctx.fillStyle = col;
+    ctx.fill();
+  });
+
+  // Address bar
+  const abW = 380, abH = 24;
+  const abX = CARD_X + (CARD_W - abW) / 2, abY = CARD_Y + 7;
+  rr(abX, abY, abW, abH, 5);
+  ctx.fillStyle = '#0c1015';
+  ctx.fill();
+  rr(abX, abY, abW, abH, 5);
+  ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  ctx.fillStyle = '#3e4558';
+  ctx.font = '12px -apple-system, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('🔒  boardscope.app', abX + abW / 2, abY + 16);
+
+  // Screenshot image inside card
+  const IMG_Y = CARD_Y + CHROME;
+  const IMG_H = CARD_H - CHROME;
+  drawScreenshot(imgs[0], CARD_X, IMG_Y, CARD_W, IMG_H, [0, 0, 14, 14]);
+
+  // Subtle inner border
+  rr(CARD_X, CARD_Y, CARD_W, CARD_H, 14);
+  ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  // Teal glow edge on card
+  rr(CARD_X, CARD_Y, CARD_W, CARD_H, 14);
+  ctx.strokeStyle = 'rgba(0,217,166,0.12)';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+
+  // ── Left-panel fade (blend card into text area) ───────────────────────────
+  const fade = ctx.createLinearGradient(560, 0, 700, 0);
+  fade.addColorStop(0, 'rgba(9,11,15,1)');
+  fade.addColorStop(1, 'rgba(9,11,15,0)');
+  ctx.fillStyle = fade;
+  ctx.fillRect(560, 0, 140, H);
+
+
+  // ── Left panel — text ────────────────────────────────────────────────────
+  const TX = 76;
+
+  // Wordmark
+  const LM = 42;
+  const LMY = 118;
+  rr(TX, LMY, LM, LM, 10);
+  ctx.fillStyle = '#00d9a6';
+  ctx.fill();
+  ctx.fillStyle = '#000';
+  ctx.font = 'bold 17px -apple-system, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Bs', TX + LM / 2, LMY + LM / 2 + 6);
+
+  ctx.fillStyle = '#d0d8e8';
+  ctx.font = 'bold 15px -apple-system, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('BOARDSCOPE', TX + LM + 14, LMY + 28);
+
+  // Teal rule
+  ctx.fillStyle = '#00d9a6';
+  ctx.fillRect(TX, LMY + 62, 44, 3);
+  ctx.fillStyle = 'rgba(0,217,166,0.2)';
+  ctx.fillRect(TX + 44, LMY + 62, 120, 3);
+
+  // Headline
+  ctx.textAlign = 'left';
+  const HY = LMY + 108;
+  const HL = 84;
+
+  function drawLine(text, color, y) {
+    ctx.fillStyle = color;
+    ctx.font = 'bold 74px -apple-system, BlinkMacSystemFont, sans-serif';
+    ctx.fillText(text, TX, y);
+  }
+
+  drawLine('Board-level', '#e8edf5', HY);
+  drawLine('repair,',     '#e8edf5', HY + HL);
+  drawLine('made',        '#e8edf5', HY + HL * 2);
+  drawLine('precise.',    '#00d9a6', HY + HL * 3);
+
+  // Subtitle
+  ctx.fillStyle = '#6b7490';
+  ctx.font = '19px -apple-system, sans-serif';
+  const SY = HY + HL * 3 + 50;
+  ctx.fillText('Professional PCB boardview &', TX, SY);
+  ctx.fillText('diagnostic workspace in one tool.', TX, SY + 30);
+
+  // Feature chips — row 1 (teal accent)
+  const chips1 = [
+    '⚡ Volt Map', '🔍 Net Search', '🤖 AI Diagnosis',
+  ];
+  const chips2 = [
+    '⚠️ Fault Tree', '🌡️ Thermal', '🔌 Power Tree', '🎬 Macros',
+  ];
+
+  function drawChips(chips, y, accent) {
+    let cx = TX;
+    chips.forEach(label => {
+      ctx.font = '13px -apple-system, sans-serif';
+      const tw = ctx.measureText(label).width;
+      const cw = tw + 26, ch = 34;
+      rr(cx, y, cw, ch, 7);
+      ctx.fillStyle = accent
+        ? 'rgba(0,217,166,0.09)'
+        : 'rgba(255,255,255,0.04)';
+      ctx.fill();
+      rr(cx, y, cw, ch, 7);
+      ctx.strokeStyle = accent
+        ? 'rgba(0,217,166,0.22)'
+        : 'rgba(255,255,255,0.07)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.fillStyle = accent ? '#80c8b2' : '#4e5770';
+      ctx.fillText(label, cx + 13, y + 22);
+      cx += cw + 9;
+    });
+  }
+
+  drawChips(chips1, SY + 70,  true);
+  drawChips(chips2, SY + 116, false);
+
+  // Platform badges
+  ctx.fillStyle = '#343b52';
+  ctx.font = '13px -apple-system, sans-serif';
+  ctx.fillText('macOS  ·  Windows  ·  Linux  ·  iPad PWA', TX, SY + 166);
+
+  // Bottom pill — free/pro
+  const pillY = H - 96;
+  const pillW = 264;
+  rr(TX, pillY, pillW, 36, 8);
+  ctx.fillStyle = 'rgba(0,217,166,0.07)';
+  ctx.fill();
+  rr(TX, pillY, pillW, 36, 8);
+  ctx.strokeStyle = 'rgba(0,217,166,0.18)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  // Pulse dot
+  ctx.beginPath();
+  ctx.arc(TX + 16, pillY + 18, 5, 0, Math.PI * 2);
+  ctx.fillStyle = '#00d9a6';
+  ctx.fill();
+
+  ctx.fillStyle = '#00d9a6';
+  ctx.font = '13px -apple-system, sans-serif';
+  ctx.fillText('Free to use · Pro unlocks AI & more', TX + 28, pillY + 23);
+
+
+  // ── Small floating feature cards (bottom-right strip) ────────────────────
+  const mini = [imgs[1], imgs[2], imgs[3]];
+  const MINI_W = 390, MINI_H = 234;
+  const MINI_GAP = 16;
+  const MINI_Y = H - MINI_H - 20;
+  const stripTotalW = 3 * MINI_W + 2 * MINI_GAP;
+  const MINI_START_X = CARD_X + (CARD_W - stripTotalW) / 2;
+
+  const miniLabels = ['Multi-Net Trace', 'Component Inspect', 'Thermal Overlay'];
+
+  mini.forEach((img, i) => {
+    const mx = MINI_START_X + i * (MINI_W + MINI_GAP);
+    const my = MINI_Y;
+
+    // Card shadow
+    ctx.save();
+    ctx.shadowColor   = 'rgba(0,0,0,0.6)';
+    ctx.shadowBlur    = 24;
+    ctx.shadowOffsetY = 8;
+    rr(mx, my, MINI_W, MINI_H, 10);
+    ctx.fillStyle = '#0d1117';
+    ctx.fill();
+    ctx.restore();
+
+    // Screenshot
+    drawScreenshot(img, mx, my, MINI_W, MINI_H, 10);
+
+    // Bottom label overlay
+    const labelH = 34;
+    const labelGrad = ctx.createLinearGradient(mx, my + MINI_H - labelH - 10, mx, my + MINI_H);
+    labelGrad.addColorStop(0, 'rgba(9,11,15,0)');
+    labelGrad.addColorStop(1, 'rgba(9,11,15,0.85)');
+    ctx.save();
+    rr(mx, my, MINI_W, MINI_H, 10);
+    ctx.clip();
+    ctx.fillStyle = labelGrad;
+    ctx.fillRect(mx, my, MINI_W, MINI_H);
+    ctx.restore();
+
+    ctx.fillStyle = '#c8d0e0';
+    ctx.font = '13px -apple-system, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(miniLabels[i], mx + MINI_W / 2, my + MINI_H - 12);
+
+    // Border
+    rr(mx, my, MINI_W, MINI_H, 10);
+    ctx.strokeStyle = 'rgba(255,255,255,0.07)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  });
+
+  // Overlap fade — blend hero card bottom edge into mini cards
+  const btmFade = ctx.createLinearGradient(0, CARD_Y + CARD_H - 140, 0, CARD_Y + CARD_H);
+  btmFade.addColorStop(0, 'rgba(9,11,15,0)');
+  btmFade.addColorStop(1, 'rgba(9,11,15,0.92)');
+  ctx.fillStyle = btmFade;
+  ctx.fillRect(CARD_X, CARD_Y + CARD_H - 140, CARD_W, 140);
+
+
+  // ── Teal accent line (left panel bottom border) ───────────────────────────
+  const lineY = H - 48;
+  ctx.fillStyle = 'rgba(0,217,166,0.15)';
+  ctx.fillRect(TX, lineY, 480, 1);
+}
+
+function download() {
+  const a = document.createElement('a');
+  a.download = 'boardscope-polar-1920x1080.png';
+  a.href = canvas.toDataURL('image/png');
+  a.click();
+}
+
+init();
+</script>
+</body>
+</html>
