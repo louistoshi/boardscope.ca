@@ -17,6 +17,7 @@ out/
 
 # API keys and secrets
 .api_key
+api key
 .polar_config
 .env
 .env.local
