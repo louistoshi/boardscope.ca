@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BoardView Software — Professional PCB Boardview Tool for Repair</title>
+<meta name="description" content="BoardScope is the professional boardview software for PCB repair technicians. Load .brd files, measure voltages, trace signals, and diagnose board-level faults with AI assistance.">
+<meta name="keywords" content="boardview software, boardview tool, brd viewer, brd file viewer, PCB boardview, schematic viewer, repair software, board analysis">
+<meta name="author" content="BoardScope">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://boardscope.ca/boardview-software.html">
+
+<!-- International & Global Reach -->
+<meta name="geo.placename" content="Global">
+<meta name="geo.region" content="Global">
+<http-equiv content-language" content="en-us">
+<link rel="alternate" hreflang="en" href="https://boardscope.ca/boardview-software.html">
+<meta property="og:locale" content="en_US">
+<meta name="distribution" content="global">
+
+<!-- Open Graph (Social Sharing) -->
+<meta property="og:title" content="BoardScope — Professional Boardview Software">
+<meta property="og:description" content="Professional boardview software for PCB repair. Load .brd files, measure voltages, trace signals, and diagnose with AI assistance.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://boardscope.ca/boardview-software.html">
+<meta property="og:site_name" content="BoardScope">
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="BoardScope — Boardview Software">
+<meta name="twitter:description" content="Professional boardview software for board-level repair technicians.">
+
+<!-- Structured Data (Schema.org) -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "BoardScope",
+  "description": "Professional boardview software for PCB repair and board-level diagnostics",
+  "url": "https://boardscope.ca/boardview-software.html",
+  "applicationCategory": "DesktopApplication",
+  "operatingSystem": "macOS, Windows, Linux",
+  "inLanguage": "en-US"
+}
+</script>
+
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:      #0b0d0f;
+    --bg2:     #111418;
+    --bg3:     #181c22;
+    --border:  #1e2430;
+    --accent:  #00d9a6;
+    --accent2: #5294f8;
+    --text:    #e8edf5;
+    --text2:   #9aa3b5;
+    --text3:   #5a6276;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    overflow-x: hidden;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 40px; height: 60px;
+    background: rgba(11,13,15,0.7);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .nav-logo {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 15px; font-weight: 700; letter-spacing: .5px; color: var(--text);
+    text-decoration: none;
+  }
+  .nav-logo-mark {
+    width: 28px; height: 28px; background: var(--accent);
+    border-radius: 6px; display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 900; color: #000; letter-spacing: -1px;
+  }
+  .nav-links { display: flex; align-items: center; gap: 32px; }
+  .nav-links a {
+    font-size: 13px; color: var(--text2); text-decoration: none; letter-spacing: .3px;
+    transition: color .2s;
+  }
+  .nav-links a:hover { color: var(--text); }
+  .nav-cta {
+    background: var(--accent); color: #000; font-size: 13px; font-weight: 700;
+    padding: 8px 20px; border-radius: 6px; text-decoration: none; letter-spacing: .3px;
+    transition: opacity .2s;
+  }
+  .nav-cta:hover { opacity: .85; }
+
+  /* ── HERO ── */
+  .hero {
+    padding: 140px 40px 80px;
+    max-width: 900px;
+    margin: 0 auto;
+    text-align: center;
+  }
+  .hero-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(0,217,166,0.1); border: 1px solid rgba(0,217,166,0.3);
+    color: var(--accent); font-size: 11px; font-weight: 700; letter-spacing: 1.5px;
+    padding: 5px 14px; border-radius: 20px; margin-bottom: 28px;
+    text-transform: uppercase;
+  }
+  .hero-badge::before {
+    content: ''; width: 6px; height: 6px; border-radius: 50%;
+    background: var(--accent); animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: .3; }
+  }
+  .hero h1 {
+    font-size: clamp(36px, 6vw, 64px);
+    font-weight: 800; line-height: 1.1;
+    letter-spacing: -2px; margin-bottom: 22px;
+  }
+  .hero h1 span { color: var(--accent); }
+  .hero p {
+    font-size: clamp(16px, 2vw, 18px);
+    color: var(--text2); line-height: 1.7;
+    margin-bottom: 40px; max-width: 680px; margin-left: auto; margin-right: auto;
+  }
+  .hero-actions { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+  .btn-primary {
+    background: var(--accent); color: #000; font-size: 15px; font-weight: 700;
+    padding: 14px 32px; border-radius: 8px; text-decoration: none;
+    letter-spacing: .3px; transition: all .2s;
+    box-shadow: 0 0 32px rgba(0,217,166,0.3);
+  }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 0 48px rgba(0,217,166,0.45); }
+  .btn-secondary {
+    background: rgba(255,255,255,0.07); color: var(--text);
+    font-size: 15px; font-weight: 600; padding: 14px 32px; border-radius: 8px;
+    text-decoration: none; border: 1px solid rgba(255,255,255,0.1);
+    letter-spacing: .3px; transition: all .2s;
+  }
+  .btn-secondary:hover { background: rgba(255,255,255,0.11); }
+
+  /* ── SECTIONS ── */
+  section { padding: 80px 40px; max-width: 1100px; margin: 0 auto; }
+  .section-tag {
+    font-size: 11px; font-weight: 700; letter-spacing: 2px;
+    color: var(--accent); text-transform: uppercase; margin-bottom: 14px;
+  }
+  .section-title {
+    font-size: clamp(28px, 4vw, 48px); font-weight: 800;
+    letter-spacing: -1.5px; line-height: 1.1; margin-bottom: 16px;
+  }
+  .section-sub {
+    font-size: 16px; color: var(--text2); line-height: 1.65;
+    max-width: 600px; margin-bottom: 60px;
+  }
+
+  /* ── FEATURE GRID ── */
+  .features-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 2px; background: var(--border); border: 1px solid var(--border);
+    border-radius: 12px; overflow: hidden;
+  }
+  .feature-card {
+    background: var(--bg2); padding: 32px;
+    transition: background .2s;
+  }
+  .feature-card:hover { background: var(--bg3); }
+  .feature-icon {
+    width: 44px; height: 44px; border-radius: 10px;
+    background: rgba(0,217,166,0.1); border: 1px solid rgba(0,217,166,0.2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; margin-bottom: 20px;
+  }
+  .feature-card h3 {
+    font-size: 16px; font-weight: 700; margin-bottom: 10px; letter-spacing: -.3px;
+  }
+  .feature-card p { font-size: 14px; color: var(--text2); line-height: 1.6; }
+
+  /* ── COMPARISON TABLE ── */
+  .comparison {
+    margin-top: 60px;
+    overflow-x: auto;
+  }
+  .comparison-table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .comparison-table th {
+    background: var(--bg2);
+    padding: 18px 24px;
+    text-align: left;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text);
+    border-bottom: 1px solid var(--border);
+    letter-spacing: -.3px;
+  }
+  .comparison-table td {
+    padding: 18px 24px;
+    border-bottom: 1px solid var(--border);
+    font-size: 14px;
+    color: var(--text2);
+  }
+  .comparison-table tbody tr:last-child td {
+    border-bottom: none;
+  }
+  .comparison-table tbody tr:hover {
+    background: rgba(0,217,166,0.02);
+  }
+  .comparison-table .feature-name {
+    font-weight: 600;
+    color: var(--text);
+    width: 200px;
+  }
+  .comparison-table .checkmark {
+    color: var(--accent);
+    font-weight: 700;
+  }
+  .comparison-table .x {
+    color: var(--text3);
+  }
+
+  /* ── CTA SECTION ── */
+  #cta {
+    text-align: center; max-width: 100%;
+    background: linear-gradient(135deg, rgba(0,217,166,0.06) 0%, rgba(82,148,248,0.04) 100%);
+    border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+  }
+  #cta .inner { max-width: 800px; margin: 0 auto; padding: 100px 40px; }
+
+  /* ── FOOTER ── */
+  footer {
+    background: var(--bg); border-top: 1px solid var(--border);
+    padding: 40px; display: flex; justify-content: space-between; align-items: center;
+    flex-wrap: wrap; gap: 16px;
+  }
+  .footer-logo { font-size: 14px; font-weight: 700; color: var(--text); }
+  .footer-logo span { color: var(--accent); }
+  footer p { font-size: 12px; color: var(--text3); }
+  .footer-links { display: flex; gap: 24px; }
+  .footer-links a { font-size: 12px; color: var(--text3); text-decoration: none; transition: color .2s; }
+  .footer-links a:hover { color: var(--text2); }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 768px) {
+    nav { padding: 0 20px; }
+    .nav-links { display: none; }
+    .hero { padding: 100px 24px 60px; }
+    section { padding: 60px 24px; }
+    .comparison { margin-top: 40px; }
+    footer { flex-direction: column; text-align: center; padding: 32px 24px; }
+    .footer-links { justify-content: center; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ── NAV ── -->
+<nav>
+  <a class="nav-logo" href="index.html">
+    <div class="nav-logo-mark">Bs</div>
+    BoardScope
+  </a>
+  <div class="nav-links">
+    <a href="index.html#features">Features</a>
+    <a href="index.html#how">How It Works</a>
+    <a href="pricing.html">Pricing</a>
+  </div>
+  <a class="nav-cta" href="pricing.html">Get Pro</a>
+</nav>
+
+<!-- ── HERO ── -->
+<section class="hero">
+  <div class="hero-badge">Professional Boardview Software</div>
+  <h1>
+    The <span>best boardview software</span><br>
+    for board-level repair
+  </h1>
+  <p>
+    Load .brd files instantly. Measure voltages, trace signals, identify faults, and document repairs — all in one professional boardview tool. AI-powered diagnostics included.
+  </p>
+  <div class="hero-actions">
+    <a class="btn-primary" href="https://github.com/louistoshi/boardscope.ca/releases">Download Free</a>
+    <a class="btn-secondary" href="pricing.html">View Pricing →</a>
+  </div>
+</section>
+
+<!-- ── WHAT IS BOARDVIEW ── -->
+<section>
+  <div class="section-tag">Boardview Explained</div>
+  <h2 class="section-title">What is boardview software?</h2>
+  <p class="section-sub">Boardview software is a specialized tool for viewing and analyzing PCB layout files (.brd files). It's essential for board-level repair technicians, electronics engineers, and anyone who needs to understand circuit board layouts.</p>
+
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon">📋</div>
+      <h3>.BRD File Viewer</h3>
+      <p>Open and render .brd, .bvr, .brd2, and other boardview format files instantly. See both sides of the board simultaneously.</p>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon">🔍</div>
+      <h3>Net & Component Search</h3>
+      <p>Search any net name or component reference. BoardScope highlights every connection across the entire board instantly.</p>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon">⚡</div>
+      <h3>Voltage Measurement</h3>
+      <p>Record live voltage readings per net. See color-coded pass/fail overlays update the board view in real time.</p>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon">🗺️</div>
+      <h3>Volt Map Overlay</h3>
+      <p>Visualize measured voltages as a heat map across the board. Spot power distribution issues at a glance.</p>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon">🔌</div>
+      <h3>Schematic Cross-Reference</h3>
+      <p>Link your schematic PDF directly to the boardview. Click a component on the board and see its schematic symbol.</p>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon">🤖</div>
+      <h3>AI Diagnosis</h3>
+      <p>Describe a symptom and let AI analyze your board, measurements, and fault patterns to suggest solutions.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ── WHY BOARDSCOPE ── -->
+<section>
+  <div class="section-tag">Why BoardScope</div>
+  <h2 class="section-title">Why choose BoardScope?</h2>
+  <p class="section-sub">BoardScope combines the power of professional boardview software with modern repair workflows — faster diagnostics, better documentation, and AI-powered insights.</p>
+
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon">⚡</div>
+      <h3>Lightning-Fast Loading</h3>
+      <p>Load large .brd files instantly. No lag, no crashes. Optimized for complex boards with thousands of components.</p>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon">🎯</div>
+      <h3>Repair-Focused Workflow</h3>
+      <p>Built around the real workflow of board-level technicians. Every feature serves the repair process.</p>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon">📊</div>
+      <h3>Multi-Board Analysis</h3>
+      <p>Open multiple boards simultaneously. Compare layouts, identify shared circuits, and speed up parallel repairs.</p>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon">🔧</div>
+      <h3>Hardware Integration</h3>
+      <p>Connect real test equipment — multimeters, oscilloscopes. Live readings flow directly into your boardview analysis.</p>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon">📝</div>
+      <h3>Repair Documentation</h3>
+      <p>Log repairs per component. Add notes, photos, and measurement history. Build team knowledge over time.</p>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon">💰</div>
+      <h3>Affordable Pro Features</h3>
+      <p>Core boardview features are free forever. Pro features ($59/year or $129 lifetime) unlock AI and automation.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ── BOARDVIEW FILE FORMATS ── -->
+<section>
+  <div class="section-tag">File Support</div>
+  <h2 class="section-title">Supports all major boardview formats</h2>
+  <p class="section-sub">Whether you're working with Cadence, Allegro, FlexBV exports, or open-source formats — BoardScope reads them all.</p>
+
+  <div class="comparison">
+    <table class="comparison-table">
+      <thead>
+        <tr>
+          <th>File Format</th>
+          <th>Description</th>
+          <th>BoardScope Support</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="feature-name">.brd (ASCII)</td>
+          <td>Standard boardview format</td>
+          <td class="checkmark">✓ Full Support</td>
+        </tr>
+        <tr>
+          <td class="feature-name">.brd (Binary)</td>
+          <td>Compact binary format</td>
+          <td class="checkmark">✓ Full Support</td>
+        </tr>
+        <tr>
+          <td class="feature-name">.bvr (FlexBV)</td>
+          <td>FlexBV proprietary format</td>
+          <td class="checkmark">✓ Full Support</td>
+        </tr>
+        <tr>
+          <td class="feature-name">.brd2 (Extended)</td>
+          <td>Extended boardview format with advanced features</td>
+          <td class="checkmark">✓ Full Support</td>
+        </tr>
+        <tr>
+          <td class="feature-name">Verilog Boardview</td>
+          <td>Verilog format exports</td>
+          <td class="checkmark">✓ Full Support</td>
+        </tr>
+        <tr>
+          <td class="feature-name">OpenBoardData</td>
+          <td>Open-source component library</td>
+          <td class="checkmark">✓ Integrated</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ── USE CASES ── -->
+<section>
+  <div class="section-tag">Use Cases</div>
+  <h2 class="section-title">Perfect for every repair technician</h2>
+  <p class="section-sub">Whether you're in a repair shop, engineering lab, or classroom — boardview software is essential.</p>
+
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon">🔧</div>
+      <h3>Professional Repair Techs</h3>
+      <p>Diagnose MacBooks, iPhones, gaming consoles, and enterprise hardware. Measure, trace, and document repairs in minutes.</p>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon">🎓</div>
+      <h3>Students & Learning</h3>
+      <p>Understand PCB design, signal flow, and component placement. Interactive visualization accelerates learning.</p>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon">🔬</div>
+      <h3>Electronics Engineers</h3>
+      <p>Analyze prototype boards, verify layouts, and debug hardware during development cycles.</p>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon">🏭</div>
+      <h3>Manufacturing & QA</h3>
+      <p>Validate board layouts, verify component placement, and accelerate production troubleshooting.</p>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon">🌍</div>
+      <h3>Supply Chain / Sourcing</h3>
+      <p>Analyze competitor boards, understand component usage patterns, and make informed sourcing decisions.</p>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon">📚</div>
+      <h3>Technical Training</h3>
+      <p>Create repair documentation and training materials with visual boardview analysis and annotations.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ── CTA ── -->
+<div id="cta">
+  <div class="inner">
+    <div class="section-tag">Get Started</div>
+    <h2 class="section-title">Start analyzing boards today</h2>
+    <p>
+      Download BoardScope free. Open your first .brd file in seconds. Core boardview features are always free. Upgrade to Pro for AI diagnosis and automation.
+    </p>
+    <div class="hero-actions" style="margin-top: 40px;">
+      <a class="btn-primary" href="https://github.com/louistoshi/boardscope.ca/releases">Download Free</a>
+      <a class="btn-secondary" href="pricing.html">See Pro Features →</a>
+    </div>
+  </div>
+</div>
+
+<!-- ── FOOTER ── -->
+<footer>
+  <div class="footer-logo">Board<span>Scope</span></div>
+  <p>© 2025 BoardScope. Professional PCB Boardview & Repair Analysis.</p>
+  <div class="footer-links">
+    <a href="https://github.com/louistoshi/boardscope.ca/releases">Download</a>
+    <a href="manual.html">Manual</a>
+    <a href="index.html">Home</a>
+  </div>
+</footer>
+
+<script>
+  const nav = document.querySelector('nav');
+  window.addEventListener('scroll', () => {
+    const scrolled = window.scrollY > 60;
+    nav.style.background = scrolled
+      ? 'rgba(11,13,15,0.95)'
+      : 'rgba(11,13,15,0.7)';
+  }, { passive: true });
+</script>
+</body>
+</html>

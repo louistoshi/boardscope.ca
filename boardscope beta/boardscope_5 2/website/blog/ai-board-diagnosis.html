@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI-Powered Board Diagnosis — How Machine Learning Changes Repair</title>
+<meta name="description" content="How AI is transforming PCB repair. Machine learning diagnostics, fault prediction, and automated repair suggestions using Claude, GPT-4, and Gemini.">
+<meta name="keywords" content="AI board diagnosis, machine learning repair, automated diagnostics, AI repair suggestions, AI fault detection, Claude GPT repair">
+<meta name="author" content="BoardScope">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://boardscope.ca/blog/ai-board-diagnosis.html">
+
+<meta property="og:title" content="AI-Powered Board Diagnosis — Repair Technology Evolution">
+<meta property="og:description" content="How AI is transforming board-level repair. Machine learning analyzes symptoms and measurements to suggest repairs in seconds.">
+<meta property="og:type" content="article">
+
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg:      #0b0d0f;
+    --bg2:     #111418;
+    --bg3:     #181c22;
+    --border:  #1e2430;
+    --accent:  #00d9a6;
+    --accent2: #5294f8;
+    --text:    #e8edf5;
+    --text2:   #9aa3b5;
+    --text3:   #5a6276;
+  }
+  html { scroll-behavior: smooth; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); overflow-x: hidden; }
+  nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; display: flex; align-items: center; justify-content: space-between; padding: 0 40px; height: 60px; background: rgba(11,13,15,0.7); backdrop-filter: blur(16px); border-bottom: 1px solid rgba(255,255,255,0.04); }
+  .nav-logo { display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 700; letter-spacing: .5px; color: var(--text); text-decoration: none; }
+  .nav-logo-mark { width: 28px; height: 28px; background: var(--accent); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 900; color: #000; letter-spacing: -1px; }
+  .nav-links { display: flex; align-items: center; gap: 32px; }
+  .nav-links a { font-size: 13px; color: var(--text2); text-decoration: none; letter-spacing: .3px; transition: color .2s; }
+  .nav-links a:hover { color: var(--text); }
+  .nav-cta { background: var(--accent); color: #000; font-size: 13px; font-weight: 700; padding: 8px 20px; border-radius: 6px; text-decoration: none; letter-spacing: .3px; transition: opacity .2s; }
+  .nav-cta:hover { opacity: .85; }
+
+  .article-header { padding: 140px 40px 60px; max-width: 900px; margin: 0 auto; text-align: center; }
+  .article-tag { display: inline-flex; align-items: center; gap: 6px; background: rgba(0,217,166,0.1); border: 1px solid rgba(0,217,166,0.3); color: var(--accent); font-size: 11px; font-weight: 700; letter-spacing: 1.5px; padding: 5px 14px; border-radius: 20px; margin-bottom: 20px; text-transform: uppercase; }
+  .article-header h1 { font-size: clamp(32px, 5vw, 56px); font-weight: 800; line-height: 1.2; letter-spacing: -1.5px; margin-bottom: 20px; }
+  .article-header h1 span { color: var(--accent); }
+  .article-meta { font-size: 14px; color: var(--text2); display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; }
+
+  .article-content { max-width: 800px; margin: 0 auto; padding: 0 40px 100px; }
+  .article-content h2 { font-size: 28px; font-weight: 800; letter-spacing: -1px; margin: 60px 0 20px; }
+  .article-content h3 { font-size: 20px; font-weight: 700; letter-spacing: -.5px; margin: 40px 0 16px; }
+  .article-content p { font-size: 16px; line-height: 1.8; color: var(--text2); margin-bottom: 20px; }
+  .article-content ul, .article-content ol { margin: 24px 0 24px 24px; font-size: 16px; line-height: 1.8; color: var(--text2); }
+  .article-content li { margin-bottom: 12px; }
+  .article-content strong { color: var(--accent); }
+  .article-content code { background: var(--bg2); padding: 2px 6px; border-radius: 4px; font-family: 'Monaco', monospace; font-size: 14px; color: var(--accent); }
+
+  .highlight-box { background: rgba(0,217,166,0.08); border-left: 4px solid var(--accent); padding: 24px; border-radius: 8px; margin: 32px 0; font-size: 15px; line-height: 1.7; }
+  .highlight-box strong { color: var(--accent); }
+
+  .cta-box { background: linear-gradient(135deg, rgba(0,217,166,0.06) 0%, rgba(82,148,248,0.04) 100%); border: 1px solid var(--border); border-radius: 12px; padding: 40px; margin: 60px 0; text-align: center; }
+  .cta-box h3 { font-size: 20px; margin: 0 0 16px; }
+  .cta-box p { margin-bottom: 24px; }
+  .btn-primary { display: inline-block; background: var(--accent); color: #000; font-size: 15px; font-weight: 700; padding: 14px 32px; border-radius: 8px; text-decoration: none; letter-spacing: .3px; transition: all .2s; box-shadow: 0 0 32px rgba(0,217,166,0.3); }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 0 48px rgba(0,217,166,0.45); }
+
+  footer { background: var(--bg); border-top: 1px solid var(--border); padding: 40px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; }
+  .footer-logo { font-size: 14px; font-weight: 700; color: var(--text); }
+  .footer-logo span { color: var(--accent); }
+  footer p { font-size: 12px; color: var(--text3); }
+  .footer-links { display: flex; gap: 24px; }
+  .footer-links a { font-size: 12px; color: var(--text3); text-decoration: none; transition: color .2s; }
+  .footer-links a:hover { color: var(--text2); }
+
+  @media (max-width: 768px) {
+    nav { padding: 0 20px; }
+    .nav-links { display: none; }
+    .article-header { padding: 100px 24px 40px; }
+    .article-content { padding: 0 24px 80px; }
+    .cta-box { padding: 32px 24px; }
+    footer { flex-direction: column; text-align: center; padding: 32px 24px; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="../index.html"><div class="nav-logo-mark">Bs</div>BoardScope</a>
+  <div class="nav-links">
+    <a href="../index.html#features">Features</a>
+    <a href="../index.html#how">How It Works</a>
+    <a href="../pricing.html">Pricing</a>
+  </div>
+  <a class="nav-cta" href="../pricing.html">Get Pro</a>
+</nav>
+
+<div class="article-header">
+  <div class="article-tag">🤖 AI Diagnostics</div>
+  <h1>AI-Powered Board <span>Diagnosis</span></h1>
+  <div class="article-meta"><span>📖 18 min read</span><span>🛠️ Future tech</span><span>✓ Available now</span></div>
+</div>
+
+<div class="article-content">
+
+<h2>The Problem: Knowledge Gap</h2>
+
+<p>Board-level repair requires expertise. A technician needs to know:</p>
+
+<ul>
+  <li>Thousands of component part numbers and their functions</li>
+  <li>Power distribution patterns for hundreds of device models</li>
+  <li>Signal paths through complex circuits</li>
+  <li>Common failure modes for each device type</li>
+  <li>How to interpret voltage measurements in context</li>
+</ul>
+
+<p>This takes years to develop. What if AI could help bridge that gap?</p>
+
+<h2>What is AI-Powered Board Diagnosis?</h2>
+
+<p><strong>AI diagnosis</strong> means describing a symptom in plain English, and letting artificial intelligence (Claude, GPT-4, Gemini) analyze your board, measurements, and fault patterns to suggest solutions.</p>
+
+<p><strong>Example:</strong></p>
+
+<blockquote>You: "MacBook powers on but no display. VBATT is good, 3.3V is good, but display power (5V) is missing."</blockquote>
+
+<blockquote>AI: "Based on your measurements and this board layout, the issue is likely the display power regulator (likely failed PWM IC or shorted display capacitor). Check U23 and C45 first. If those are good, trace back to the power IC supplying them."</blockquote>
+
+<p>The AI isn't guessing — it's analyzing the specific board, your measurements, and patterns from millions of repair examples.</p>
+
+<h2>How AI Learns Board Repair</h2>
+
+<h3>Training Data</h3>
+
+<p>Modern AI models like Claude and GPT-4 were trained on:</p>
+
+<ul>
+  <li>Board schematics and service manuals</li>
+  <li>Repair forums and technician discussions</li>
+  <li>Published failure analysis reports</li>
+  <li>Electronics engineering textbooks</li>
+  <li>Years of repair logs and case studies</li>
+</ul>
+
+<p>This means the AI has internalized patterns that would take a human technician decades to learn.</p>
+
+<h3>What AI Does Best</h3>
+
+<p><strong>✓ Pattern recognition:</strong> "I've seen this symptom on 50 different board designs, and here are the most likely causes."</p>
+
+<p><strong>✓ Data analysis:</strong> "Your voltage readings show a 200mV droop on 3.3V under load. That's consistent with a bad capacitor or power trace break."</p>
+
+<p><strong>✓ Logical reasoning:</strong> "If the clock signal is missing, the processor can't execute. If processor can't execute, it can't start the boot sequence. This explains why the display never powers on."</p>
+
+<p><strong>✓ Multi-fault analysis:</strong> "This board has two problems: a burnt diode (obvious burn mark) AND a loose connector (intermittent contact). Fix both or the problem will recur."</p>
+
+<p><strong>✓ Learning from feedback:</strong> "You told me the capacitor swap fixed it. I'll remember this for similar boards."</p>
+
+<h3>What AI Still Needs Human Input For</h3>
+
+<p><strong>✗ Physical inspection:</strong> AI can't see a burnt component (though you can describe it)</p>
+
+<p><strong>✗ Soldering skills:</strong> AI can suggest what to fix but can't solder</p>
+
+<p><strong>✗ Risk assessment:</strong> "Should we risk aggressive reballing, or go with a less invasive approach?" — Requires human judgment</p>
+
+<p><strong>✗ New boards or designs:</strong> AI is based on historical data; genuinely novel designs might confuse it</p>
+
+<h2>AI Diagnosis Workflow</h2>
+
+<h3>Step 1: Load Your Board & Describe the Symptom</h3>
+
+<p>Open BoardScope (or compatible software) and:</p>
+
+<ol>
+  <li>Load the .brd file</li>
+  <li>Click "AI Diagnosis"</li>
+  <li>Type: "Device won't power on. Battery voltage present. Main power IC getting 12V input but 0V output."</li>
+</ol>
+
+<h3>Step 2: Provide Measurements</h3>
+
+<p>If you've measured voltages, add them:</p>
+
+<blockquote>"VBATT: 12.5V (good), U15 input: 12.5V (good), U15 output: 0V (bad), 3.3V rail: 0V"</blockquote>
+
+<h3>Step 3: Mention Physical Observations</h3>
+
+<blockquote>"U15 (power IC) is not hot. No burnt components visible. No liquid damage."</blockquote>
+
+<h3>Step 4: Get Suggestions</h3>
+
+<p>AI analyzes everything and responds:</p>
+
+<blockquote>"Based on the boardview and your measurements, U15 (power IC) is faulty. Input voltage is good but output is zero, and the IC isn't drawing current (not hot). This indicates a failure in the IC itself, not an external short. Recommendation: Replace U15."</blockquote>
+
+<p>Or it might suggest:</p>
+
+<blockquote>"The output is zero despite valid input. This could be: (1) Faulty IC, (2) Short circuit on the output rail, (3) Enable signal missing. Check C12-C15 (output capacitors) for shorts with a multimeter. If they're good, measure the enable pin on U15 — should be high logic level."</blockquote>
+
+<h2>Real-World AI Diagnosis Examples</h2>
+
+<h3>Example 1: iPhone Display Not Working</h3>
+
+<p><strong>You:</strong> "iPhone 12. Powers on, backlight is off. All other features work (calls, photos, etc.)."</p>
+
+<p><strong>Measurements:</strong> "Display power (5V) is present. Backlight enable signal (GPIO) is present. Connector voltages look good."</p>
+
+<p><strong>AI Response:</strong> "Your measurements rule out power supply. The backlight is likely a failure in the backlight IC or a broken LED driver. Check: (1) Backlight IC (usually near power management IC), (2) Backlight voltage line for shorts, (3) Display connector flex cable for cracks. Start with the connector — 30% of display issues are just bad connections."</p>
+
+<p><strong>Result:</strong> You reseat the display connector, it works. AI diagnosis saved you an hour of troubleshooting.</p>
+
+<h3>Example 2: MacBook Kernel Panic</h3>
+
+<p><strong>You:</strong> "MacBook Pro boots sometimes, sometimes crashes with kernel panic. Pattern: crashes under load (gaming, video editing), stable during light use."</p>
+
+<p><strong>Measurements:</strong> "3.3V rail dips from 3.3V to 2.9V under load. 1.2V rail is stable."</p>
+
+<p><strong>AI Response:</strong> "The voltage droop on 3.3V under load indicates insufficient power delivery. Common causes: (1) Swollen/dead capacitor in the 3.3V supply, (2) Fractured power trace, (3) Bad power connector. The kernel panic happens when voltage drops below minimum processor spec. Recommendation: Check the 3.3V capacitor bank near the processor — look for swelling, leaked electrolyte, or corrosion."</p>
+
+<p><strong>Result:</strong> You find a swollen capacitor. Replace it, problem solved. Without AI guidance, you might have wasted hours checking the power IC instead of focusing on the capacitor.</p>
+
+<h3>Example 3: Gaming Console Dead on Arrival</h3>
+
+<p><strong>You:</strong> "Nintendo Switch, brand new, won't power on. Connected to charger."</p>
+
+<p><strong>Measurements:</strong> "Charger output: 15V (good). Console charge pin: 15V (good). But power IC input measures 0V."</p>
+
+<p><strong>AI Response:</strong> "Your measurements show 15V at the connector but 0V at the power IC input. This indicates a break in the power path between the connector and the IC. Most likely: (1) Burnt protection diode between connector and input, (2) Blown fuse, (3) Disconnected trace or via. Check the protection diode first — it's often the cheapest fix."</p>
+
+<p><strong>Result:</strong> You find the protection diode is burnt (black mark). Replace it, console powers on. Total diagnosis time: 2 minutes with AI guidance.</p>
+
+<h2>AI + Fault Trees: Guided Repair</h2>
+
+<p>Some boardview software generates "fault trees" — step-by-step diagnostic flowcharts created by AI.</p>
+
+<p><strong>Example fault tree for "Device won't power on":</strong></p>
+
+<blockquote>
+<p>Step 1: Is battery voltage present?<br>
+→ Yes: Proceed to Step 2<br>
+→ No: Check battery connector and diode<br>
+<br>
+Step 2: Is 3.3V rail present?<br>
+→ Yes: Proceed to Step 3<br>
+→ No: Power IC is faulty or input is broken<br>
+<br>
+Step 3: Is clock signal present?<br>
+→ Yes: Processor is alive, check boot firmware<br>
+→ No: Clock crystal or oscillator is faulty<br>
+</p>
+</blockquote>
+
+<p>This guides you through diagnosis systematically. You don't need to think — just follow the tree.</p>
+
+<h2>Privacy & Security: Your Data is Safe</h2>
+
+<p>When you use AI diagnosis:</p>
+
+<ul>
+  <li><strong>Your board images:</strong> Can be analyzed locally (privacy mode) or sent to Claude/GPT-4 (encrypted)</li>
+  <li><strong>Your measurements:</strong> Logged locally in software, not shared unless you explicitly upload them</li>
+  <li><strong>Your customer data:</strong> Stays on your computer, not shared with AI providers</li>
+</ul>
+
+<p>Reputable software (like BoardScope) offers <strong>privacy mode</strong> — all AI analysis happens on your local machine. No data leaves your computer.</p>
+
+<h2>Limitations: Where AI Isn't Perfect</h2>
+
+<h3>New or Obscure Devices</h3>
+
+<p>AI is trained on popular devices (iPhone, MacBook, Dell laptops, etc.). For brand-new products or obscure devices, AI might have limited knowledge.</p>
+
+<p><strong>Workaround:</strong> Provide schematic and detailed component info. AI can still help with general principles.</p>
+
+<h3>Novel Faults</h3>
+
+<p>A genuinely unique failure (rare on modern boards) might confuse AI.</p>
+
+<p><strong>Workaround:</strong> Ask for general guidance on the faulty component type, not specific diagnosis.</p>
+
+<h3>Requires Good Data</h3>
+
+<p>Garbage in, garbage out. If your measurements are wrong, AI suggestions will be wrong.</p>
+
+<p><strong>Workaround:</strong> Always verify measurements with a good multimeter. Don't rely on single data point.</p>
+
+<h3>No Physical Inspection</h3>
+
+<p>AI can't see burnt marks, corrosion, or water damage. You must describe what you see.</p>
+
+<p><strong>Workaround:</strong> Take clear photos, describe observations in detail.</p>
+
+<h2>Which AI Models Work Best?</h2>
+
+<h3>Claude 3 (Anthropic)</h3>
+
+<p><strong>Strengths:</strong> Excellent at complex reasoning, understands schematics, good at multi-step diagnostics</p>
+
+<p><strong>Best for:</strong> Complex power supply issues, multi-fault boards</p>
+
+<h3>GPT-4 (OpenAI)</h3>
+
+<p><strong>Strengths:</strong> Broad knowledge, good at pattern matching, trained on lots of repair data</p>
+
+<p><strong>Best for:</strong> Quick diagnosis, common failure modes</p>
+
+<h3>Gemini (Google)</h3>
+
+<p><strong>Strengths:</strong> Free tier available, good visual understanding</p>
+
+<p><strong>Best for:</strong> Budget-conscious shops, image analysis</p>
+
+<p><strong>Recommendation for repair shops:</strong> Start with Claude or GPT-4. They're most specialized for technical diagnosis.</p>
+
+<div class="cta-box">
+  <h3>Get AI diagnostics without expensive subscriptions</h3>
+  <p>BoardScope Pro includes Claude AI integration at no extra cost. Bring your own API key (free tier available), or use our included credits. Download now.</p>
+  <a class="btn-primary" href="https://github.com/louistoshi/boardscope.ca/releases">Download BoardScope Free</a>
+</div>
+
+<h2>The Future: AI Will Evolve, But Humans Are Essential</h2>
+
+<p><strong>Next 5 years:</strong> AI will get better at predicting failures before they happen. ("This component is showing early wear signs. Replace it preventively.")</p>
+
+<p><strong>Soldering robots:</strong> Might eventually automate component replacement, but physical diagnostics will always need human touch.</p>
+
+<p><strong>What won't change:</strong> Understanding WHY something failed. That requires human judgment, experience, and empathy for the customer.</p>
+
+<p>AI is a tool that makes technicians more efficient, not a replacement for expertise.</p>
+
+<h2>Summary</h2>
+
+<ul>
+  <li>AI diagnosis analyzes symptoms and measurements to suggest repairs</li>
+  <li>AI is trained on millions of repair examples and engineering knowledge</li>
+  <li>Dramatically speeds up diagnosis on complex boards</li>
+  <li>Works best with good measurements and physical observations</li>
+  <li>Privacy-first software keeps your data local</li>
+  <li>Human technicians are still essential for final decision-making</li>
+  <li>Available now in BoardScope and similar tools</li>
+  <li>Will improve significantly over next 5 years</li>
+</ul>
+
+<p>AI diagnosis isn't science fiction. It's here, it works, and it's changing board repair from art to science.</p>
+
+</div>
+
+<footer>
+  <div class="footer-logo">Board<span>Scope</span></div>
+  <p>© 2025 BoardScope. Professional PCB Boardview & Repair Analysis.</p>
+  <div class="footer-links">
+    <a href="https://github.com/louistoshi/boardscope.ca/releases">Download</a>
+    <a href="../manual.html">Manual</a>
+    <a href="../index.html">Home</a>
+  </div>
+</footer>
+
+<script>
+  const nav = document.querySelector('nav');
+  window.addEventListener('scroll', () => {
+    const scrolled = window.scrollY > 60;
+    nav.style.background = scrolled ? 'rgba(11,13,15,0.95)' : 'rgba(11,13,15,0.7)';
+  }, { passive: true });
+</script>
+</body>
+</html>
