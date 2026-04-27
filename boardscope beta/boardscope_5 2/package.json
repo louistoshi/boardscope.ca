@@ -19,7 +19,8 @@
     "build:secure:win": "npm run electron:build:secure -- --win",
     "build:secure:mac": "npm run electron:build:secure -- --mac",
     "build:secure:linux": "npm run electron:build:secure -- --linux",
-    "build:secure:all": "npm run electron:build:secure -- --win --mac --linux"
+    "build:secure:all": "npm run electron:build:secure -- --win --mac --linux",
+    "build:mas": "electron-builder --mac mas"
   },
   "build": {
     "appId": "com.boardscope.app",
@@ -73,6 +74,13 @@
             "x64",
             "arm64"
           ]
+        },
+        {
+          "target": "pkg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
         }
       ],
       "icon": "assets/icon.icns",
@@ -81,7 +89,7 @@
       "gatekeeperAssess": false,
       "entitlements": "build/entitlements.mac.plist",
       "entitlementsInherit": "build/entitlements.mac.plist",
-      "identity": "Developer ID Application: louis robert (QWV8X6H5C8)",
+      "identity": "louis robert (QWV8X6H5C8)",
       "fileAssociations": [
         {
           "ext": "brd",
@@ -89,6 +97,15 @@
           "description": "PCB Board View File"
         }
       ]
+    },
+    "mas": {
+      "target": ["pkg"],
+      "type": "distribution",
+      "category": "public.app-category.developer-tools",
+      "entitlements": "build/entitlements.mas.plist",
+      "entitlementsInherit": "build/entitlements.mas.inherit.plist",
+      "identity": "louis robert (QWV8X6H5C8)",
+      "provisioningProfile": "secrets/BoardScope.provisioningprofile"
     },
     "linux": {
       "maintainer": "BoardScope <support@boardscope.com>",
@@ -139,6 +156,9 @@
     }
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.3.1",
+    "@capacitor/core": "^8.3.1",
+    "@capacitor/ios": "^8.3.1",
     "electron": "^28.0.0",
     "electron-builder": "^24.9.1",
     "javascript-obfuscator": "^5.4.1",

@@ -7,6 +7,7 @@ yarn.lock
 dist/
 dist-obfuscated/
 out/
+www/
 *.dmg
 *.exe
 *.AppImage
@@ -18,6 +19,12 @@ out/
 # API keys and secrets
 .api_key
 api key
+secrets/
+*.cer
+*.p12
+*.key
+*.certSigningRequest
+*.p7b
 .polar_config
 .env
 .env.local
