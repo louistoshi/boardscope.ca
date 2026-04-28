@@ -1,0 +1,15 @@
+{
+  "compact": true,
+  "controlFlowFlattening": false,
+  "deadCodeInjection": false,
+  "debugProtection": false,
+  "disableConsoleOutput": true,
+  "stringArray": true,
+  "stringArrayEncoding": ["base64"],
+  "stringArrayThreshold": 0.75,
+  "rotateStringArray": true,
+  "shuffleStringArray": true,
+  "splitStrings": false,
+  "transformObjectKeys": false,
+  "unicodeEscapeSequence": false
+}

@@ -1,0 +1,61 @@
+# Dependencies
+node_modules/
+package-lock.json
+yarn.lock
+
+# Build artifacts
+dist/
+dist-obfuscated/
+out/
+www/
+*.dmg
+*.exe
+*.AppImage
+*.deb
+
+# Source maps (don't expose in production)
+*.map
+
+# API keys and secrets
+.api_key
+api key
+secrets/
+*.cer
+*.p12
+*.key
+*.certSigningRequest
+*.p7b
+.polar_config
+.env
+.env.local
+*.pem
+*.key
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.log
+*.tmp
+.cache/
+
+# macOS specific
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+
+# Electron
+electron/dist
+electron/out
+
+# Development
+.claude/
+.continue/
+.copilot/

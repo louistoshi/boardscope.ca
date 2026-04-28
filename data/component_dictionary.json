@@ -1,0 +1,22 @@
+{
+  "335S00500": "multichannel_pmic.png",
+  "TBT_ROM": "apple_chip.png",
+  "CD3215": "multichannel_pmic.png",
+  "TPS": "multichannel_pmic.png",
+  "ISL": "pcu.png",
+  "NAND": "nand_controller.png",
+  "APPLE": "apple_chip.png",
+  "PROD_SW_MU": "nand_controller.png",
+  "FPC": "display_connector.png",
+  "CONN": "display_connector.png",
+  "RECEPTACLE": "display_connector.png",
+  "BATT": "battery_connector.png",
+  "SMC": "apple_chip.png",
+  "T2": "apple_chip.png",
+  "PMIC": "multichannel_pmic.png",
+  "BUF": "capacitors_buffer.png",
+  "TRANS": "voltage_translator.png",
+  "MOSFET": "mosfet.png",
+  "ESD": "esd_protection.png",
+  "TVS": "esd_protection.png"
+}

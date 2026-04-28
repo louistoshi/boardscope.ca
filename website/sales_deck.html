@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BoardScope — The Professional PCB Command Center (Sales Deck)</title>
+<style>
+  :root {
+    --bg: #05070a; --card: #0f1218; --accent: #00d9a6; --accent-dim: #00a87e;
+    --blue: #5294f8; --text: #f0f3fa; --text2: #9aa0b0; --border: #1e2430;
+    --grad: linear-gradient(135deg, #00d9a6 0%, #5294f8 100%);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    overflow-x: hidden;
+  }
+  
+  /* ── PRESENTATION ENGINE ── */
+  .slide {
+    height: 100vh; width: 100vw;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 60px; scroll-snap-align: start; position: relative;
+    overflow: hidden;
+  }
+  .slides-container {
+    height: 100vh; overflow-y: auto; scroll-snap-type: y mandatory;
+  }
+  
+  /* ── BACKGROUND DECOR ── */
+  .circuit-bg {
+    position: absolute; inset: 0; opacity: 0.05; pointer-events: none;
+    background-image: radial-gradient(var(--accent) 1px, transparent 1px);
+    background-size: 30px 30px;
+  }
+  .glow {
+    position: absolute; width: 400px; height: 400px;
+    background: radial-gradient(circle, rgba(0,217,166,0.1) 0%, transparent 70%);
+    z-index: -1;
+  }
+
+  /* ── TYPOGRAPHY ── */
+  .tag { color: var(--accent); font-size: 12px; font-weight: 800; letter-spacing: 4px; text-transform: uppercase; margin-bottom: 20px; }
+  h1 { font-size: 84px; font-weight: 900; letter-spacing: -3px; line-height: 0.9; margin-bottom: 30px; }
+  h2 { font-size: 48px; font-weight: 800; letter-spacing: -1.5px; margin-bottom: 20px; }
+  p { font-size: 20px; color: var(--text2); line-height: 1.6; max-width: 700px; }
+  span.highlight { color: var(--accent); }
+
+  /* ── COMPONENTS ── */
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px; margin-top: 50px; width: 100%; max-width: 1200px; }
+  .stat-box { background: var(--card); border: 1px solid var(--border); padding: 40px; border-radius: 20px; text-align: center; }
+  .stat-num { font-size: 54px; font-weight: 900; color: var(--accent); margin-bottom: 10px; }
+  .stat-label { font-size: 14px; color: var(--text2); text-transform: uppercase; letter-spacing: 2px; }
+  
+  .feature-card { background: var(--card); border: 1px solid var(--border); padding: 30px; border-radius: 16px; position: relative; }
+  .feature-icon { font-size: 32px; margin-bottom: 20px; }
+  .feature-card h3 { font-size: 18px; margin-bottom: 10px; }
+  .feature-card p { font-size: 14px; }
+
+  .comparison { width: 100%; max-width: 1000px; border-collapse: collapse; margin-top: 40px; }
+  .comparison th, .comparison td { padding: 20px; border-bottom: 1px solid var(--border); text-align: center; }
+  .comparison th { color: var(--accent); font-size: 11px; letter-spacing: 2px; }
+  .comparison td:first-child { text-align: left; font-weight: 700; color: var(--text2); }
+  .check { color: var(--accent); font-weight: 900; }
+  .cross { color: #333; }
+
+  /* ── COVER ── */
+  #cover .glow { top: -100px; right: -100px; }
+  #cover h1 { background: var(--grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+
+  /* ── CTA ── */
+  .btn {
+    background: var(--accent); color: #000; padding: 20px 40px; border-radius: 12px;
+    font-weight: 800; text-decoration: none; font-size: 18px; margin-top: 40px;
+    box-shadow: 0 10px 40px rgba(0,217,166,0.3); transition: all 0.2s;
+  }
+  .btn:hover { transform: translateY(-3px); box-shadow: 0 20px 60px rgba(0,217,166,0.5); }
+
+  /* ── MOBILE ── */
+  @media (max-width: 768px) {
+    .slide { padding: 30px; }
+    h1 { font-size: 48px; }
+    h2 { font-size: 32px; }
+    .grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="slides-container">
+  
+  <!-- SLIDE 1: COVER -->
+  <section class="slide" id="cover">
+    <div class="circuit-bg"></div>
+    <div class="glow"></div>
+    <span class="tag">Next-Gen Repair Logic</span>
+    <h1>BoardScope.</h1>
+    <p>The first professional "Command Center" for board-level repair. Turn lost minutes into shop revenue.</p>
+    <div style="margin-top: 60px; font-size: 14px; color: var(--text3);">SCROLL TO DISCOVER →</div>
+  </section>
+
+  <!-- SLIDE 2: THE PROBLEM -->
+  <section class="slide">
+    <span class="tag">The Challenge</span>
+    <h2>Lost Minutes = <span class="highlight">Lost Revenue.</span></h2>
+    <p>Every second your technicians spend switching between boardviewers, schematics, and multimeters is profit leaking out of your shop.</p>
+    <div class="grid">
+      <div class="stat-box">
+        <div class="stat-num">15m</div>
+        <div class="stat-label">Lost in app-switching</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-num">30%</div>
+        <div class="stat-label">Diagnostic Failure Rate</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-num">∞</div>
+        <div class="stat-label">Scaling Bottleneck</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 3: THE SOLUTION -->
+  <section class="slide">
+    <span class="tag">The Solution</span>
+    <h2>One Workbench. <span class="highlight">Total Mastery.</span></h2>
+    <p>BoardScope integrates the entire diagnostic stack into a single, unified heads-up display.</p>
+    <div class="grid">
+      <div class="feature-card">
+        <div class="feature-icon">🔌</div>
+        <h3>Live Meter Sync</h3>
+        <p>Real-time voltage and diode data overlaid directly on the board view. Zero context switching.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📋</div>
+        <h3>Interactive PDF</h3>
+        <p>Ultra-precise schematic syncing. One click on a pad highlights the circuit in the schematic instantly.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🤖</div>
+        <h3>AI-Powered Logic</h3>
+        <p>Guided repair trees and AI diagnostics that help your junior techs perform like senior masters.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 4: ROI -->
+  <section class="slide">
+    <span class="tag">Return on Investment</span>
+    <h2>Built for <span class="highlight">High-Volume Shops.</span></h2>
+    <p>We don't just view boards. We manage your workflow to ensure consistent, repeatable successes.</p>
+    <div class="grid">
+      <div class="feature-card">
+        <div class="feature-icon">📊</div>
+        <h3>Automatic Reporting</h3>
+        <p>Generate professional PDF customer reports in seconds. Justify higher labor rates with data.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">⚖️</div>
+        <h3>Before/After Diff</h3>
+        <p>Instantly compare measurements against reference boards to verify 100% repair success.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">💰</div>
+        <h3>Built-in Billing</h3>
+        <p>Generate professional shop invoices and repair logs without leaving the diagnostic window.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 5: COMPARISON -->
+  <section class="slide">
+    <span class="tag">The Comparison</span>
+    <h2>The Next Generation.</h2>
+    <table class="comparison">
+      <thead>
+        <tr>
+          <th>Capability</th>
+          <th>Legacy Viewers</th>
+          <th>BoardScope Pro</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>PDF / Schematic Sync</td><td>Optional</td><td class="check">✓ NATIVE</td></tr>
+        <tr><td>Live Meter Integration</td><td class="cross">✕</td><td class="check">✓ NATIVE</td></tr>
+        <tr><td>AI Repair Assistant</td><td class="cross">✕</td><td class="check">✓ NATIVE</td></tr>
+        <tr><td>Customer Invoicing</td><td class="cross">✕</td><td class="check">✓ NATIVE</td></tr>
+        <tr><td>Team Session Sync</td><td class="cross">✕</td><td class="check">✓ NATIVE</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- SLIDE 6: CTA -->
+  <section class="slide">
+    <div class="glow"></div>
+    <span class="tag">Equip Your Bench</span>
+    <h2>Ready to Scale?</h2>
+    <p>Join the elite shops using BoardScope to dominate their local market. Download the free version or equip your entire team with a Pro Shop License.</p>
+    <a href="https://boardscope.ca/pricing.html" class="btn">View Shop Licensing →</a>
+    <div style="margin-top: 40px; font-size: 14px; color: var(--text3);">Contact: support@boardscope.ca</div>
+  </section>
+
+</div>
+
+</body>
+</html>

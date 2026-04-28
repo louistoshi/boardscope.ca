@@ -1,0 +1,20 @@
+{
+  "name": "BoardScope - PCB Boardview & Schematic Analysis",
+  "short_name": "BoardScope",
+  "description": "PCB Boardview & Schematic Analysis Tool for board repair",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0d0f12",
+  "theme_color": "#0b0d0f",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/assets/icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["utilities", "developer tools"],
+  "lang": "en-US"
+}

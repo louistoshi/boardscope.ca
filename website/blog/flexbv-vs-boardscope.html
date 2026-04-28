@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FlexBV vs BoardScope: Detailed Feature & Workflow Comparison</title>
+<meta name="description" content="Comprehensive comparison of FlexBV and BoardScope boardview software. Features, workflow, pricing, and real-world use cases.">
+<meta name="keywords" content="FlexBV vs BoardScope, boardview comparison, boardview software comparison, best boardview tool, flexbv alternative">
+<meta name="author" content="BoardScope">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://boardscope.ca/blog/flexbv-vs-boardscope.html">
+
+<meta property="og:title" content="FlexBV vs BoardScope — Professional Comparison">
+<meta property="og:description" content="In-depth comparison of FlexBV and BoardScope. Which tool is best for your repair shop?">
+<meta property="og:type" content="article">
+
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root { --bg: #0b0d0f; --bg2: #111418; --bg3: #181c22; --border: #1e2430; --accent: #00d9a6; --accent2: #5294f8; --text: #e8edf5; --text2: #9aa3b5; --text3: #5a6276; }
+  html { scroll-behavior: smooth; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); overflow-x: hidden; }
+  nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; display: flex; align-items: center; justify-content: space-between; padding: 0 40px; height: 60px; background: rgba(11,13,15,0.7); backdrop-filter: blur(16px); border-bottom: 1px solid rgba(255,255,255,0.04); }
+  .nav-logo { display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 700; letter-spacing: .5px; color: var(--text); text-decoration: none; }
+  .nav-logo-mark { width: 28px; height: 28px; background: var(--accent); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 900; color: #000; letter-spacing: -1px; }
+  .nav-links { display: flex; align-items: center; gap: 32px; }
+  .nav-links a { font-size: 13px; color: var(--text2); text-decoration: none; letter-spacing: .3px; transition: color .2s; }
+  .nav-links a:hover { color: var(--text); }
+  .nav-cta { background: var(--accent); color: #000; font-size: 13px; font-weight: 700; padding: 8px 20px; border-radius: 6px; text-decoration: none; letter-spacing: .3px; transition: opacity .2s; }
+  .nav-cta:hover { opacity: .85; }
+
+  .article-header { padding: 140px 40px 60px; max-width: 900px; margin: 0 auto; text-align: center; }
+  .article-tag { display: inline-flex; align-items: center; gap: 6px; background: rgba(0,217,166,0.1); border: 1px solid rgba(0,217,166,0.3); color: var(--accent); font-size: 11px; font-weight: 700; letter-spacing: 1.5px; padding: 5px 14px; border-radius: 20px; margin-bottom: 20px; text-transform: uppercase; }
+  .article-header h1 { font-size: clamp(32px, 5vw, 56px); font-weight: 800; line-height: 1.2; letter-spacing: -1.5px; margin-bottom: 20px; }
+  .article-header h1 span { color: var(--accent); }
+  .article-meta { font-size: 14px; color: var(--text2); display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; }
+
+  .article-content { max-width: 800px; margin: 0 auto; padding: 0 40px 100px; }
+  .article-content h2 { font-size: 28px; font-weight: 800; letter-spacing: -1px; margin: 60px 0 20px; }
+  .article-content h3 { font-size: 20px; font-weight: 700; letter-spacing: -.5px; margin: 40px 0 16px; }
+  .article-content p { font-size: 16px; line-height: 1.8; color: var(--text2); margin-bottom: 20px; }
+  .article-content ul, .article-content ol { margin: 24px 0 24px 24px; font-size: 16px; line-height: 1.8; color: var(--text2); }
+  .article-content li { margin-bottom: 12px; }
+  .article-content strong { color: var(--accent); }
+  .article-content code { background: var(--bg2); padding: 2px 6px; border-radius: 4px; font-family: 'Monaco', monospace; font-size: 14px; color: var(--accent); }
+
+  .table-container { overflow-x: auto; margin: 40px 0; }
+  .comparison-table { width: 100%; border-collapse: collapse; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+  .comparison-table th { background: var(--bg2); padding: 18px 24px; text-align: left; font-size: 14px; font-weight: 700; border-bottom: 1px solid var(--border); }
+  .comparison-table td { padding: 18px 24px; border-bottom: 1px solid var(--border); font-size: 14px; color: var(--text2); }
+  .comparison-table tbody tr:nth-child(even) { background: rgba(0,217,166,0.02); }
+  .comparison-table .feature-name { font-weight: 600; color: var(--text); }
+  .comparison-table .boardscope { color: var(--accent); font-weight: 600; }
+
+  .highlight-box { background: rgba(0,217,166,0.08); border-left: 4px solid var(--accent); padding: 24px; border-radius: 8px; margin: 32px 0; font-size: 15px; line-height: 1.7; }
+  .highlight-box strong { color: var(--accent); }
+
+  .cta-box { background: linear-gradient(135deg, rgba(0,217,166,0.06) 0%, rgba(82,148,248,0.04) 100%); border: 1px solid var(--border); border-radius: 12px; padding: 40px; margin: 60px 0; text-align: center; }
+  .cta-box h3 { font-size: 20px; margin: 0 0 16px; }
+  .cta-box p { margin-bottom: 24px; }
+  .btn-primary { display: inline-block; background: var(--accent); color: #000; font-size: 15px; font-weight: 700; padding: 14px 32px; border-radius: 8px; text-decoration: none; letter-spacing: .3px; transition: all .2s; box-shadow: 0 0 32px rgba(0,217,166,0.3); }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 0 48px rgba(0,217,166,0.45); }
+
+  footer { background: var(--bg); border-top: 1px solid var(--border); padding: 40px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; }
+  .footer-logo { font-size: 14px; font-weight: 700; color: var(--text); }
+  .footer-logo span { color: var(--accent); }
+  footer p { font-size: 12px; color: var(--text3); }
+  .footer-links { display: flex; gap: 24px; }
+  .footer-links a { font-size: 12px; color: var(--text3); text-decoration: none; transition: color .2s; }
+  .footer-links a:hover { color: var(--text2); }
+
+  @media (max-width: 768px) {
+    nav { padding: 0 20px; }
+    .nav-links { display: none; }
+    .article-header { padding: 100px 24px 40px; }
+    .article-content { padding: 0 24px 80px; }
+    .cta-box { padding: 32px 24px; }
+    footer { flex-direction: column; text-align: center; padding: 32px 24px; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="../index.html"><div class="nav-logo-mark">Bs</div>BoardScope</a>
+  <div class="nav-links">
+    <a href="../index.html#features">Features</a>
+    <a href="../index.html#how">How It Works</a>
+    <a href="../pricing.html">Pricing</a>
+  </div>
+  <a class="nav-cta" href="../pricing.html">Get Pro</a>
+</nav>
+
+<div class="article-header">
+  <div class="article-tag">🔍 Deep Comparison</div>
+  <h1>FlexBV vs <span>BoardScope</span></h1>
+  <div class="article-meta"><span>📖 20 min read</span><span>🛠️ Detailed analysis</span><span>✓ Professional level</span></div>
+</div>
+
+<div class="article-content">
+
+<h2>Introduction: The Choice Between Two Professionals</h2>
+
+<p>FlexBV and BoardScope are both legitimate professional tools. This isn't a "FlexBV sucks" article — it's an honest comparison to help you decide which fits your workflow.</p>
+
+<p>Both tools load boardview files and display PCB layouts. But they differ significantly in:</p>
+
+<ul>
+  <li>Features beyond core boardview</li>
+  <li>Hardware integration capabilities</li>
+  <li>Pricing model</li>
+  <li>Support for modern repair workflows</li>
+  <li>Learning curve and UI design</li>
+</ul>
+
+<p>Let's dive deep.</p>
+
+<h2>Core Boardview: Both Are Excellent</h2>
+
+<p>On the fundamental task — displaying PCB layouts — both tools excel.</p>
+
+<h3>File Format Support</h3>
+
+<div class="table-container">
+  <table class="comparison-table">
+    <thead>
+      <tr>
+        <th>Format</th>
+        <th>FlexBV</th>
+        <th>BoardScope</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="feature-name">.brd (ASCII)</td>
+        <td>✓</td>
+        <td class="boardscope">✓</td>
+      </tr>
+      <tr>
+        <td class="feature-name">.brd (Binary)</td>
+        <td>✓</td>
+        <td class="boardscope">✓</td>
+      </tr>
+      <tr>
+        <td class="feature-name">.bvr (FlexBV native)</td>
+        <td>✓</td>
+        <td class="boardscope">✓</td>
+      </tr>
+      <tr>
+        <td class="feature-name">Verilog Boardview</td>
+        <td>✓</td>
+        <td class="boardscope">✓</td>
+      </tr>
+      <tr>
+        <td class="feature-name">CAD files (direct)</td>
+        <td>Limited</td>
+        <td class="boardscope">Limited</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<p><strong>Verdict:</strong> Tie. Both handle all common formats.</p>
+
+<h3>Performance & Rendering</h3>
+
+<p>FlexBV is known for rock-solid rendering. Its boardview engine hasn't crashed in a decade. That's a major reliability advantage if you're on a service call.</p>
+
+<p>BoardScope is newer and just as stable, with more modern UI. Performance is indistinguishable for typical boards.</p>
+
+<p><strong>Verdict:</strong> Slight edge to FlexBV for legacy reliability. But BoardScope is equally solid for modern use.</p>
+
+<h2>Beyond Core: Where They Diverge</h2>
+
+<h3>AI-Powered Diagnosis</h3>
+
+<div class="table-container">
+  <table class="comparison-table">
+    <thead>
+      <tr>
+        <th>Feature</th>
+        <th>FlexBV</th>
+        <th>BoardScope</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="feature-name">AI Diagnosis</td>
+        <td>—</td>
+        <td class="boardscope">✓ Claude/GPT-4/Gemini</td>
+      </tr>
+      <tr>
+        <td class="feature-name">Fault Trees</td>
+        <td>—</td>
+        <td class="boardscope">✓ AI-generated</td>
+      </tr>
+      <tr>
+        <td class="feature-name">Repair Suggestions</td>
+        <td>—</td>
+        <td class="boardscope">✓ Context-aware</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<p><strong>Winner: BoardScope</strong></p>
+
+<p>This is a fundamental differentiator. If you're using FlexBV, you diagnose by experience and logic. If you're using BoardScope, you can ask an AI for guidance. On complex boards, this saves 2-3 hours per repair.</p>
+
+<h3>Hardware Integration (USB Multimeter/Oscilloscope)</h3>
+
+<div class="table-container">
+  <table class="comparison-table">
+    <thead>
+      <tr>
+        <th>Feature</th>
+        <th>FlexBV</th>
+        <th>BoardScope</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="feature-name">USB Multimeter Support</td>
+        <td>—</td>
+        <td class="boardscope">✓ FS9721 & others</td>
+      </tr>
+      <tr>
+        <td class="feature-name">Oscilloscope Integration</td>
+        <td>—</td>
+        <td class="boardscope">✓ SCPI protocol</td>
+      </tr>
+      <tr>
+        <td class="feature-name">Live Voltage Overlay</td>
+        <td>—</td>
+        <td class="boardscope">✓ Color-coded heat map</td>
+      </tr>
+      <tr>
+        <td class="feature-name">Automatic Logging</td>
+        <td>—</td>
+        <td class="boardscope">✓ One-click save</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<p><strong>Winner: BoardScope</strong></p>
+
+<p>FlexBV doesn't support hardware integration at all. You measure with your meter, write down numbers on paper, then refer back to FlexBV for the next test point.</p>
+
+<p>BoardScope connects your meter directly. Measurements appear on the board. No context-switching, no paper, no errors.</p>
+
+<p><strong>Practical impact:</strong> 50% faster diagnosis on complex boards. Cleaner documentation. Repeatable tests.</p>
+
+<h3>Multi-Board Tabs & Comparison</h3>
+
+<div class="table-container">
+  <table class="comparison-table">
+    <thead>
+      <tr>
+        <th>Feature</th>
+        <th>FlexBV</th>
+        <th>BoardScope</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="feature-name">Multiple Boards Open</td>
+        <td>Limited</td>
+        <td class="boardscope">✓ Unlimited tabs</td>
+      </tr>
+      <tr>
+        <td class="feature-name">Side-by-Side Compare</td>
+        <td>—</td>
+        <td class="boardscope">✓ Visual diff</td>
+      </tr>
+      <tr>
+        <td class="feature-name">Repair Notes Sharing</td>
+        <td>—</td>
+        <td class="boardscope">✓ Team collaboration</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<p><strong>Winner: BoardScope</strong></p>
+
+<p>Multi-board tabs are invaluable. Comparing a working board to a broken board is the fastest way to spot faults. BoardScope makes this seamless.</p>
+
+<h3>Repair Documentation</h3>
+
+<div class="table-container">
+  <table class="comparison-table">
+    <thead>
+      <tr>
+        <th>Feature</th>
+        <th>FlexBV</th>
+        <th>BoardScope</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="feature-name">Repair Notes</td>
+        <td>Basic</td>
+        <td class="boardscope">✓ Per-component</td>
+      </tr>
+      <tr>
+        <td class="feature-name">Photo Attach</td>
+        <td>—</td>
+        <td class="boardscope">✓ Link before/after</td>
+      </tr>
+      <tr>
+        <td class="feature-name">Export Report (HTML/PDF)</td>
+        <td>—</td>
+        <td class="boardscope">✓ Professional format</td>
+      </tr>
+      <tr>
+        <td class="feature-name">Measurement History</td>
+        <td>—</td>
+        <td class="boardscope">✓ Automatic</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<p><strong>Winner: BoardScope</strong></p>
+
+<p>Good documentation matters. FlexBV has minimal documentation features. BoardScope makes documentation easy — photos, notes, measurements all tied to components.</p>
+
+<h2>Pricing Comparison</h2>
+
+<div class="table-container">
+  <table class="comparison-table">
+    <thead>
+      <tr>
+        <th>Option</th>
+        <th>FlexBV</th>
+        <th>BoardScope</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="feature-name">Free Version</td>
+        <td>—</td>
+        <td class="boardscope">✓ Full core features</td>
+      </tr>
+      <tr>
+        <td class="feature-name">Entry Price</td>
+        <td>$150 (Pro)</td>
+        <td class="boardscope">Free (upgrade anytime)</td>
+      </tr>
+      <tr>
+        <td class="feature-name">Pro Features</td>
+        <td>Included in $150</td>
+        <td class="boardscope">$59/year or $129 lifetime</td>
+      </tr>
+      <tr>
+        <td class="feature-name">Total 5-Year Cost</td>
+        <td>$150 (no updates)</td>
+        <td class="boardscope">$129 lifetime (or $295 yearly)</td>
+      </tr>
+      <tr>
+        <td class="feature-name">Updates</td>
+        <td>Paid upgrades (~$30-50)</td>
+        <td class="boardscope">Free (included)</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<p><strong>Winner: BoardScope</strong></p>
+
+<p>FlexBV $150 is a one-time payment, but you get the software as-is. Updates cost extra.</p>
+
+<p>BoardScope free gives you everything FlexBV costs $150 for. Pro features are optional and affordable.</p>
+
+<p><strong>Math:</strong> If you're comparing FlexBV ($150) to BoardScope Pro ($129), BoardScope is cheaper. And you get AI diagnosis, hardware integration, and modern features FlexBV lacks.</p>
+
+<h2>Real-World Workflow Comparison</h2>
+
+<h3>Scenario: Diagnose MacBook with No Display</h3>
+
+<p><strong>With FlexBV:</strong></p>
+
+<ol>
+  <li>Open FlexBV, load MacBook boardview (30 sec)</li>
+  <li>Search for display power rail, trace back to power IC (2 min)</li>
+  <li>Check for presence of various voltages, make notes on paper (10 min)</li>
+  <li>If measurements don't match expectations, manually check schematic (3 min)</li>
+  <li>Make diagnosis based on experience (5-10 min)</li>
+  <li>Total: ~20 minutes</li>
+</ol>
+
+<p><strong>With BoardScope:</strong></p>
+
+<ol>
+  <li>Open BoardScope, load MacBook boardview (30 sec)</li>
+  <li>Connect USB multimeter (already done) (0 sec)</li>
+  <li>Probe display power voltage, automatically logged (30 sec)</li>
+  <li>Probe input voltage to display power IC (30 sec)</li>
+  <li>Use AI Diagnosis: "Display power input is good but output is zero" (1 min)</li>
+  <li>AI suggests: "Display power IC is faulty. Check U47."</li>
+  <li>Verify with schematic link (1 min)</li>
+  <li>Total: ~5 minutes</li>
+</ol>
+
+<p><strong>Time saved: 15 minutes per repair. 20 repairs/week = 5 hours saved.</strong></p>
+
+<h3>Scenario: Repair Shop Needs Team Collaboration</h3>
+
+<p><strong>With FlexBV:</strong></p>
+
+<ul>
+  <li>Tech 1 diagnoses a MacBook issue, writes notes on paper</li>
+  <li>Tech 2 needs to understand the diagnosis, asks Tech 1 to explain</li>
+  <li>Knowledge is lost when Tech 1 leaves</li>
+  <li>Next time this issue comes up, you start from scratch</li>
+</ul>
+
+<p><strong>With BoardScope:</strong></p>
+
+<ul>
+  <li>Tech 1 opens the board, makes notes in BoardScope, attaches photos</li>
+  <li>Tech 2 opens the same file, sees all notes and measurements</li>
+  <li>Knowledge is documented for future reference</li>
+  <li>Next time this issue comes up, you search for similar boards, find the solution</li>
+</ul>
+
+<h2>When FlexBV is Still the Right Choice</h2>
+
+<p>FlexBV isn't bad. In some cases, it's the better choice:</p>
+
+<h3>You're Already Trained on FlexBV</h3>
+
+<p>If your entire team knows FlexBV, switching costs time and retraining. FlexBV works fine — there's no reason to disrupt your workflow if it's working.</p>
+
+<h3>You Need Legacy Support</h3>
+
+<p>FlexBV has been around for 20+ years. If you have very old boards or niche file formats, FlexBV might have better support (though unlikely).</p>
+
+<h3>You Don't Need Modern Features</h3>
+
+<p>If you're happy with pure boardview (no AI, no hardware integration, no documentation features), FlexBV does the job. It's stable and reliable.</p>
+
+<h3>You Work in Isolation (No Team)</h3>
+
+<p>Solo technicians might not need documentation features. FlexBV is lighter, simpler, and loads instantly.</p>
+
+<h2>When BoardScope is the Better Choice</h2>
+
+<h3>You Want Modern Features</h3>
+
+<p>AI diagnosis, hardware integration, documentation — these features exist in BoardScope, not FlexBV.</p>
+
+<h3>You Have a Repair Shop Team</h3>
+
+<p>Multi-board comparison, repair notes, documentation features help teams work smarter.</p>
+
+<h3>You Want to Reduce Diagnosis Time</h3>
+
+<p>Hardware integration alone cuts diagnosis time in half on complex boards.</p>
+
+<h3>You're Budget-Conscious</h3>
+
+<p>Free core features + affordable Pro tier ($59/year) is cheaper than FlexBV's $150 flat fee.</p>
+
+<h3>You Work on Various Devices</h3>
+
+<p>Multi-board tabs and side-by-side comparison speed up diagnosis on unfamiliar boards.</p>
+
+<div class="highlight-box">
+  <strong>Our recommendation:</strong> Try BoardScope free for 30 days on your typical boards. If you find the workflow faster than FlexBV, upgrade to Pro. If FlexBV works fine for you, stick with it. We're not saying FlexBV is bad — we're saying BoardScope is better for modern repair workflows.
+</div>
+
+<h2>Feature-by-Feature Matrix</h2>
+
+<div class="table-container">
+  <table class="comparison-table">
+    <thead>
+      <tr>
+        <th>Feature</th>
+        <th>FlexBV</th>
+        <th>BoardScope Free</th>
+        <th>BoardScope Pro</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="feature-name">Boardview (.brd) Loading</td>
+        <td>✓</td>
+        <td class="boardscope">✓</td>
+        <td class="boardscope">✓</td>
+      </tr>
+      <tr>
+        <td class="feature-name">Net Search & Highlight</td>
+        <td>✓</td>
+        <td class="boardscope">✓</td>
+        <td class="boardscope">✓</td>
+      </tr>
+      <tr>
+        <td class="feature-name">Schematic PDF Viewer</td>
+        <td>✓</td>
+        <td class="boardscope">✓</td>
+        <td class="boardscope">✓</td>
+      </tr>
+      <tr>
+        <td class="feature-name">Component Notes</td>
+        <td>Basic</td>
+        <td class="boardscope">✓ Full</td>
+        <td class="boardscope">✓ Full</td>
+      </tr>
+      <tr>
+        <td class="feature-name">USB Multimeter</td>
+        <td>—</td>
+        <td class="boardscope">✓</td>
+        <td class="boardscope">✓</td>
+      </tr>
+      <tr>
+        <td class="feature-name">Oscilloscope Support</td>
+        <td>—</td>
+        <td class="boardscope">—</td>
+        <td class="boardscope">✓</td>
+      </tr>
+      <tr>
+        <td class="feature-name">AI Diagnosis</td>
+        <td>—</td>
+        <td class="boardscope">—</td>
+        <td class="boardscope">✓</td>
+      </tr>
+      <tr>
+        <td class="feature-name">Fault Trees</td>
+        <td>—</td>
+        <td class="boardscope">—</td>
+        <td class="boardscope">✓</td>
+      </tr>
+      <tr>
+        <td class="feature-name">Photo Attachment</td>
+        <td>—</td>
+        <td class="boardscope">—</td>
+        <td class="boardscope">✓</td>
+      </tr>
+      <tr>
+        <td class="feature-name">HTML/PDF Export</td>
+        <td>—</td>
+        <td class="boardscope">—</td>
+        <td class="boardscope">✓</td>
+      </tr>
+      <tr>
+        <td class="feature-name">Multi-Board Tabs</td>
+        <td>—</td>
+        <td class="boardscope">✓</td>
+        <td class="boardscope">✓</td>
+      </tr>
+      <tr>
+        <td class="feature-name">Price</td>
+        <td>$150</td>
+        <td class="boardscope">Free</td>
+        <td class="boardscope">$59/yr or $129 lifetime</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<h2>Migration from FlexBV to BoardScope</h2>
+
+<p>If you decide to switch, it's easy:</p>
+
+<ol>
+  <li><strong>Download BoardScope free</strong> — Open your existing board files (they load instantly)</li>
+  <li><strong>Test for a week</strong> — Use it for real repairs alongside FlexBV</li>
+  <li><strong>Compare workflow:</strong> Time, documentation, ease of diagnosis</li>
+  <li><strong>If you like it:</strong> Upgrade to Pro, retire FlexBV</li>
+  <li><strong>If you don't:</strong> No cost, no commitment, just stick with FlexBV</li>
+</ol>
+
+<p>No risk. No pressure. The choice is yours.</p>
+
+<div class="cta-box">
+  <h3>Try BoardScope risk-free for 30 days</h3>
+  <p>Download free. Load your boards. See how fast AI diagnosis works. No credit card. No signup required.</p>
+  <a class="btn-primary" href="https://github.com/louistoshi/boardscope.ca/releases">Download BoardScope Free</a>
+</div>
+
+<h2>Summary: The Honest Verdict</h2>
+
+<ul>
+  <li><strong>FlexBV:</strong> Solid, stable, reliable boardview tool. Best if you're already trained on it.</li>
+  <li><strong>BoardScope:</strong> Modern alternative with AI diagnosis, hardware integration, and documentation features.</li>
+  <li><strong>For most repair shops:</strong> BoardScope offers better value and faster diagnosis.</li>
+  <li><strong>For solo technicians happy with basics:</strong> FlexBV works fine.</li>
+  <li><strong>Cost:</strong> BoardScope free (or $129 lifetime) beats FlexBV $150.</li>
+  <li><strong>Features:</strong> BoardScope has more modern tools; FlexBV is proven and stable.</li>
+  <li><strong>Time savings:</strong> BoardScope saves 2-3 hours per week on average through faster diagnosis.</li>
+</ul>
+
+<p>We don't think you should choose BoardScope because FlexBV is bad. You should choose it because it's better for modern repair work — faster diagnosis, better documentation, lower cost.</p>
+
+<p>But if FlexBV works for you, that's fine too. Use what works.</p>
+
+</div>
+
+<footer>
+  <div class="footer-logo">Board<span>Scope</span></div>
+  <p>© 2025 BoardScope. Professional PCB Boardview & Repair Analysis.</p>
+  <div class="footer-links">
+    <a href="https://github.com/louistoshi/boardscope.ca/releases">Download</a>
+    <a href="../manual.html">Manual</a>
+    <a href="../index.html">Home</a>
+  </div>
+</footer>
+
+<script>
+  const nav = document.querySelector('nav');
+  window.addEventListener('scroll', () => {
+    const scrolled = window.scrollY > 60;
+    nav.style.background = scrolled ? 'rgba(11,13,15,0.95)' : 'rgba(11,13,15,0.7)';
+  }, { passive: true });
+</script>
+</body>
+</html>

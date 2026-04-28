@@ -1,0 +1,2123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BoardScope — User Manual</title>
+<style>
+:root {
+  --bg:#0d0f12; --bg2:#161920; --bg3:#1e2229;
+  --border:#2a2e38; --border2:#363c48;
+  --text:#f0f3fa; --text2:#9aa0b0; --text3:#606878;
+  --accent:#00d9a6; --accent-dim:#00a87e;
+  --blue:#5294f8; --blue-dim:#1a4a8a;
+  --amber:#f5a623; --red:#f05050;
+  --r:6px;
+  --mono:'JetBrains Mono','Courier New',monospace;
+  --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --shadow-sm:0 2px 8px rgba(0,0,0,0.12);
+  --shadow-md:0 4px 16px rgba(0,0,0,0.18);
+  --shadow-lg:0 8px 32px rgba(0,0,0,0.24);
+  --shadow-accent:0 4px 20px rgba(0,217,166,0.15);
+  --transition-fast:0.15s ease;
+  --transition-smooth:0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+body.light {
+  --bg:#f0f2f5; --bg2:#ffffff; --bg3:#e8eaed;
+  --border:#d0d4da; --border2:#b8bcc4;
+  --text:#1a1d24; --text2:#4a5060; --text3:#8090a0;
+  --accent:#007a5c; --blue:#1a6ad0; --amber:#c07010; --red:#c03030;
+  --shadow-sm:0 2px 8px rgba(0,0,0,0.08);
+  --shadow-md:0 4px 16px rgba(0,0,0,0.12);
+  --shadow-lg:0 8px 32px rgba(0,0,0,0.16);
+  --shadow-accent:0 4px 20px rgba(0,122,92,0.12);
+}
+/* Sky theme (macOS-inspired) */
+body.theme-sky {
+  --bg:#1a2744; --bg2:#223354; --bg3:#2a3f66;
+  --border:rgba(100,150,220,0.15); --border2:rgba(100,150,220,0.25);
+  --text:#e8f0fe; --text2:#a0b8d8; --text3:#6080a8;
+  --accent:#5294f8; --accent-dim:#3a7ae0;
+  --blue:#5294f8; --blue-dim:#1a4a8a;
+  --amber:#f5a623; --red:#f05050;
+  --shadow-sm:0 2px 8px rgba(0,0,0,0.2);
+  --shadow-md:0 4px 16px rgba(0,0,0,0.3);
+  --shadow-lg:0 8px 32px rgba(0,0,0,0.4);
+  --shadow-accent:0 4px 20px rgba(82,148,248,0.2);
+}
+body.theme-sky.light {
+  --bg:#f5f7fa; --bg2:#ffffff; --bg3:#e8edf4;
+  --border:rgba(0,0,0,0.08); --border2:rgba(0,0,0,0.15);
+  --text:#1a2030; --text2:#4a5a70; --text3:#7a8a9a;
+  --accent:#0066cc; --accent-dim:#0050a0;
+  --blue:#0066cc; --blue-dim:#004a99;
+}
+/* Figma theme */
+body.theme-figma {
+  --bg:#0f1117; --bg2:#161822; --bg3:#1c1f2e;
+  --border:rgba(255,255,255,0.06); --border2:rgba(255,255,255,0.1);
+  --text:#f4f6fc; --text2:#a0a8c0; --text3:#5a6280;
+  --accent:#00d9a6; --accent-dim:#00a87e;
+  --blue:#5294f8; --amber:#f5a623; --red:#f05050;
+  --r:8px;
+  --shadow-sm:0 2px 8px rgba(0,0,0,0.15);
+  --shadow-md:0 4px 16px rgba(0,0,0,0.25);
+  --shadow-lg:0 8px 32px rgba(0,0,0,0.35);
+  --shadow-accent:0 4px 20px rgba(0,217,166,0.18);
+}
+body.theme-figma.light {
+  --bg:#f8f9fc; --bg2:#ffffff; --bg3:#f0f2f8;
+  --border:rgba(0,0,0,0.06); --border2:rgba(0,0,0,0.1);
+  --text:#1a1d2e; --text2:#4a5068; --text3:#8090a8;
+  --accent:#00b48a; --accent-dim:#008a6a;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  background:var(--bg);color:var(--text);
+  font-family:var(--sans);font-size:14px;line-height:1.7;
+  display:flex;min-height:100vh;
+  transition:background-color var(--transition-smooth), color var(--transition-smooth);
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ── SIDEBAR NAV ── */
+#nav{
+  width:240px;flex-shrink:0;background:var(--bg2);
+  border-right:1px solid var(--border);
+  position:fixed;top:0;left:0;bottom:0;overflow-y:auto;
+  padding:0 0 40px 0;z-index:10;
+  box-shadow:var(--shadow-sm);
+}
+#nav::after{
+  content:'';position:absolute;top:0;right:0;bottom:0;width:1px;
+  background:linear-gradient(180deg, transparent, var(--border) 10%, var(--border) 90%, transparent);
+  pointer-events:none;
+}
+#nav-logo{
+  padding:20px 18px 16px;
+  border-bottom:1px solid var(--border);
+  margin-bottom:8px;
+}
+#nav-logo .logo{font-size:15px;font-weight:700;letter-spacing:3px;color:var(--accent);font-family:var(--mono)}
+#nav-logo .sub{font-size:10px;color:var(--text3);letter-spacing:1.5px;margin-top:2px}
+.nav-section{font-size:9px;color:var(--text3);letter-spacing:1.5px;font-weight:700;
+  padding:14px 18px 4px;text-transform:uppercase}
+.nav-link{
+  display:block;padding:6px 18px;font-size:12px;color:var(--text2);
+  text-decoration:none;border-left:2px solid transparent;
+  transition:all var(--transition-fast);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  position:relative;
+}
+.nav-link::before{
+  content:'';position:absolute;left:0;top:0;bottom:0;width:2px;
+  background:var(--accent);transform:scaleY(0);transition:transform var(--transition-fast);
+  transform-origin:center;
+}
+.nav-link:hover{color:var(--text);background:var(--bg3);border-left-color:var(--border2)}
+.nav-link:hover::before{transform:scaleY(0.3)}
+.nav-link.active{color:var(--accent);border-left-color:var(--accent);background:rgba(0,217,166,.06);
+  box-shadow:inset 0 0 0 1px rgba(0,217,166,.08)}
+.nav-link.active::before{transform:scaleY(1)}
+.nav-link.sub{padding-left:30px;font-size:11px}
+
+/* ── THEME TOGGLE ── */
+#theme-btn{
+  position:fixed;top:14px;right:18px;z-index:20;
+  background:var(--bg3);border:1px solid var(--border2);color:var(--text2);
+  font-size:13px;padding:5px 11px;border-radius:var(--r);cursor:pointer;
+  font-family:var(--mono);transition:all var(--transition-fast);
+  box-shadow:var(--shadow-sm);
+}
+#theme-btn:hover{color:var(--accent);border-color:var(--accent);
+  box-shadow:var(--shadow-accent);transform:translateY(-1px)}
+#theme-btn:active{transform:translateY(0);box-shadow:var(--shadow-sm)}
+
+/* ── MAIN CONTENT ── */
+#main{margin-left:240px;max-width:900px;padding:48px 48px 80px;}
+
+/* ── HERO ── */
+.hero{
+  border:1px solid var(--border2);border-radius:10px;
+  background:var(--bg2);padding:36px 40px;margin-bottom:48px;
+  box-shadow:var(--shadow-md);
+  position:relative;overflow:hidden;
+}
+.hero::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg, transparent, var(--accent) 20%, var(--accent) 80%, transparent);
+  opacity:0.6;
+}
+.hero h1{font-size:28px;font-weight:700;letter-spacing:2px;color:var(--accent);font-family:var(--mono);
+  text-shadow:0 0 30px rgba(0,217,166,0.15)}
+.hero .version{font-size:11px;color:var(--text3);letter-spacing:1px;margin-top:4px;font-family:var(--mono)}
+.hero p{color:var(--text2);margin-top:14px;max-width:600px;line-height:1.8}
+
+/* ── SECTIONS ── */
+.section{margin-bottom:56px}
+h2{
+  font-size:15px;font-weight:700;letter-spacing:2px;color:var(--accent);
+  font-family:var(--mono);text-transform:uppercase;
+  padding-bottom:10px;border-bottom:1px solid var(--border);
+  margin-bottom:24px;
+}
+h3{font-size:13px;font-weight:700;color:var(--text);letter-spacing:.5px;margin:28px 0 10px}
+h4{font-size:11px;font-weight:700;color:var(--text2);letter-spacing:.5px;margin:18px 0 8px;text-transform:uppercase}
+p{color:var(--text2);margin-bottom:12px}
+ul,ol{color:var(--text2);padding-left:20px;margin-bottom:12px}
+li{margin-bottom:4px}
+strong{color:var(--text);font-weight:600}
+a{color:var(--blue);text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* ── CARDS ── */
+.card{
+  background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);
+  padding:16px 20px;margin-bottom:12px;
+  box-shadow:var(--shadow-sm);
+  transition:all var(--transition-fast);
+}
+.card:hover{border-color:var(--border2);box-shadow:var(--shadow-md);transform:translateY(-2px)}
+.card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:16px}
+.card-sm{
+  background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);
+  padding:12px 14px;
+  box-shadow:var(--shadow-sm);
+  transition:all var(--transition-fast);
+  position:relative;overflow:hidden;
+}
+.card-sm::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg, transparent, var(--accent) 50%, transparent);
+  opacity:0;transition:opacity var(--transition-fast);
+}
+.card-sm:hover{border-color:var(--accent);box-shadow:var(--shadow-accent);transform:translateY(-2px)}
+.card-sm:hover::before{opacity:0.4}
+.card-sm h4{margin:0 0 6px;font-size:10px;font-weight:700;letter-spacing:1px}
+.card-sm p{font-size:12px;margin:0;line-height:1.6}
+
+/* ── KEYBOARD SHORTCUTS ── */
+.shortcuts-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.shortcut-group{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;
+  box-shadow:var(--shadow-sm);transition:all var(--transition-fast)}
+.shortcut-group:hover{border-color:var(--border2);box-shadow:var(--shadow-md)}
+.shortcut-group h4{margin-top:0;color:var(--accent);font-size:10px;font-weight:700}
+.shortcut-row{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:5px}
+.shortcut-row:last-child{margin-bottom:0}
+.shortcut-desc{font-size:12px;color:var(--text2)}
+kbd{
+  display:inline-block;background:var(--bg3);border:1px solid var(--border2);
+  border-radius:3px;padding:1px 6px;font-family:var(--mono);font-size:10px;
+  color:var(--text);white-space:nowrap;line-height:1.6;
+  box-shadow:0 1px 2px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.05);
+  transition:all var(--transition-fast);
+}
+kbd:hover{border-color:var(--accent);transform:translateY(-1px);
+  box-shadow:0 2px 4px rgba(0,217,166,0.15), inset 0 1px 0 rgba(255,255,255,0.05)}
+
+/* ── BADGE / TAG ── */
+.badge{
+  display:inline-block;font-size:9px;font-family:var(--mono);letter-spacing:.5px;
+  padding:2px 7px;border-radius:3px;font-weight:700;vertical-align:middle;
+  transition:all var(--transition-fast);
+}
+.badge-accent{background:rgba(0,217,166,.12);color:var(--accent);border:1px solid rgba(0,217,166,.25);
+  box-shadow:0 0 8px rgba(0,217,166,0.1)}
+.badge-accent:hover{background:rgba(0,217,166,.18);box-shadow:0 0 12px rgba(0,217,166,0.2)}
+.badge-blue{background:rgba(82,148,248,.12);color:var(--blue);border:1px solid rgba(82,148,248,.25);
+  box-shadow:0 0 8px rgba(82,148,248,0.1)}
+.badge-blue:hover{background:rgba(82,148,248,.18);box-shadow:0 0 12px rgba(82,148,248,0.2)}
+.badge-amber{background:rgba(245,166,35,.12);color:var(--amber);border:1px solid rgba(245,166,35,.25);
+  box-shadow:0 0 8px rgba(245,166,35,0.1)}
+.badge-amber:hover{background:rgba(245,166,35,.18);box-shadow:0 0 12px rgba(245,166,35,0.2)}
+.badge-red{background:rgba(240,80,80,.12);color:var(--red);border:1px solid rgba(240,80,80,.25);
+  box-shadow:0 0 8px rgba(240,80,80,0.1)}
+.badge-red:hover{background:rgba(240,80,80,.18);box-shadow:0 0 12px rgba(240,80,80,0.2)}
+
+/* ── TABLE ── */
+table{width:100%;border-collapse:collapse;margin-bottom:16px;font-size:12px}
+th{text-align:left;padding:7px 10px;font-size:9px;letter-spacing:1px;text-transform:uppercase;
+   color:var(--text3);border-bottom:1px solid var(--border2);font-family:var(--mono)}
+td{padding:7px 10px;border-bottom:1px solid var(--border);color:var(--text2);vertical-align:top}
+tr:last-child td{border-bottom:none}
+td:first-child{color:var(--text);font-family:var(--mono);font-size:11px;white-space:nowrap}
+
+/* ── CODE ── */
+code{
+  font-family:var(--mono);font-size:11px;background:var(--bg3);
+  border:1px solid var(--border);border-radius:3px;padding:1px 6px;color:var(--accent);
+}
+pre{
+  background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);
+  padding:14px 16px;overflow-x:auto;margin-bottom:12px;
+}
+pre code{background:none;border:none;padding:0;color:var(--text2);font-size:12px}
+
+/* ── CALLOUT ── */
+.callout{
+  border-left:3px solid var(--accent);background:rgba(0,217,166,.05);
+  border-radius:0 var(--r) var(--r) 0;padding:12px 16px;margin-bottom:14px;
+}
+.callout.warn{border-left-color:var(--amber);background:rgba(245,166,35,.05)}
+.callout.info{border-left-color:var(--blue);background:rgba(82,148,248,.05)}
+.callout p{margin:0;font-size:13px}
+
+/* ── FEATURE ROW ── */
+.feature-row{display:flex;gap:8px;align-items:flex-start;margin-bottom:8px}
+.feature-icon{width:22px;text-align:center;flex-shrink:0;font-size:14px;margin-top:1px}
+.feature-text{font-size:13px;color:var(--text2)}
+.feature-text strong{color:var(--text)}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+
+@media(max-width:720px){
+  #nav{display:none}
+  #main{margin-left:0;padding:24px 20px 60px}
+  .shortcuts-grid{grid-template-columns:1fr}
+  .card-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<div style="position:fixed;top:14px;right:18px;z-index:20;display:flex;gap:6px;align-items:center">
+  <select id="theme-select" style="background:var(--bg3);border:1px solid var(--border2);color:var(--text2);font-size:11px;padding:5px 8px;border-radius:var(--r);cursor:pointer;font-family:var(--mono);transition:all var(--transition-fast);box-shadow:var(--shadow-sm)">
+    <option value="dark">🌙 Dark</option>
+    <option value="light">☀ Light</option>
+    <option value="sky-dark">🌌 Sky Dark</option>
+    <option value="sky-light">☁️ Sky Light</option>
+    <option value="figma-dark">🎨 Figma Dark</option>
+    <option value="figma-light">✨ Figma Light</option>
+  </select>
+</div>
+
+<!-- ── SIDEBAR ── -->
+<nav id="nav">
+  <div id="nav-logo">
+    <div class="logo">BOARDSCOPE</div>
+    <div class="sub">USER MANUAL</div>
+  </div>
+
+  <div class="nav-section">Getting Started</div>
+  <a href="#overview" class="nav-link">Overview</a>
+  <a href="#install" class="nav-link">Installation</a>
+  <a href="#loading" class="nav-link">Loading Files</a>
+
+  <div class="nav-section">Interface</div>
+  <a href="#layout" class="nav-link">Layout & Panels</a>
+  <a href="#themes" class="nav-link">Themes</a>
+  <a href="#board-view" class="nav-link">Board View</a>
+  <a href="#pdf-view" class="nav-link">PDF / Schematic</a>
+  <a href="#toolbar" class="nav-link">Toolbar Reference</a>
+
+  <div class="nav-section">Core Features</div>
+  <a href="#search" class="nav-link">Search & Filters</a>
+  <a href="#nets" class="nav-link">Nets & Components</a>
+  <a href="#multimeter" class="nav-link">Multimeter</a>
+  <a href="#probe" class="nav-link">Probe Mode</a>
+  <a href="#ai" class="nav-link">AI Diagnosis</a>
+
+  <div class="nav-section">Diagnosis Tools</div>
+  <a href="#continuity" class="nav-link">Continuity Checker</a>
+  <a href="#shorts" class="nav-link">Short Finder</a>
+  <a href="#fault-tree" class="nav-link">Fault Tree</a>
+  <a href="#power-tree" class="nav-link">Power Tree</a>
+  <a href="#power-seq" class="nav-link">Power Sequencing</a>
+  <a href="#mosfet" class="nav-link">MOSFET Tester</a>
+  <a href="#signal-chain" class="nav-link">Signal Chain</a>
+  <a href="#comparison" class="nav-link">Board Comparison</a>
+  <a href="#multisearch" class="nav-link">Multi-Search</a>
+  <a href="#annotations" class="nav-link">PDF Annotations</a>
+
+  <div class="nav-section">Hardware</div>
+  <a href="#oscilloscope" class="nav-link">Oscilloscope</a>
+
+  <div class="nav-section">Component Info</div>
+  <a href="#sidebar" class="nav-link">Component Sidebar</a>
+  <a href="#known-bad" class="nav-link">Known-Bad Database</a>
+  <a href="#xref" class="nav-link">Cross-Reference</a>
+  <a href="#datasheet" class="nav-link">Datasheet Lookup</a>
+  <a href="#esr" class="nav-link">Capacitor ESR</a>
+  <a href="#component-library" class="nav-link">Component Library</a>
+
+  <div class="nav-section">Visual Overlays</div>
+  <a href="#thermal" class="nav-link">Thermal Map</a>
+  <a href="#damage-map" class="nav-link">Damage Map</a>
+  <a href="#color-maps" class="nav-link">Colour Coding &amp; Maps</a>
+
+  <div class="nav-section">Data & Export</div>
+  <a href="#obd" class="nav-link">OpenBoardData</a>
+  <a href="#diff" class="nav-link">Before/After Diff</a>
+  <a href="#notes" class="nav-link">Component Notes</a>
+  <a href="#revision" class="nav-link">Board Revision</a>
+  <a href="#repair-log" class="nav-link">Repair Log</a>
+  <a href="#export" class="nav-link">Export & Sessions</a>
+
+  <div class="nav-section">Shop Tools</div>
+  <a href="#jobs" class="nav-link">Job Tickets</a>
+  <a href="#parts-log" class="nav-link">Parts Log</a>
+  <a href="#inventory" class="nav-link">Inventory</a>
+  <a href="#time-tracking" class="nav-link">Time Tracking</a>
+  <a href="#board-db" class="nav-link">Board Database</a>
+  <a href="#reball" class="nav-link">Reballing Tracker</a>
+  <a href="#water-score" class="nav-link">Water Damage Score</a>
+  <a href="#microsolder" class="nav-link">Micro-Solder Checklist</a>
+  <a href="#photo-log" class="nav-link">Photo Log</a>
+  <a href="#repair-history" class="nav-link">Repair History</a>
+  <a href="#community-notes" class="nav-link">Community Notes</a>
+  <a href="#video-refs" class="nav-link">Video References</a>
+  <a href="#customer-report" class="nav-link">Customer Report PDF</a>
+  <a href="#qr-code" class="nav-link">QR Code</a>
+  <a href="#invoice" class="nav-link">Invoice Generator</a>
+
+  <div class="nav-section">Automation</div>
+  <a href="#macros" class="nav-link">Macro Recorder</a>
+  <a href="#test-suite" class="nav-link">Post-Repair Tests</a>
+
+  <div class="nav-section">Collaboration</div>
+  <a href="#team" class="nav-link">Team Session</a>
+
+  <div class="nav-section">Settings</div>
+  <a href="#license" class="nav-link">License</a>
+
+  <div class="nav-section">Settings</div>
+  <a href="#settings" class="nav-link">Visual Settings</a>
+  <a href="#language" class="nav-link">Language</a>
+  <a href="#shortcuts" class="nav-link">Keyboard Shortcuts</a>
+</nav>
+
+<!-- ── MAIN ── -->
+<main id="main">
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="logo" style="font-size:22px;font-weight:700;letter-spacing:3px;color:var(--accent);font-family:var(--mono)">BOARDSCOPE</div>
+    <div class="version">USER MANUAL — v5.4.1</div>
+    <p>BoardScope is a PCB repair diagnostic workbench. Load boardview files and schematics side-by-side, measure components with a live USB multimeter or oscilloscope, trace signal paths, run AI-powered diagnoses, manage repair jobs, generate invoices, automate test sequences, and collaborate with remote technicians — all in one tool.</p>
+  </div>
+
+  <!-- OVERVIEW -->
+  <div class="section" id="overview">
+    <h2>Overview</h2>
+    <p>BoardScope combines four workspaces into a single window:</p>
+    <div class="card-grid">
+      <div class="card-sm">
+        <h4>📋 Schematic / PDF</h4>
+        <p>View, annotate, and search multi-page schematics with bookmarks and highlights.</p>
+      </div>
+      <div class="card-sm">
+        <h4>🔌 Board View</h4>
+        <p>Interactive top/bottom layer view with net highlighting, component search, and color maps.</p>
+      </div>
+      <div class="card-sm">
+        <h4>⚡ Live Multimeter</h4>
+        <p>USB serial meter integration — live readings, auto-capture, voltage rail detection, diode database.</p>
+      </div>
+      <div class="card-sm">
+        <h4>🤖 AI Diagnosis</h4>
+        <p>Send board context and measurements to Claude, GPT-4o, Gemini, or a local model for repair suggestions.</p>
+      </div>
+      <div class="card-sm">
+        <h4>🌡 Thermal &amp; Damage Maps</h4>
+        <p>Align thermal camera photos over the board view, and mark corroded/missing/burned components.</p>
+      </div>
+      <div class="card-sm">
+        <h4>🔴 Known-Bad Database</h4>
+        <p>Built-in warnings for commonly failing components, cross-references, and guided MOSFET testing.</p>
+      </div>
+      <div class="card-sm">
+        <h4>📋 Shop Management</h4>
+        <p>Repair queue, job tickets, parts inventory, time tracking, customer reports, and invoice generator.</p>
+      </div>
+    </div>
+    <div class="callout">
+      <p><strong>Supported browsers:</strong> Chrome 89+ or Edge 89+ (required for Web Serial API used by the multimeter and WebUSB for oscilloscopes). Safari and Firefox do not support Web Serial or WebUSB.</p>
+    </div>
+  </div>
+
+  <!-- INSTALLATION -->
+  <div class="section" id="install">
+    <h2>Installation</h2>
+    <h3>Desktop App (macOS)</h3>
+    <p>Download the latest <code>.dmg</code> from the releases page, open it, and drag BoardScope into your Applications folder. Since the app is signed with an official Apple Developer ID, it should run immediately. If blocked, right-click the app and choose <strong>Open</strong>.</p>
+    
+    <h3>Desktop App (Windows)</h3>
+    <p>Download the <code>.exe</code> installer. Run the setup and follow the prompts. BoardScope will be installed to your local AppData folder and a shortcut created on your desktop.</p>
+    
+    <h3>Desktop App (Linux)</h3>
+    <p>Download the <code>.AppImage</code> or <code>.deb</code> file. For AppImage, right-click the file, go to Permissions, and check <strong>Allow executing file as program</strong>, then double-click to run.</p>
+
+    <h3>Web Version</h3>
+    <p>Open <code>boardview.html</code> directly in Chrome or Edge. No server or internet connection is required for core features. AI diagnosis requires an API key.</p>
+    <h3>API Key Setup (for AI features)</h3>
+    <p>Create a file named <code>api key</code> in the app folder (or paste your key into Settings → AI). The file supports multiple providers:</p>
+    <pre><code>ANTHROPIC_API_KEY=sk-ant-...
+OPENAI_API_KEY=sk-...
+GEMINI_API_KEY=AI...
+OPENROUTER_API_KEY=sk-or-...</code></pre>
+    <p>For local models (Ollama / LM Studio), no key is needed — just set the base URL in AI settings.</p>
+  </div>
+
+  <!-- LOADING FILES -->
+  <div class="section" id="loading">
+    <h2>Loading Files</h2>
+    <h3>Supported Formats</h3>
+    <table>
+      <tr><th>Format</th><th>Extension</th><th>Description</th></tr>
+      <tr><td>.brd</td><td>Apple binary BRD</td><td>Most common boardview format from repair communities</td></tr>
+      <tr><td>.bvr</td><td>Text boardview</td><td>Plain-text boardview (FZ/BVR dialect)</td></tr>
+      <tr><td>.brd2</td><td>BRD2</td><td>Extended BRD variant</td></tr>
+      <tr><td>.cad</td><td>CAD</td><td>CAD boardview export</td></tr>
+      <tr><td>.fz</td><td>FlexBV</td><td>FlexBV-compatible format</td></tr>
+      <tr><td>.csv / .txt</td><td>CSV / Text</td><td>Component list in tabular form</td></tr>
+      <tr><td>.pdf</td><td>PDF</td><td>Multi-page schematic, service manual, or datasheet</td></tr>
+    </table>
+    <h3>How to Load</h3>
+    <div class="feature-row"><div class="feature-icon">📂</div><div class="feature-text"><strong>+ PDF button</strong> — opens a file picker for schematic PDFs (left pane)</div></div>
+    <div class="feature-row"><div class="feature-icon">📂</div><div class="feature-text"><strong>+ BRD / BVR button</strong> — opens a file picker for boardview files (right pane)</div></div>
+    <div class="feature-row"><div class="feature-icon">🖱</div><div class="feature-text"><strong>Drag &amp; drop</strong> — drag a PDF onto the left pane or a boardview file onto the right pane; a colored overlay confirms the drop zone</div></div>
+    <h3>Multiple Boards (Tabs)</h3>
+    <p>Click the <strong>+</strong> tab button in the tab bar to open a second board in a new tab. Switch between boards instantly — each tab keeps its own state (measurements, notes, selections). A dot <code>●</code> on a tab name indicates unsaved changes.</p>
+  </div>
+
+  <!-- LAYOUT -->
+  <div class="section" id="layout">
+    <h2>Layout &amp; Panels</h2>
+    <h3>View Modes</h3>
+    <p>Three layout buttons in the header switch between:</p>
+    <table>
+      <tr><th>Mode</th><th>Description</th></tr>
+      <tr><td>PDF</td><td>Full-width schematic only</td></tr>
+      <tr><td>Dual</td><td>Schematic left, board view right — default and recommended</td></tr>
+      <tr><td>BRD</td><td>Full-width board view only</td></tr>
+    </table>
+    <h3>Pane Collapsing</h3>
+    <p>Each pane has a thin collapse strip on its edge. Click the strip to collapse that pane into a label bar, giving the other pane more space. Click again to restore.</p>
+    <h3>Minimap</h3>
+    <p>A minimap in the bottom-right corner of the board view shows your current viewport position relative to the full board. Click or drag on it to jump to any area. Toggle it with the minimap button.</p>
+    <h3>Floating Windows</h3>
+    <p>The <strong>Multimeter window</strong> is a floating, draggable panel that can be repositioned anywhere on screen. Open it with the <strong>⚡ METER</strong> button or press <kbd>M</kbd>.</p>
+  </div>
+
+  <!-- THEMES -->
+  <div class="section" id="themes">
+    <h2>Themes</h2>
+    <p>Click the <strong>☀</strong> button in the header to toggle between Dark and Light modes. The entire UI — including the multimeter window, all panels, and overlays — follows the selected theme. Your choice is saved automatically.</p>
+    <h3>Available Themes</h3>
+    <div class="card-grid">
+      <div class="card-sm"><h4>Dark (default)</h4><p>Near-black background, green accent. Ideal for low-light repair environments.</p></div>
+      <div class="card-sm"><h4>Light</h4><p>White/grey background, dark text. Better for bright workbenches or print reference.</p></div>
+      <div class="card-sm"><h4>Sky (macOS)</h4><p>Deep blue dark theme with blue accent.</p></div>
+      <div class="card-sm"><h4>Figma</h4><p>Near-black with refined spacing, styled after Figma's UI.</p></div>
+    </div>
+    <p>Sky and Figma themes also support Light variants. Switch with the theme toggle cycling through options.</p>
+  </div>
+
+  <!-- BOARD VIEW -->
+  <div class="section" id="board-view">
+    <h2>Board View</h2>
+    <h3>Navigation</h3>
+    <ul>
+      <li><strong>Pan</strong> — click and drag anywhere on the board</li>
+      <li><strong>Zoom</strong> — scroll wheel, or <kbd>+</kbd> / <kbd>-</kbd> keys</li>
+      <li><strong>Fit to window</strong> — press <kbd>Z</kbd> or click the fit button</li>
+      <li><strong>Fit selection</strong> — press <kbd>Shift+F</kbd> to zoom to highlighted components</li>
+    </ul>
+    <h3>Top / Bottom Sides</h3>
+    <p>Toggle each side with <kbd>T</kbd> (top) and <kbd>B</kbd> (bottom). Color coding:</p>
+    <ul>
+      <li><span class="badge badge-blue">BLUE</span> Top side components and pads</li>
+      <li><span class="badge" style="background:rgba(153,102,221,.15);color:#9966dd;border:1px solid rgba(153,102,221,.3)">PURPLE</span> Bottom side components and pads</li>
+    </ul>
+    <p>Hidden layers show as semi-transparent ghosts when <strong>GHOST</strong> mode is on.</p>
+    <h3>Rotation &amp; Flip</h3>
+    <ul>
+      <li><kbd>,</kbd> / <kbd>.</kbd> — rotate 90° left / right</li>
+      <li><kbd>X</kbd> — flip horizontally</li>
+      <li><kbd>Y</kbd> — flip vertically</li>
+    </ul>
+    <h3>Butterfly Mode</h3>
+    <p>Enable <strong>BUTTERFLY</strong> in the VIEW dropdown to show top and bottom sides simultaneously, mirrored, with a divider between them. Useful for checking both sides without toggling.</p>
+    <h3>Color Maps</h3>
+    <table>
+      <tr><th>Map</th><th>What it shows</th></tr>
+      <tr><td>VOLT MAP</td><td>Components colored by measured voltage — quickly spot missing rails</td></tr>
+      <tr><td>DIODE MAP</td><td>Components colored by diode drop measurement</td></tr>
+      <tr><td>HEAT MAP</td><td>Deviation from OBD reference — green = matching, red = off</td></tr>
+    </table>
+    <h3>Photo Overlay</h3>
+    <p>Enable <strong>PHOTO OVERLAY</strong> to load a photograph of the physical board. Use the corner handles to align the photo with the boardview schematic. Useful when the silkscreen markings in the boardview don't match your board revision.</p>
+    <h3>Pin Display</h3>
+    <ul>
+      <li>Pin numbers appear at a configurable zoom threshold (default 25%)</li>
+      <li>Component values/package codes appear at another threshold (default 18%)</li>
+      <li>Pin 1 is marked with a dot at configurable size and color</li>
+      <li>Toggle all of these in Settings</li>
+    </ul>
+  </div>
+
+  <!-- PDF VIEW -->
+  <div class="section" id="pdf-view">
+    <h2>PDF / Schematic View</h2>
+    <h3>Navigation</h3>
+    <ul>
+      <li><kbd>P</kbd> or <kbd>←</kbd> — previous page</li>
+      <li><kbd>N</kbd> or <kbd>→</kbd> — next page</li>
+      <li><kbd>G</kbd> — jump to page (type number, press Enter)</li>
+      <li><kbd>+</kbd> / <kbd>-</kbd> — zoom in / out</li>
+      <li><kbd>Z</kbd> — fit page to window</li>
+      <li><kbd>C</kbd> — toggle continuous scroll mode</li>
+      <li>Scroll wheel pans the page; hold Ctrl+scroll to zoom</li>
+    </ul>
+    <h3>2-Up Mode</h3>
+    <p>Click <strong>2-UP PDF</strong> in the BOARD dropdown to show two pages side-by-side. Navigate pairs with Previous / Next. Ideal for pinout reference alongside a schematic sheet.</p>
+    <h3>PDF Search & Navigation</h3>
+    <p>The PDF toolbar now features an anchored <strong>Search Bar</strong> and <strong>Navigation Controls</strong> that stay visible even when zooming. 
+    <ul>
+      <li><strong>Search:</strong> Type to highlight text matches. Use the <kbd>↑</kbd> / <kbd>↓</kbd> buttons next to the search box to cycle through results.</li>
+      <li><strong>Zoom:</strong> Controls are now locked to the toolbar for easier access on large schematics.</li>
+    </ul></p>
+    <h3>Bookmarks</h3>
+    <p>Press <kbd>Ctrl+B</kbd> on any page to bookmark it. View all bookmarks with the bookmarks button. Click a bookmark to jump to that page. Bookmarks are saved per board file.</p>
+    <h3>Annotations</h3>
+    <p>See the <a href="#annotations">PDF Annotations</a> section below for the full annotation toolkit.</p>
+  </div>
+
+  <!-- TOOLBAR -->
+  <div class="section" id="toolbar">
+    <h2>Toolbar Reference</h2>
+    <p>The board toolbar sits below the search bar. Buttons are grouped into dropdown menus.</p>
+
+    <h3>VIEW Group</h3>
+    <table>
+      <tr><th>Button</th><th>Function</th></tr>
+      <tr><td>👁 GHOST</td><td>Show hidden-layer components as semi-transparent ghosts</td></tr>
+      <tr><td>⊞ MECH</td><td>Hide mechanical components (SH*, MH*, TP* refs)</td></tr>
+      <tr><td>● PIN 1</td><td>Show / hide pin 1 markers on all components</td></tr>
+      <tr><td>⑁ BUTTERFLY</td><td>Split top and bottom side view</td></tr>
+      <tr><td>⚡ VOLT MAP</td><td>Voltage-based color overlay</td></tr>
+      <tr><td>⎆ DIODE MAP</td><td>Diode-drop color overlay</td></tr>
+      <tr><td>▲ HEAT MAP</td><td>Measurement deviation heatmap</td></tr>
+      <tr><td>📷 PHOTO OVERLAY</td><td>Align a board photo under the schematic</td></tr>
+      <tr><td>🌡 THERMAL MAP</td><td>Load and align a thermal camera image over the board</td></tr>
+    </table>
+
+    <h3>FIND Group</h3>
+    <table>
+      <tr><th>Button</th><th>Function</th></tr>
+      <tr><td>TEST POINTS</td><td>List and navigate all test points on the board</td></tr>
+      <tr><td>MULTI SEARCH</td><td>Find components that share selected nets</td></tr>
+      <tr><td>UNMEASURED</td><td>Filter — show only components with no measurements</td></tr>
+      <tr><td>FAILING</td><td>Filter — show only components with failing measurements</td></tr>
+      <tr><td>PASSING</td><td>Filter — show only components with passing measurements</td></tr>
+      <tr><td>HAS NOTES</td><td>Filter — show only components that have repair notes</td></tr>
+      <tr><td>CLEAR FILTER</td><td>Remove all active filters</td></tr>
+      <tr><td>SIGNAL TRACE</td><td>Trace a signal path from pin to pin</td></tr>
+      <tr><td>CONTINUITY</td><td>Two-point continuity / resistance checker</td></tr>
+      <tr><td>SHORTS</td><td>Scan for potential short circuits</td></tr>
+      <tr><td>COMPARE</td><td>Compare two board files component-by-component</td></tr>
+    </table>
+
+    <h3>REPAIR Group (Command Center)</h3>
+    <p>The REPAIR menu is now a 2-column <strong>Command Center</strong> designed for high-speed diagnostics. Features marked with a <span class="badge badge-accent">PRO</span> badge require a premium license.</p>
+    
+    <table>
+      <tr><th>Category</th><th>Tools</th></tr>
+      <tr><td><strong>Diagnose</strong></td><td>FAULT TREE, AI DIAGNOSIS, PROBE MODE, CONTINUITY, SHORTS</td></tr>
+      <tr><td><strong>Notes</strong></td><td>COMP NOTES, REPAIR LOG, REPAIR HISTORY, COMMUNITY NOTES, VIDEO REFS</td></tr>
+      <tr><td><strong>Damage</strong></td><td>DAMAGE MAP, WATER SCORE, PHOTO LOG, THERMAL MAP</td></tr>
+      <tr><td><strong>Data & Log</strong></td><td>OBD DATA, MEAS. TABLE, MEASUREMENTS CSV, BEFORE/AFTER DIFF</td></tr>
+      <tr><td><strong>Automation</strong></td><td>MACRO RECORDER, TEST SUITE, TEMPLATES</td></tr>
+      <tr><td><strong>Export</strong></td><td>EXPORT SESSION, IMPORT SESSION, SCREENSHOT, CUSTOMER REPORT, INVOICE</td></tr>
+    </table>
+
+    <h3>BOARD Group</h3>
+    <table>
+      <tr><th>Button</th><th>Function</th></tr>
+      <tr><td>POWER TREE</td><td>Visualize power rail distribution</td></tr>
+      <tr><td>▶ POWER SEQUENCE</td><td>Step-by-step rail power-up timeline with live measurement status</td></tr>
+      <tr><td>📚 BOARD DATABASE</td><td>Searchable reference of iPhone / iPad / MacBook board models, CPUs, and ICs</td></tr>
+      <tr><td>STATISTICS</td><td>Component counts by type and side</td></tr>
+      <tr><td>2-UP PDF</td><td>Two schematic pages side-by-side</td></tr>
+      <tr><td>EXPORT SESSION</td><td>Save full repair session to a file</td></tr>
+      <tr><td>IMPORT SESSION</td><td>Load a previously saved session</td></tr>
+      <tr><td>MEASUREMENTS CSV</td><td>Export all measurements as CSV</td></tr>
+      <tr><td>📝 CUSTOMER REPORT</td><td>Print-ready customer repair summary with photos and parts list</td></tr>
+      <tr><td>⬡ QR CODE</td><td>Generate a QR code encoding the board ID, revision, and job ticket number</td></tr>
+      <tr><td>💲 INVOICE</td><td>Professional invoice generator with shop logo, line items, and PDF print</td></tr>
+      <tr><td>REPAIR REPORT</td><td>Generate an HTML summary report</td></tr>
+      <tr><td>EXPORT BRD</td><td>Save board as binary .brd</td></tr>
+      <tr><td>EXPORT BVR</td><td>Save board as text .bvr</td></tr>
+      <tr><td>SCREENSHOT</td><td>Capture the current board view as PNG</td></tr>
+    </table>
+  </div>
+
+  <!-- SEARCH -->
+  <div class="section" id="search">
+    <h2>Search &amp; Filters</h2>
+    <h3>Search Syntax</h3>
+    <p>The search bar (focus with <kbd>Ctrl+F</kbd> or <kbd>F</kbd>) supports plain text and structured queries:</p>
+    <table>
+      <tr><th>Query</th><th>Matches</th></tr>
+      <tr><td>U5</td><td>Component with reference designator U5</td></tr>
+      <tr><td>PP3V3</td><td>Any component or pin connected to net PP3V3</td></tr>
+      <tr><td>ref:U05</td><td>Exact reference search</td></tr>
+      <tr><td>net:PP1V8</td><td>Exact net name search</td></tr>
+      <tr><td>side:T</td><td>Top-side components only</td></tr>
+      <tr><td>side:B</td><td>Bottom-side components only</td></tr>
+      <tr><td>pin:1</td><td>Highlight pin 1 of all components</td></tr>
+      <tr><td>meter:bad</td><td>Components with failing meter readings</td></tr>
+    </table>
+    <p>Combine terms with spaces: <code>side:T net:PP3V3</code></p>
+    <h3>Search History</h3>
+    <p>Previously searched terms are saved. Click the search field to see your history. Navigate with <kbd>↑</kbd> / <kbd>↓</kbd>, confirm with <kbd>Enter</kbd>, clear with <kbd>Escape</kbd>.</p>
+    <h3>Active Filters</h3>
+    <p>Use the filter buttons in the FIND dropdown to show only a subset of components:</p>
+    <ul>
+      <li><strong>UNMEASURED</strong> — components with no logged readings</li>
+      <li><strong>FAILING</strong> — readings outside acceptable range</li>
+      <li><strong>PASSING</strong> — readings within acceptable range</li>
+      <li><strong>HAS NOTES</strong> — components with repair notes attached</li>
+    </ul>
+    <p>Multiple filters can be active simultaneously. Click <strong>CLEAR FILTER</strong> to remove all.</p>
+  </div>
+
+  <!-- NETS & COMPONENTS -->
+  <div class="section" id="nets">
+    <h2>Nets &amp; Components</h2>
+    <h3>Selecting a Component</h3>
+    <p>Click any component body to select it. The component sidebar opens on the right showing:</p>
+    <ul>
+      <li>Reference designator and board side</li>
+      <li>Package footprint and value (from OBD)</li>
+      <li><strong>Known-issue warning</strong> (red/amber) if the component is in the known-bad database</li>
+      <li><strong>Substitute parts</strong> if cross-reference data exists</li>
+      <li><strong>📄 Datasheet / 🛒 LCSC / 🔍 Octopart</strong> quick-links</li>
+      <li><strong>ESR indicator</strong> for capacitors with resistance readings</li>
+      <li><strong>MOSFET test guide</strong> (collapsible) for Q* transistors</li>
+      <li>Full pin list with net names — click any pin to highlight that net</li>
+      <li><strong>Mycelium</strong> — a visual web of connected signals radiating from the component</li>
+    </ul>
+    <h3>Net Highlighting</h3>
+    <p>Click any pad or pin to highlight the entire net. A net info panel appears in the lower-left corner showing:</p>
+    <ul>
+      <li>Net name (color coded — power rails in amber, GND in grey, signals in accent)</li>
+      <li>Number of components on the net</li>
+      <li>OpenBoardData reference values (V, D, R) if available</li>
+      <li>Link to find the net in the schematic</li>
+    </ul>
+    <p>Hold <kbd>Shift</kbd> and click additional pads to add nets to the Multi-Search panel.</p>
+    <h3>Pin Popup</h3>
+    <p>Hover over any pad to see an instant tooltip with the component reference, pin number, net name, and any measurement data.</p>
+    <h3>Navigation History</h3>
+    <p>Use <kbd>Alt+←</kbd> and <kbd>Alt+→</kbd> (or the back/forward buttons in the header) to navigate through your component selection history — similar to browser back/forward.</p>
+    <h3>LABELS Toggle</h3>
+    <p>The LABELS button (in the VIEW area) shows persistent net name labels on highlighted pins rather than requiring a hover.</p>
+  </div>
+
+  <!-- MULTIMETER -->
+  <div class="section" id="multimeter">
+    <h2>Multimeter</h2>
+    <div class="callout info">
+      <p><strong>Requirement:</strong> Web Serial API — Chrome 89+ or Edge 89+ only. Connect your meter via a USB-to-serial adapter.</p>
+    </div>
+    <h3>Supported Meters</h3>
+    <p>BoardScope supports three multimeter protocols, auto-detected from the first valid frame:</p>
+
+    <h4>FS9721 Protocol (2400 baud, 14-byte frames)</h4>
+    <ul>
+      <li>UNI-T UT61E, UT61D, UT60E, UT60A</li>
+      <li>Victor VC86, VC82, VC81</li>
+      <li>Mastech MS8250D, MS8230D</li>
+      <li>Voltcraft VC-820, VC-840</li>
+      <li>Digitech QM-1531</li>
+      <li>Lilliput DM25, T-28</li>
+      <li>Many Chinese FS9721 clones</li>
+    </ul>
+
+    <h4>OWON Protocol (9600 baud, 11-byte frames)</h4>
+    <ul>
+      <li>OWON OW16B, OW16C</li>
+      <li>OWON-compatible USB serial meters</li>
+    </ul>
+
+    <h4>Metex Protocol (1200 baud, 14-byte ASCII frames)</h4>
+    <ul>
+      <li>Metex M-3860M</li>
+      <li>Voltcraft M-3860</li>
+      <li>Conrad ME-32</li>
+    </ul>
+    <h3>Connecting</h3>
+    <ol>
+      <li>Plug your meter's USB adapter into the computer</li>
+      <li>Click the <strong>⚡ METER</strong> button (header) or press <kbd>M</kbd> to open the meter window</li>
+      <li>Click <strong>CONNECT</strong> — the browser's port picker appears</li>
+      <li>Select your meter's COM/serial port and click Connect</li>
+      <li>The status line shows <em>Connected</em> and live readings begin</li>
+    </ol>
+    <h3>Meter Window</h3>
+    <p>The floating meter window shows:</p>
+    <ul>
+      <li><strong>Large display</strong> — current reading with value and unit</li>
+      <li><strong>Mode badge</strong> — DCV, ACV, OHM, DIODE, CONT, etc.</li>
+      <li><strong>Rate counter</strong> — readings per second</li>
+      <li><strong>Analog bar</strong> — visual level indicator</li>
+      <li><strong>Sparkline</strong> — trend graph of the last 200 readings</li>
+      <li><strong>Stats row</strong> — Min / Max / Avg / Rate since last reset</li>
+    </ul>
+    <h3>Meter Modes</h3>
+    <table>
+      <tr><th>Mode</th><th>Unit</th><th>Notes</th></tr>
+      <tr><td>DCV / ACV</td><td>V</td><td>Voltage rail detection active</td></tr>
+      <tr><td>mV</td><td>mV</td><td>Millivolt range</td></tr>
+      <tr><td>DCA / ACA</td><td>A</td><td>Current measurement</td></tr>
+      <tr><td>mA / uA</td><td>mA / µA</td><td>Low-current range</td></tr>
+      <tr><td>OHM</td><td>Ω</td><td>Resistance</td></tr>
+      <tr><td>DIODE</td><td>V</td><td>Diode drop — database lookup active</td></tr>
+      <tr><td>CONT</td><td>Ω</td><td>Continuity — short/open detection active</td></tr>
+      <tr><td>CAP</td><td>F</td><td>Capacitance</td></tr>
+      <tr><td>FREQ</td><td>Hz</td><td>Frequency</td></tr>
+      <tr><td>DUTY</td><td>%</td><td>Duty cycle</td></tr>
+      <tr><td>TEMP</td><td>°C</td><td>Temperature</td></tr>
+    </table>
+    <h3>Meter Control Buttons</h3>
+    <table>
+      <tr><th>Button</th><th>Function</th></tr>
+      <tr><td>HOLD ⏸</td><td>Freeze display on current reading; meter keeps receiving but display is locked</td></tr>
+      <tr><td>REL Δ</td><td>Relative mode — zeroes to current reading; subsequent values show delta</td></tr>
+      <tr><td>FILL</td><td>Auto-fill: stable readings are written into the active probe-mode field</td></tr>
+      <tr><td>CAP</td><td>Auto-capture: stable readings are automatically saved to the selected net</td></tr>
+      <tr><td>NET ✓</td><td>Auto-Net: when a stable voltage matches a known rail in OBD data, that net is automatically highlighted on the board — see below</td></tr>
+      <tr><td>COPY</td><td>Copy the last reading value to the clipboard</td></tr>
+      <tr><td>CSV</td><td>Export full reading log (up to 10,000 entries) as a CSV file</td></tr>
+      <tr><td>RESET</td><td>Clear Min / Max / Avg statistics for the current mode</td></tr>
+    </table>
+    <h3>Auto-Net: Probe → Board Highlight</h3>
+    <p>This is the fastest way to identify what you're touching on a real board without hunting for a silk-screen label.</p>
+    <div class="callout info">
+      <p><strong>Requires:</strong> OBD data loaded for the current board (so BoardScope has reference voltages to compare against).</p>
+    </div>
+    <h4>Workflow</h4>
+    <ol>
+      <li>Load OBD data for your board (REPAIR → OBD DATA → Import)</li>
+      <li>Connect your meter and click <strong>NET</strong> in the meter window — it turns green (<em>NET ✓</em>)</li>
+      <li>Touch your probe to any test point or via on the physical board</li>
+      <li>When the reading stabilises, BoardScope compares the voltage against every net in the OBD data</li>
+      <li>If a match is found within 6% tolerance, that net <strong>highlights on the board</strong> — you see every pin and component on that rail instantly</li>
+      <li>The status bar confirms: <em>NET MATCH ⚡ PP3V3_G3H = 3.30V (measured 3.281V)</em></li>
+    </ol>
+    <p>If multiple rails share the same voltage (common with 3.3V or 1.8V), BoardScope highlights the closest match and lists the others in the status bar so you can choose.</p>
+    <h3>Voltage Rail Detection</h3>
+    <p>In DCV / ACV / mV mode, BoardScope automatically matches the reading against a database of 21 common Apple board rails and displays the rail name below the reading:</p>
+    <div class="card-grid">
+      <div class="card-sm"><h4>12.6V</h4><p>PPBUS_G3H (main bus)</p></div>
+      <div class="card-sm"><h4>5.0V</h4><p>PP5V_G3H / PP5V_S0</p></div>
+      <div class="card-sm"><h4>3.42V</h4><p>PP3V42_G3H</p></div>
+      <div class="card-sm"><h4>3.3V</h4><p>PP3V3_S5 / PP3V3</p></div>
+      <div class="card-sm"><h4>1.8V</h4><p>PP1V8_S0 / PPAVDD</p></div>
+      <div class="card-sm"><h4>1.05V</h4><p>PP1V05_PCH</p></div>
+    </div>
+    <p>Plus GPU, CPU, RAM, PCH, backlight, charger, and GND references. Tolerances are pre-configured per rail.</p>
+    <h3>Diode Drop Database</h3>
+    <p>In DIODE / CONT mode, readings are matched against a reference database:</p>
+    <table>
+      <tr><th>Status</th><th>Condition</th><th>Action</th></tr>
+      <tr><td><span class="badge badge-red">SHORT</span></td><td>&lt; 0.050 V</td><td>Likely shorted junction — inspect for damage</td></tr>
+      <tr><td><span class="badge badge-amber">OPEN</span></td><td>&gt; 2.0 V (OL)</td><td>Open circuit — component may be lifted or dead</td></tr>
+      <tr><td><span class="badge badge-accent">NORMAL</span></td><td>Within reference range</td><td>Shows matched reference name (e.g. CPU_VCC, USB_DATA)</td></tr>
+    </table>
+    <h3>Stable Reading Detection</h3>
+    <p>A reading is considered <em>stable</em> when the value stays within 1% tolerance for 1 second. Stable readings are highlighted in the display and used for auto-capture. The debounce window and tolerance are adjustable in code (<code>setStableWindow(ms)</code>, <code>setStableTolerance(pct)</code>).</p>
+    <h3>Calibration</h3>
+    <p>Per-mode calibration offsets can be applied to compensate for lead resistance or meter drift. Set via Settings or programmatically with <code>meter.setCalibration('OHM', -0.5)</code>.</p>
+  </div>
+
+  <!-- PROBE MODE -->
+  <div class="section" id="probe">
+    <h2>Probe Mode</h2>
+    <p>Probe Mode turns BoardScope into a measurement logging tool. Enable it via <strong>PROBE MODE</strong> in the REPAIR dropdown.</p>
+    <h3>Two Ways to Work</h3>
+    <p>There are two approaches depending on whether you know the component reference or not:</p>
+    <table>
+      <tr><th>Approach</th><th>When to use</th><th>How</th></tr>
+      <tr><td><strong>Component-first</strong></td><td>You know the ref (e.g. U2, C104) and want to measure it</td><td>Search the ref → click the pad → probe with meter</td></tr>
+      <tr><td><strong>Net-first</strong></td><td>You're probing a random point on the physical board and need to know what it is</td><td>Enable NET on the meter window → probe the point → the matching net highlights automatically</td></tr>
+    </table>
+    <h3>Component-First Workflow</h3>
+    <ol>
+      <li>Enable Probe Mode — the cursor changes to a crosshair over pads</li>
+      <li>Click any pad on the board to open the measurement entry for that net</li>
+      <li>Enter V (voltage), D (diode drop), or R (resistance) values manually, or enable <strong>FILL</strong> on the meter window to auto-populate from the live meter</li>
+      <li>Press <kbd>Enter</kbd> to save the measurement</li>
+      <li>The pad changes color to reflect pass/fail status against the OBD reference</li>
+    </ol>
+    <h3>Net-First Workflow (with USB Meter)</h3>
+    <ol>
+      <li>Load OBD data and connect your USB meter</li>
+      <li>Enable <strong>NET</strong> in the meter window</li>
+      <li>Touch your probe to any test point or via on the real board — no need to find the component ref first</li>
+      <li>When the reading stabilises, the matching net highlights on the board — all connected components become visible</li>
+      <li>Click any highlighted pad to log the measurement to that net</li>
+    </ol>
+    <h3>Auto-Capture</h3>
+    <p>With <strong>CAP</strong> enabled on the meter window, any stable reading is automatically saved to the currently selected net without you needing to click. Touch a pad to select the target net, then probe — readings are captured hands-free.</p>
+    <h3>Measurement Comparison</h3>
+    <p>Open <strong>MEAS. TABLE</strong> to see all your logged measurements alongside the OBD reference values in a single table. Filter by component ref, sort by deviation.</p>
+    <h3>Before / After Snapshot</h3>
+    <p>Click <strong>📷 SNAP</strong> in the probe mode bar to save the current set of measurements as a baseline. After further probing, open <strong>▲ BEFORE/AFTER DIFF</strong> in the REPAIR dropdown to see exactly what changed. See the <a href="#diff">Before / After Diff</a> section for full details.</p>
+  </div>
+
+  <!-- AI DIAGNOSIS -->
+  <div class="section" id="ai">
+    <h2>AI Diagnosis</h2>
+    <p>Open the AI panel via <strong>AI DIAGNOSIS</strong> in the REPAIR dropdown. The panel sends board context to an AI model and returns repair suggestions.</p>
+    <h3>What Context is Sent</h3>
+    <ul>
+      <li><strong>Symptom description</strong> — what you type in the input field</li>
+      <li><strong>Board schematic</strong> (optional) — a screenshot of the current PDF view</li>
+      <li><strong>Measurements</strong> (optional) — all your logged V / D / R readings</li>
+      <li><strong>Component notes</strong> (optional) — any repair notes you've written</li>
+      <li><strong>OBD reference data</strong> (optional) — expected values from OpenBoardData</li>
+    </ul>
+    <h3>Supported AI Providers</h3>
+    <table>
+      <tr><th>Provider</th><th>Models</th><th>Key Required</th></tr>
+      <tr><td>Anthropic</td><td>Claude Sonnet, Claude Opus</td><td>ANTHROPIC_API_KEY</td></tr>
+      <tr><td>OpenAI</td><td>GPT-4o, GPT-4o-mini</td><td>OPENAI_API_KEY</td></tr>
+      <tr><td>Google</td><td>Gemini 1.5 Flash, Pro</td><td>GEMINI_API_KEY</td></tr>
+      <tr><td>OpenRouter</td><td>Multiple models</td><td>OPENROUTER_API_KEY</td></tr>
+      <tr><td>Ollama / LM Studio</td><td>Any local model</td><td>None (set base URL)</td></tr>
+    </table>
+    <div class="callout warn">
+      <p><strong>Privacy:</strong> When schematic or board screenshots are included, they are sent to the AI provider's servers. Use a local Ollama model if confidentiality is required.</p>
+    </div>
+  </div>
+
+  <!-- CONTINUITY -->
+  <div class="section" id="continuity">
+    <h2>Continuity Checker</h2>
+    <p>Open via <strong>CONTINUITY</strong> in the FIND dropdown. Measures resistance between two selected points on the board.</p>
+    <ol>
+      <li>Click <strong>Point A</strong> — click a pad to set the first test point</li>
+      <li>Click <strong>Point B</strong> — click a second pad to set the second test point</li>
+      <li>Press <kbd>Enter</kbd> to measure, or enable live meter for auto-reading</li>
+      <li>Result shows resistance value; &lt; 1Ω is typically a good connection</li>
+      <li>Press <kbd>Escape</kbd> to close</li>
+    </ol>
+  </div>
+
+  <!-- SHORTS -->
+  <div class="section" id="shorts">
+    <h2>Short Circuit Finder</h2>
+    <p>Open via <strong>SHORTS</strong> in the FIND dropdown. Scans measurements for potential short circuits between nets.</p>
+    <ul>
+      <li>Adjustable resistance threshold — readings below the threshold are flagged as potential shorts</li>
+      <li>Results listed by net pair with measured values</li>
+      <li>Click any result to highlight the involved nets on the board</li>
+      <li>Color-coded severity: red = likely short, amber = suspicious</li>
+    </ul>
+  </div>
+
+  <!-- FAULT TREE -->
+  <div class="section" id="fault-tree">
+    <h2>Fault Tree</h2>
+    <p>Open via <strong>FAULT TREE</strong> in the REPAIR dropdown. An interactive decision tree that guides you through a structured diagnostic workflow.</p>
+    <ul>
+      <li>Each node presents a test or observation question</li>
+      <li>Answer Yes / No to advance through the tree</li>
+      <li>Leaf nodes suggest probable causes and repair actions</li>
+      <li>Integrated with Probe Mode — some nodes auto-select the relevant net on the board</li>
+      <li>Pre-built trees for common board faults across multiple manufacturers</li>
+    </ul>
+
+    <h3>Supported Manufacturers</h3>
+    <table>
+      <tr><th>Manufacturer</th><th>Board Models Covered</th><th>Key Symptoms</th></tr>
+      <tr><td>🍎 Apple MacBook</td><td>A2179, A2289, A2251, A2141, A1990, A1989, A1706, A1707, A1502, A1466, A1465, A1398, A1369</td><td>No Power, No Charging, No Backlight, No Display, No Audio, No USB/TB, Keyboard/Trackpad, WiFi/BT</td></tr>
+      <tr><td>💻 HP</td><td>845 G8, 850 G8, EliteBook 840, ProBook 450, Pavilion 15, ENVY 13, Spectre x360, OMEN 15, Victus 16</td><td>No Power, No Charging, No Display, No Backlight, No USB, No WiFi</td></tr>
+      <tr><td>💻 Dell</td><td>XPS 13, XPS 15, Latitude 5520, Inspiron 15, Precision 5560, G15 5511, Alienware m15</td><td>No Power, No Charging, No Display</td></tr>
+      <tr><td>💻 Lenovo</td><td>ThinkPad X1, T14, IdeaPad 3, Legion 5, Yoga 9i, P15</td><td>No Power, No Charging</td></tr>
+      <tr><td>💻 ASUS</td><td>ROG Strix G15, TUF Gaming A15, ZenBook 14, VivoBook 15, ROG Zephyrus G14</td><td>No Power</td></tr>
+      <tr><td>💻 Microsoft Surface</td><td>Surface Pro 7/8, Laptop 4, Go 2, Book 3</td><td>No Power, No Display</td></tr>
+      <tr><td>🎮 Nintendo Switch</td><td>HAC-001, HAC-001(-01), HDH-001, HEG-001</td><td>No Power, No Charging, No Display, Joy-Con, No HDMI, No Audio</td></tr>
+      <tr><td>🎮 Nintendo 3DS</td><td>CTR-001, SPR-001, FTR-001, KTR-001</td><td>No Power, No Display (Top/Bottom)</td></tr>
+    </table>
+
+    <h3>Generic Fault Trees (All Manufacturers)</h3>
+    <ul>
+      <li><strong>Liquid Damage</strong> — corrosion inspection, shorted rail checks, IPA cleaning</li>
+      <li><strong>Overheating / Fan Always On</strong> — thermal sensors, NTC thermistors, fan PWM</li>
+      <li><strong>Kernel Panic / Random Crashes</strong> — VRM ripple, RAM voltage, SSD power</li>
+      <li><strong>No Network / Ethernet Dead</strong> — PHY power, magnetics, RJ45</li>
+    </ul>
+
+    <h3>AI-Generated Fault Trees</h3>
+    <p>If your board model or symptom isn't covered by a pre-built tree, type a description and click <strong>AI GENERATE</strong>. The AI creates a custom fault tree with exact net names, expected values, and step-by-step instructions specific to your manufacturer and board model.</p>
+
+    <h3>Searching Fault Trees</h3>
+    <p>Use the search field in the Fault Tree panel to find steps across all manufacturers. Search by symptom, net name, or component reference. Results show the manufacturer, symptom, and matching steps.</p>
+  </div>
+
+  <!-- POWER TREE -->
+  <div class="section" id="power-tree">
+    <h2>Power Tree</h2>
+    <p>Open via <strong>POWER TREE</strong> in the BOARD dropdown. Visualizes how power flows from the main rails through regulators and distribution components.</p>
+    <ul>
+      <li>Tree diagram with rail names and expected voltages</li>
+      <li>Filter by rail name to focus on a specific subsystem</li>
+      <li>Nodes turn red when a measured value deviates from expected</li>
+      <li>Click any node to jump to the corresponding net on the board</li>
+    </ul>
+  </div>
+
+  <!-- SIGNAL CHAIN -->
+  <div class="section" id="signal-chain">
+    <h2>Signal Chain Tracer</h2>
+    <p>Open via <strong>SIGNAL TRACE</strong> in the FIND dropdown. Traces the path a signal takes through the circuit from source to destination.</p>
+    <ol>
+      <li>Click a source pin on the board</li>
+      <li>The tracer follows the net through connectors, ICs, and passives</li>
+      <li>Each step in the path is highlighted and listed in the panel</li>
+      <li>Click any step to jump to that component</li>
+    </ol>
+  </div>
+
+  <!-- COMPARISON -->
+  <div class="section" id="comparison">
+    <h2>Board Comparison</h2>
+    <p>Open via <strong>COMPARE</strong> in the FIND dropdown. Compare two boardview files to identify differences.</p>
+    <ol>
+      <li>Load the first board normally</li>
+      <li>Open the Compare panel and load the second board file</li>
+      <li>The table lists every component with a status tag</li>
+    </ol>
+    <table>
+      <tr><th>Status</th><th>Meaning</th></tr>
+      <tr><td><span class="badge badge-accent">MATCH</span></td><td>Component present and identical in both boards</td></tr>
+      <tr><td><span class="badge badge-blue">EXTRA</span></td><td>Present in board 1 but not board 2</td></tr>
+      <tr><td><span class="badge badge-amber">MISSING</span></td><td>Present in board 2 but not board 1</td></tr>
+      <tr><td><span class="badge badge-red">DIFF</span></td><td>Present in both but with different values or nets</td></tr>
+    </table>
+    <p>Use the filter tabs (ALL / MATCHING / EXTRA / MISSING / DIFFERENCES) to focus on specific categories. Search within the comparison table by reference designator.</p>
+  </div>
+
+  <!-- MULTI-SEARCH -->
+  <div class="section" id="multisearch">
+    <h2>Multi-Search</h2>
+    <p>Open via <strong>MULTI SEARCH</strong> in the FIND dropdown, or hold <kbd>Shift</kbd> and click any net/pad to add it to the list.</p>
+    <p>Multi-Search finds all components that are connected to <em>all</em> of the selected nets simultaneously — useful for tracing data bus members, finding bridge chips, or identifying which IC drives multiple signals.</p>
+    <ul>
+      <li>Add nets by Shift-clicking pads on the board</li>
+      <li>Results update live as you add / remove nets</li>
+      <li>Click any result to highlight that component</li>
+    </ul>
+  </div>
+
+  <!-- ANNOTATIONS -->
+  <div class="section" id="annotations">
+    <h2>PDF Annotations</h2>
+    <p>Annotate your schematic directly in the PDF pane. Annotations are saved per board file in local storage.</p>
+    <h3>Annotation Tools</h3>
+    <table>
+      <tr><th>Tool</th><th>Shortcut</th><th>Description</th></tr>
+      <tr><td>✏ Pen</td><td><kbd>D</kbd></td><td>Freehand drawing</td></tr>
+      <tr><td>→ Arrow</td><td>—</td><td>Directional arrow</td></tr>
+      <tr><td>▭ Rectangle</td><td>—</td><td>Rectangular highlight box</td></tr>
+      <tr><td>T Text</td><td>—</td><td>Add a text label</td></tr>
+      <tr><td>◻ Eraser</td><td>—</td><td>Erase annotations</td></tr>
+    </table>
+    <h3>Annotation Shortcuts</h3>
+    <ul>
+      <li><kbd>Ctrl+Z</kbd> — undo last annotation</li>
+      <li><kbd>Ctrl+Y</kbd> — redo</li>
+      <li><kbd>Ctrl+Shift+S</kbd> — screenshot with annotations</li>
+      <li>Clear All button — removes all annotations on the current page</li>
+    </ul>
+    <p>Choose annotation color with the color picker in the annotation toolbar. Pen width is adjustable.</p>
+  </div>
+
+  <!-- OBD -->
+  <div class="section" id="obd">
+    <h2>OpenBoardData (OBD)</h2>
+    <p>OpenBoardData provides community-sourced reference measurements for boards — expected voltages, diode drops, and resistance values for each net on a known-good board.</p>
+    <h3>Using OBD Data</h3>
+    <ol>
+      <li>Open <strong>OBD DATA</strong> from the REPAIR dropdown</li>
+      <li>Import an <code>.obdata</code> file for your board model</li>
+      <li>Reference values appear in pin popups and the net info panel</li>
+      <li>The Heat Map overlay uses OBD data to color-code deviations</li>
+      <li>The MEAS. TABLE shows your readings next to OBD reference values</li>
+    </ol>
+    <h3>Contributing Measurements</h3>
+    <p>After measuring a known-good board, export your measurements via <strong>OBD DATA → Export</strong> to generate an <code>.obdata</code> file that can be shared with the community.</p>
+  </div>
+
+  <!-- COMPONENT NOTES -->
+  <div class="section" id="notes">
+    <h2>Component Notes</h2>
+    <p>Attach free-text notes to any component for documenting findings, suspicions, or repair steps.</p>
+    <ul>
+      <li>Open <strong>COMP NOTES</strong> from the REPAIR dropdown</li>
+      <li>Or click a component and use the Notes field in the sidebar</li>
+      <li>Filter the component list to show only noted components with <strong>HAS NOTES</strong></li>
+      <li>Notes are saved per board in local storage</li>
+      <li>Notes are included in the repair session export</li>
+    </ul>
+    <h3>Net Aliases</h3>
+    <p>Give unfriendly net IDs a human-readable name via <strong>NET ALIASES</strong> in the REPAIR dropdown. The alias appears everywhere the net name is displayed — tooltips, net panel, search results.</p>
+  </div>
+
+  <!-- REPAIR LOG -->
+  <div class="section" id="repair-log">
+    <h2>Repair Log</h2>
+    <p>The Repair Log (<strong>REPAIR LOG</strong> in REPAIR dropdown) records all significant actions in a timestamped session history:</p>
+    <ul>
+      <li>Measurements taken and their values</li>
+      <li>Component selections</li>
+      <li>Notes added or edited</li>
+      <li>Net highlights</li>
+      <li>Fault tree progress</li>
+    </ul>
+    <p>Logs are stored per board. Export the log as part of a repair session or as a standalone CSV.</p>
+  </div>
+
+  <!-- EXPORT -->
+  <div class="section" id="export">
+    <h2>Export &amp; Sessions</h2>
+    <h3>Session Export / Import</h3>
+    <p>A repair session bundles everything into a single file: measurements, component notes, repair log, bookmarks, net aliases, and settings. Use this to:</p>
+    <ul>
+      <li>Hand off a repair to a colleague</li>
+      <li>Resume work on a different machine</li>
+      <li>Archive a completed repair</li>
+    </ul>
+    <p>Export via <strong>EXPORT SESSION</strong> in the BOARD dropdown. Import via <strong>IMPORT SESSION</strong>.</p>
+    <h3>Export Formats</h3>
+    <table>
+      <tr><th>Format</th><th>Contents</th></tr>
+      <tr><td>Repair Report (HTML)</td><td>Human-readable summary with measurements, notes, and screenshots</td></tr>
+      <tr><td>Measurements CSV</td><td>All logged V / D / R readings with timestamps</td></tr>
+      <tr><td>Meter CSV</td><td>Full multimeter reading log (up to 10,000 entries)</td></tr>
+      <tr><td>Export BRD</td><td>Binary boardview for use in other tools</td></tr>
+      <tr><td>Export BVR</td><td>Text boardview</td></tr>
+      <tr><td>Screenshot PNG</td><td>Current board view at screen resolution</td></tr>
+    </table>
+  </div>
+
+  <!-- SETTINGS -->
+  <div class="section" id="settings">
+    <h2>Visual Settings</h2>
+    <p>Open the Settings panel with the <strong>⚙</strong> button in the header. All settings are saved automatically to local storage.</p>
+    <h3>Colors &amp; Overlays</h3>
+    <table>
+      <tr><th>Setting</th><th>Default</th><th>Description</th></tr>
+      <tr><td>Top side color</td><td>#ff6666 (red)</td><td>Color for top-layer components and pads</td></tr>
+      <tr><td>Bottom side color</td><td>#66ff66 (green)</td><td>Color for bottom-layer components and pads</td></tr>
+      <tr><td>Net highlight color</td><td>#f0a030 (amber)</td><td>Highlight color when a net is selected</td></tr>
+      <tr><td>Net highlight width</td><td>0.8 px</td><td>Stroke width of net highlight lines</td></tr>
+      <tr><td>Net highlight opacity</td><td>28%</td><td>Transparency of the highlight fill</td></tr>
+      <tr><td>Mycelium color</td><td>#a040ff (purple)</td><td>Color of the signal-web visualization</td></tr>
+      <tr><td>Mycelium width</td><td>1.5 px</td><td>Stroke width of mycelium lines</td></tr>
+      <tr><td>Mycelium opacity</td><td>60%</td><td>Transparency of mycelium lines</td></tr>
+      <tr><td>Board outline color</td><td>#1a5e48</td><td>Edge cut / board outline stroke</td></tr>
+      <tr><td>Background color</td><td>#090b0d</td><td>Board canvas background</td></tr>
+    </table>
+    <h3>Component Color Coding</h3>
+    <p>When <strong>Color Code</strong> is enabled, component bodies are filled by type:</p>
+    <table>
+      <tr><th>Component Type</th><th>Default Color</th></tr>
+      <tr><td>Capacitor</td><td>#2a6a80 (teal)</td></tr>
+      <tr><td>Resistor</td><td>#2a7040 (green)</td></tr>
+      <tr><td>IC / chip</td><td>#6a5028 (brown)</td></tr>
+      <tr><td>Inductor / fuse</td><td>#5a2a70 (purple)</td></tr>
+      <tr><td>Diode / transistor</td><td>#6a2a2a (red-brown)</td></tr>
+    </table>
+    <h3>Display Thresholds</h3>
+    <ul>
+      <li><strong>Font scale</strong> — 0.5× to 2.0× for all text overlays</li>
+      <li><strong>Pin number zoom</strong> — minimum zoom level to display pin numbers (default 25%)</li>
+      <li><strong>Value overlay zoom</strong> — minimum zoom level to display component values (default 18%)</li>
+      <li><strong>Pin 1 marker size</strong> and <strong>color</strong></li>
+    </ul>
+    <h3>Resetting Defaults</h3>
+    <p>Click <strong>Reset to defaults</strong> at the bottom of the settings panel to restore all visual settings.</p>
+  </div>
+
+  <!-- LANGUAGE -->
+  <div class="section" id="language">
+    <h2>Language</h2>
+    <p>Click the language button (<strong>🌐</strong>) in the header to switch the interface language. 20+ languages are supported:</p>
+    <div class="card-grid">
+      <div class="card-sm"><p>English, Chinese (Simplified), Chinese (Traditional), Hindi, Arabic, French, Spanish, Indonesian, Russian, Portuguese</p></div>
+      <div class="card-sm"><p>German, Turkish, Vietnamese, Korean, Japanese, Polish, Romanian, Ukrainian, Thai, Bengali</p></div>
+    </div>
+    <p>The selected language is saved to local storage. Arabic enables full right-to-left layout.</p>
+  </div>
+
+  <!-- SHORTCUTS -->
+  <div class="section" id="shortcuts">
+    <h2>Keyboard Shortcuts</h2>
+    <p>Press <kbd>?</kbd> at any time to open the in-app shortcut reference. Complete reference below:</p>
+
+    <div class="shortcuts-grid">
+
+      <div class="shortcut-group">
+        <h4>PDF Navigation</h4>
+        <div class="shortcut-row"><span class="shortcut-desc">Previous page</span><span><kbd>P</kbd> <kbd>←</kbd></span></div>
+        <div class="shortcut-row"><span class="shortcut-desc">Next page</span><span><kbd>N</kbd> <kbd>→</kbd></span></div>
+        <div class="shortcut-row"><span class="shortcut-desc">Jump to page</span><kbd>G</kbd></div>
+        <div class="shortcut-row"><span class="shortcut-desc">Zoom in</span><kbd>+</kbd></div>
+        <div class="shortcut-row"><span class="shortcut-desc">Zoom out</span><kbd>-</kbd></div>
+        <div class="shortcut-row"><span class="shortcut-desc">Fit to window</span><kbd>Z</kbd></div>
+        <div class="shortcut-row"><span class="shortcut-desc">Continuous scroll</span><kbd>C</kbd></div>
+        <div class="shortcut-row"><span class="shortcut-desc">Bookmark page</span><kbd>Ctrl+B</kbd></div>
+        <div class="shortcut-row"><span class="shortcut-desc">Rotate left / right</span><span><kbd>[</kbd> <kbd>]</kbd></span></div>
+      </div>
+
+      <div class="shortcut-group">
+        <h4>Board View</h4>
+        <div class="shortcut-row"><span class="shortcut-desc">Toggle top side</span><kbd>T</kbd></div>
+        <div class="shortcut-row"><span class="shortcut-desc">Toggle bottom side</span><kbd>B</kbd></div>
+        <div class="shortcut-row"><span class="shortcut-desc">Rotate left</span><kbd>,</kbd></div>
+        <div class="shortcut-row"><span class="shortcut-desc">Rotate right</span><kbd>.</kbd></div>
+        <div class="shortcut-row"><span class="shortcut-desc">Flip horizontal</span><kbd>X</kbd></div>
+        <div class="shortcut-row"><span class="shortcut-desc">Flip vertical</span><kbd>Y</kbd></div>
+        <div class="shortcut-row"><span class="shortcut-desc">Fit to window</span><kbd>Z</kbd></div>
+        <div class="shortcut-row"><span class="shortcut-desc">Fit selection</span><kbd>Shift+F</kbd></div>
+      </div>
+
+      <div class="shortcut-group">
+        <h4>Global</h4>
+        <div class="shortcut-row"><span class="shortcut-desc">Search component / net</span><span><kbd>F</kbd> <kbd>Ctrl+F</kbd></span></div>
+        <div class="shortcut-row"><span class="shortcut-desc">Toggle multimeter</span><kbd>M</kbd></div>
+        <div class="shortcut-row"><span class="shortcut-desc">Navigate back</span><kbd>Alt+←</kbd></div>
+        <div class="shortcut-row"><span class="shortcut-desc">Navigate forward</span><kbd>Alt+→</kbd></div>
+        <div class="shortcut-row"><span class="shortcut-desc">Show shortcuts</span><kbd>?</kbd></div>
+        <div class="shortcut-row"><span class="shortcut-desc">Clear selection / close</span><kbd>Escape</kbd></div>
+        <div class="shortcut-row"><span class="shortcut-desc">Confirm / submit</span><kbd>Enter</kbd></div>
+      </div>
+
+      <div class="shortcut-group">
+        <h4>PDF Annotations</h4>
+        <div class="shortcut-row"><span class="shortcut-desc">Pen / draw mode</span><kbd>D</kbd></div>
+        <div class="shortcut-row"><span class="shortcut-desc">Undo annotation</span><kbd>Ctrl+Z</kbd></div>
+        <div class="shortcut-row"><span class="shortcut-desc">Redo annotation</span><kbd>Ctrl+Y</kbd></div>
+        <div class="shortcut-row"><span class="shortcut-desc">Screenshot</span><kbd>Ctrl+Shift+S</kbd></div>
+      </div>
+
+      <div class="shortcut-group">
+        <h4>PDF Pan (vim-style)</h4>
+        <div class="shortcut-row"><span class="shortcut-desc">Scroll down</span><span><kbd>J</kbd> <kbd>↓</kbd></span></div>
+        <div class="shortcut-row"><span class="shortcut-desc">Scroll up</span><span><kbd>K</kbd> <kbd>↑</kbd></span></div>
+        <div class="shortcut-row"><span class="shortcut-desc">Scroll left</span><kbd>H</kbd></div>
+        <div class="shortcut-row"><span class="shortcut-desc">Scroll right</span><kbd>L</kbd></div>
+      </div>
+
+      <div class="shortcut-group">
+        <h4>Multi-search</h4>
+        <div class="shortcut-row"><span class="shortcut-desc">Add net to multi-search</span><kbd>Shift+Click</kbd></div>
+        <div class="shortcut-row"><span class="shortcut-desc">Clear search</span><kbd>Escape</kbd></div>
+      </div>
+
+    </div>
+
+    <div class="callout">
+      <p>Press <kbd>?</kbd> inside the app for the interactive shortcut overlay, which is always up to date with the current version.</p>
+    </div>
+  </div>
+
+  <!-- ── NEW FEATURES v5.2 ── -->
+
+  <!-- POWER SEQUENCING -->
+  <div class="section" id="power-seq">
+    <h2>Power Sequencing Timeline</h2>
+    <p>Open via <strong>▶ POWER SEQUENCE</strong> in the BOARD dropdown. Shows the exact order in which power rails must come up on a given board model, with live measurement status overlaid on each step.</p>
+    <h3>How to Use</h3>
+    <ol>
+      <li>Open the panel — it auto-selects the board model if it matches the loaded file name</li>
+      <li>Use the <strong>board model selector</strong> to manually pick a model</li>
+      <li>Each numbered step shows the rail name, net, expected voltage, and any measurement you've already taken</li>
+      <li>Steps with a live reading show <span class="badge badge-accent">✓</span> or <span class="badge badge-red">✗</span> depending on whether the reading is within tolerance</li>
+      <li>Work through the sequence top-to-bottom — the first step that's missing or wrong tells you where to focus</li>
+    </ol>
+    <div class="callout info">
+      <p><strong>Tip:</strong> Take measurements in Probe Mode first, then open the Power Sequence panel — all your readings will already be overlaid on the timeline.</p>
+    </div>
+    <h3>Supported Board Models</h3>
+    <p>820-00165, 820-3437, 820-3662 (with 8–10 sequenced rails each). Additional models can be added to the <code>POWER_SEQ_DB</code> database in the source.</p>
+  </div>
+
+  <!-- MOSFET TESTER -->
+  <div class="section" id="mosfet">
+    <h2>MOSFET Guided Tester</h2>
+    <p>When you click any transistor or MOSFET component (reference starting with <strong>Q</strong>), a collapsible <strong>⚡ MOSFET TEST GUIDE</strong> section appears at the top of the component sidebar.</p>
+    <h3>Test Steps</h3>
+    <table>
+      <tr><th>Step</th><th>What to measure</th><th>What to expect</th></tr>
+      <tr><td>1 — Gate voltage</td><td>DC voltage on Gate pin</td><td>0V when off, 3–12V when switching on</td></tr>
+      <tr><td>2 — Source voltage</td><td>DC voltage on Source</td><td>High-side: ≈ VBUS. Low-side: ≈ 0V</td></tr>
+      <tr><td>3 — Drain voltage</td><td>DC voltage on Drain</td><td>When on: Drain ≈ Source (low Vds)</td></tr>
+      <tr><td>4 — Diode G→S</td><td>Diode mode, Gate to Source</td><td>OL both directions on a healthy FET</td></tr>
+      <tr><td>5 — Diode D→S</td><td>Diode mode, Drain to Source</td><td>Body diode ~0.4–0.7V; reverse OL. &lt; 0.1V both ways = shorted</td></tr>
+    </table>
+    <p>Click the header bar to expand / collapse the guide. The guide stays visible as you scroll through the pin list below it.</p>
+  </div>
+
+  <!-- COMPONENT SIDEBAR -->
+  <div class="section" id="sidebar">
+    <h2>Component Sidebar</h2>
+    <p>Click any component to open the sidebar. In v5.2 the sidebar shows significantly more diagnostic information:</p>
+    <div class="card-grid">
+      <div class="card-sm"><h4>🔴 Known Issue</h4><p>Red/amber/blue warning if this component is in the known-bad database for the loaded board model.</p></div>
+      <div class="card-sm"><h4>🔁 Substitutes</h4><p>Alternative part numbers if a cross-reference exists for this component's value.</p></div>
+      <div class="card-sm"><h4>📄 Datasheet Links</h4><p>One-click links to Datasheet, LCSC, and Octopart for the component's part number.</p></div>
+      <div class="card-sm"><h4>⚡ ESR Indicator</h4><p>For capacitors (C*) with a resistance reading — automatic ESR interpretation.</p></div>
+      <div class="card-sm"><h4>⚡ MOSFET Guide</h4><p>For transistors (Q*) — collapsible 5-step test workflow.</p></div>
+      <div class="card-sm"><h4>📋 Notes</h4><p>Per-component repair notes, quick-add from the sidebar.</p></div>
+    </div>
+  </div>
+
+  <!-- KNOWN-BAD DATABASE -->
+  <div class="section" id="known-bad">
+    <h2>Known-Bad Component Database</h2>
+    <p>BoardScope includes a built-in database of components that commonly fail on specific Apple board models. When you select a component that's in the database, a warning banner appears at the top of the sidebar.</p>
+    <h3>Severity Levels</h3>
+    <table>
+      <tr><th>Level</th><th>Meaning</th></tr>
+      <tr><td><span class="badge badge-red">🔴 CRITICAL</span></td><td>This component fails very frequently on this board and is usually the root cause of the symptom</td></tr>
+      <tr><td><span class="badge badge-amber">🟠 COMMON</span></td><td>Known to fail; worth inspecting early in the repair</td></tr>
+      <tr><td><span class="badge badge-blue">🔵 WATCH</span></td><td>Fails occasionally; check if other obvious causes are ruled out</td></tr>
+    </table>
+    <h3>Seeded Boards</h3>
+    <p>820-00165, 820-3437, 820-3662, 820-4924, 820-00850. Each board has 3–5 flagged components. The database is defined in <code>KNOWN_BAD_DB</code> in the source and can be extended.</p>
+  </div>
+
+  <!-- CROSS-REFERENCE -->
+  <div class="section" id="xref">
+    <h2>Replacement Cross-Reference</h2>
+    <p>When a component's part number matches an entry in the cross-reference database, a <strong>🔁 SUBSTITUTES</strong> section appears in the sidebar listing known drop-in or compatible replacements.</p>
+    <p>Useful when the original IC is NLA (no longer available) or damaged beyond identification. Current database includes common Apple repair substitutes: ISL9240 → RAA229001, ISL6259 → ISL6259A/RAA214000, TPS51980 → TPS51980A, and others.</p>
+    <div class="callout">
+      <p>The cross-reference is matched against the component's OBD value field. Load OBD data first for best results. The database is in <code>XREF_DB</code> in the source.</p>
+    </div>
+  </div>
+
+  <!-- DATASHEET LOOKUP -->
+  <div class="section" id="datasheet">
+    <h2>Datasheet &amp; Parts Lookup</h2>
+    <p>Every component sidebar now shows three quick-access links:</p>
+    <table>
+      <tr><th>Link</th><th>Destination</th></tr>
+      <tr><td>📄 Datasheet</td><td>AllDatasheet.com search for the part number</td></tr>
+      <tr><td>🛒 LCSC</td><td>LCSC parts search — pricing and availability</td></tr>
+      <tr><td>🔍 Octopart</td><td>Octopart cross-distributor search</td></tr>
+    </table>
+    <p>The search query uses the component's OBD value field if available, falling back to the reference designator. Links open in a new browser tab.</p>
+  </div>
+
+  <!-- CAPACITOR ESR -->
+  <div class="section" id="esr">
+    <h2>Capacitor ESR Indicator</h2>
+    <p>When you select a capacitor (<strong>C*</strong> reference) that has a resistance measurement logged in Probe Mode, an <strong>ESR</strong> row automatically appears in the sidebar with a colour-coded interpretation:</p>
+    <table>
+      <tr><th>Reading</th><th>Colour</th><th>Interpretation</th></tr>
+      <tr><td>&lt; 0.5 Ω</td><td><span class="badge badge-red">RED</span></td><td>Possible short — check for solder bridge or cracked MLCC</td></tr>
+      <tr><td>0.5 – 50 Ω</td><td><span class="badge badge-accent">GREEN</span></td><td>ESR OK — normal range for ceramic capacitors in-circuit</td></tr>
+      <tr><td>&gt; 50 Ω</td><td><span class="badge badge-amber">AMBER</span></td><td>High ESR — possible dry electrolytic or cracked MLCC</td></tr>
+      <tr><td>OL</td><td>Grey</td><td>Open — normal for an uncharged cap; check for lifted pad if powered</td></tr>
+    </table>
+    <div class="callout warn">
+      <p><strong>Note:</strong> These readings are in-circuit resistance, not true ESR (which requires an impedance analyser). Use as a quick triage indicator, not a definitive measurement.</p>
+    </div>
+  </div>
+
+  <!-- THERMAL MAP -->
+  <div class="section" id="thermal">
+    <h2>Thermal Map</h2>
+    <p>Load a thermal camera photo (FLIR, Seek, or any infrared image) and align it over the board view to identify which components are running hot.</p>
+    <h3>How to Use</h3>
+    <ol>
+      <li>Open the <strong>VIEW</strong> dropdown → <strong>🌡 THERMAL MAP</strong></li>
+      <li>Select your thermal image file (any common image format)</li>
+      <li>The image is loaded at 65% opacity over the board — hot spots are immediately visible</li>
+      <li>Use the <strong>ALIGN</strong> button and drag the corner handles to align the image with the boardview</li>
+      <li>Adjust <strong>OPACITY</strong> with the slider to balance the thermal image against the component overlay</li>
+      <li>Use <strong>FLIP H / FLIP V</strong> if the camera was oriented differently</li>
+    </ol>
+    <div class="callout">
+      <p>Thermal map and Photo Overlay share the same alignment engine — only one can be active at a time. Loading a thermal map replaces an existing photo overlay and vice versa.</p>
+    </div>
+  </div>
+
+  <!-- DAMAGE MAP -->
+  <div class="section" id="damage-map">
+    <h2>Liquid Damage Map</h2>
+    <p>Mark damaged components directly on the board view to build a visual map of liquid damage spread, missing parts, or burn damage.</p>
+    <h3>How to Use</h3>
+    <ol>
+      <li>Open the <strong>REPAIR</strong> dropdown → <strong>💧 DAMAGE MAP</strong></li>
+      <li>The board canvas switches to crosshair cursor mode</li>
+      <li>Select a damage type from the bar at the bottom of the screen</li>
+      <li>Click any component to tag it — a coloured circle overlay appears</li>
+      <li>To remove a tag, select <strong>✕ CLEAR</strong> and click the component</li>
+      <li>Click <strong>✕</strong> at the right of the bar to exit damage map mode</li>
+    </ol>
+    <h3>Damage Types</h3>
+    <table>
+      <tr><th>Type</th><th>Colour</th><th>Use for</th></tr>
+      <tr><td>🧴 CORROSION</td><td>Orange</td><td>Oxidation, green residue, flux contamination</td></tr>
+      <tr><td>⚡ BRIDGE</td><td>Red</td><td>Solder bridges, liquid bridges between pads</td></tr>
+      <tr><td>◻ MISSING</td><td>Grey</td><td>Component completely missing from board</td></tr>
+      <tr><td>🔥 BURNED</td><td>Dark red</td><td>Heat damage, burnt PCB, charred component</td></tr>
+    </table>
+    <p>Damage tags are saved to <code>localStorage</code> per board and persist between sessions. They are also included in the repair session export.</p>
+  </div>
+
+  <!-- COLOR MAPS -->
+  <div class="section" id="color-maps">
+    <h2>Colour Coding &amp; Maps</h2>
+    <h3>Component Type Colours</h3>
+    <p>By default, every component on the board is colour-coded by type. Toggle this with the <strong>Colour Code</strong> checkbox in Settings → Component Colours.</p>
+    <table>
+      <tr><th>Colour</th><th>Component type</th><th>Typical refs</th></tr>
+      <tr><td>Teal</td><td>Capacitors &amp; connectors</td><td>C*, CY*, J*, P*, CN*, HDR*</td></tr>
+      <tr><td>Green</td><td>Resistors</td><td>R*, RN*, VR*, POT*</td></tr>
+      <tr><td>Brown/orange</td><td>ICs &amp; crystals</td><td>U*, IC*, X*, Y*, XTAL*</td></tr>
+      <tr><td>Purple</td><td>Inductors, fuses &amp; ferrites</td><td>L*, FB*, FL*, F*, TR*, T*</td></tr>
+      <tr><td>Dark red</td><td>Diodes, transistors &amp; LEDs</td><td>D*, Z*, Q*, LED*, SW*, BT*</td></tr>
+      <tr><td>Green (muted)</td><td>Test points &amp; mounting holes</td><td>TP*, MH*, H*, FID*</td></tr>
+    </table>
+    <p>All five colours are fully customisable in <strong>Settings → Component Colours</strong>. Top-side components render at full brightness; bottom-side at 70% to visually distinguish them.</p>
+    <h3>Measurement Maps</h3>
+    <p>Three software-computed overlays in the VIEW dropdown that colour-code components based on measurement data. All three are mutually exclusive — enabling one disables the others.</p>
+    <table>
+      <tr><th>Map</th><th>Button</th><th>What it colours</th><th>Requires</th></tr>
+      <tr><td><strong>Voltage Map</strong></td><td>⚡ VOLT MAP</td><td>Components by highest voltage rail they connect to. Red = high voltage, green = logic, blue = low, dark = GND, grey = no data.</td><td>OBD data</td></tr>
+      <tr><td><strong>Diode Map</strong></td><td>⎆ DIODE MAP</td><td>Components by diode drop to ground (board powered off). Red = SHORT, green = normal, blue = high, purple = open.</td><td>OBD data</td></tr>
+      <tr><td><strong>Heat Map</strong></td><td>▲ HEAT MAP</td><td>Deviation of your live measurements from the OBD reference. Green = matching, yellow = slightly off, red = wrong, grey = not yet measured.</td><td>OBD data + Probe Mode readings</td></tr>
+    </table>
+    <div class="callout tip">
+      <p><strong>Practical workflow:</strong> Load OBD data from a known-good board → enable Volt Map to see which rails are present → switch to Diode Map (board off) to spot shorted components → enable Heat Map as you probe the faulty board to track progress.</p>
+    </div>
+  </div>
+
+  <!-- BEFORE/AFTER DIFF -->
+  <div class="section" id="diff">
+    <h2>Before / After Measurement Diff</h2>
+    <p>Compare measurements taken before and after a repair to confirm what changed and prove the fix worked.</p>
+    <h3>Workflow</h3>
+    <ol>
+      <li>Enter Probe Mode and take baseline measurements on the board</li>
+      <li>Click the <strong>📷 SNAP</strong> button in the probe bar — this saves the current state as a baseline</li>
+      <li>Continue the repair and take more measurements</li>
+      <li>Open <strong>REPAIR</strong> dropdown → <strong>▲ BEFORE/AFTER DIFF</strong> to see the comparison panel</li>
+    </ol>
+    <h3>Diff Panel</h3>
+    <p>The panel slides up from the bottom of the board view and lists every measured net with a status tag:</p>
+    <table>
+      <tr><th>Tag</th><th>Meaning</th></tr>
+      <tr><td><span class="badge badge-accent">NEW</span></td><td>Net measured after the snapshot — not in the baseline</td></tr>
+      <tr><td><span class="badge badge-red">REMOVED</span></td><td>Net was in the baseline but no longer has a measurement</td></tr>
+      <tr><td><span class="badge badge-amber">CHANGED</span></td><td>Value changed between baseline and current</td></tr>
+      <tr><td>SAME</td><td>Reading identical to baseline</td></tr>
+    </table>
+    <p>For CHANGED nets, both the before and after values are shown with an arrow between them. Close the panel with the ✕ button. Take a new snapshot at any time to reset the baseline.</p>
+  </div>
+
+  <!-- BOARD REVISION -->
+  <div class="section" id="revision">
+    <h2>Board Revision Tracker</h2>
+    <p>A small <strong>Rev —</strong> input field sits in the board view header, to the right of the filename. Type the board revision here (e.g. <code>Rev 4</code>, <code>MLB-2020</code>, <code>J152 proto</code>).</p>
+    <ul>
+      <li>The revision is saved automatically per board ID in <code>localStorage</code> and reloads when you open the same board again</li>
+      <li>It is included in <strong>session exports</strong> and restored when importing a session</li>
+      <li>It appears in the <strong>Repair Report</strong> HTML export</li>
+    </ul>
+    <div class="callout info">
+      <p>The revision field is free-text. Use any naming convention that makes sense for your workflow — board revision letters, date codes, or internal identifiers all work.</p>
+    </div>
+  </div>
+
+  <!-- ═══════ SHOP TOOLS ═══════ -->
+
+  <div class="section" id="jobs">
+    <h2>Job Ticket / Repair Queue</h2>
+    <p>Click the <strong>📋 JOBS</strong> button in the top-right of the header to open the full-screen Repair Queue panel. This is your shop's job management system — create a ticket for every device that comes in.</p>
+    <h3>Creating a ticket</h3>
+    <ol>
+      <li>Click <strong>+ NEW TICKET</strong></li>
+      <li>Fill in: Device name, Customer name, Phone/email, Symptom description</li>
+      <li>Set the initial <strong>Status</strong> — IN, DIAGNOSING, WAITING PARTS, DONE, or COLLECTED</li>
+      <li>Click <strong>SAVE TICKET</strong></li>
+    </ol>
+    <h3>Linking to a board</h3>
+    <p>While a board file is loaded, click <strong>LINK BOARD</strong> inside the ticket form to associate the current board ID with the ticket. This link appears on the ticket card and is included in the Customer Report.</p>
+    <h3>Ticket statuses</h3>
+    <table class="ref-table">
+      <tr><th>IN</th><td>Device received, not yet diagnosed</td></tr>
+      <tr><th>DIAGNOSING</th><td>Active fault diagnosis in progress</td></tr>
+      <tr><th>WAITING</th><td>Waiting for parts order to arrive</td></tr>
+      <tr><th>DONE</th><td>Repair complete, awaiting customer</td></tr>
+      <tr><th>COLLECTED</th><td>Device collected by customer</td></tr>
+    </table>
+    <p>Use the <strong>filter buttons</strong> at the top of the ticket list to view only tickets in a specific status. All tickets persist in <code>localStorage</code>.</p>
+  </div>
+
+  <div class="section" id="parts-log">
+    <h2>Parts Used Log</h2>
+    <p>Inside each job ticket, a <strong>PARTS USED</strong> section lets you log every component replaced during the repair.</p>
+    <ul>
+      <li>Click <strong>+ ADD PART</strong> to add a row</li>
+      <li>Enter the part number/description, quantity, and unit cost</li>
+      <li>Parts are saved with the ticket when you click <strong>SAVE TICKET</strong></li>
+      <li>The parts list is included in the <strong>Customer Report PDF</strong> with a line-item total</li>
+    </ul>
+    <div class="callout tip">
+      <p>Use part numbers from your inventory (e.g. <code>ISL9240IRZLX-T</code>) so reports are consistent and you can cross-reference with stock levels.</p>
+    </div>
+  </div>
+
+  <div class="section" id="inventory">
+    <h2>Inventory / Parts Bin</h2>
+    <p>Open the <strong>📋 JOBS</strong> panel and click the <strong>📦 INVENTORY</strong> tab to manage your parts stock.</p>
+    <h3>Adding a part</h3>
+    <p>Click <strong>+ ADD PART</strong>, fill in the form, and click <strong>SAVE</strong>:</p>
+    <table class="ref-table">
+      <tr><th>Part #</th><td>Component part number (e.g. ISL9240IRZLX-T)</td></tr>
+      <tr><th>Description</th><td>Human-readable name (e.g. "Charger IC, MacBook 2020")</td></tr>
+      <tr><th>Qty</th><td>Current stock count. Highlighted red when ≤ 2</td></tr>
+      <tr><th>Bin / Location</th><td>Physical storage location (e.g. "Drawer A3")</td></tr>
+      <tr><th>Unit Cost</th><td>Cost per unit in USD for estimate calculations</td></tr>
+      <tr><th>Supplier / Notes</th><td>Mouser, LCSC, AliExpress order number, etc.</td></tr>
+    </table>
+    <p>Use the <strong>search bar</strong> to filter by part number, description, or location. Click <strong>CSV EXPORT</strong> to download the full inventory as a spreadsheet.</p>
+    <div class="callout info">
+      <p>Stock levels are stored in <code>localStorage</code>. They do not auto-decrement when parts are logged on a ticket — update manually when consuming stock.</p>
+    </div>
+  </div>
+
+  <div class="section" id="time-tracking">
+    <h2>Time Tracking</h2>
+    <p>Each job ticket has a built-in stopwatch inside the <strong>TIME TRACKING</strong> section of the form.</p>
+    <ul>
+      <li>Click <strong>▶ START</strong> to begin timing a work session</li>
+      <li>Click <strong>■ STOP</strong> to end the session — the elapsed time is saved to the ticket</li>
+      <li>Multiple sessions accumulate — the running <strong>Total</strong> is shown next to the timer</li>
+      <li>A log of all timed sessions appears below the timer with timestamps</li>
+    </ul>
+    <p>Time data is saved with the ticket and included in the Customer Report for transparency (or omit it by editing the report before printing).</p>
+  </div>
+
+  <div class="section" id="board-db">
+    <h2>Board Model Database</h2>
+    <p>Access via <strong>BOARD → 📚 BOARD DATABASE</strong>. A searchable reference covering iPhone, iPad, and MacBook models with their board numbers, CPU, PMIC, and charger IC details.</p>
+    <h3>Using the database</h3>
+    <ul>
+      <li>Type any model name, board number (e.g. <code>820-00165</code>), or chip name (e.g. <code>ISL9240</code>) in the search box</li>
+      <li>Cards show: model name, board #, CPU, PMIC, charger IC, and key notes</li>
+      <li>Useful for quick identification when a board arrives with no documentation</li>
+    </ul>
+    <div class="callout info">
+      <p>The database covers iPhones 7–16 Pro, MacBooks 2011–2024 M3, and iPads. More models are added with each BoardScope update.</p>
+    </div>
+  </div>
+
+  <div class="section" id="reball">
+    <h2>Reballing Tracker</h2>
+    <p>Access via <strong>REPAIR → ⭕ REBALLING</strong>. A guided 10-step checklist for BGA chip reballing workflows, with a history log per board.</p>
+    <h3>Workflow</h3>
+    <ol>
+      <li>Enter the chip reference or description (e.g. <code>U8900 — Thunderbolt IC</code>)</li>
+      <li>Work through the checklist, checking off each step as completed</li>
+      <li>Click <strong>SAVE LOG ENTRY</strong> — records the chip, completion count, and timestamp</li>
+    </ol>
+    <p>The history panel shows the last 5 reball entries for the current board. All entries are stored per board ID in <code>localStorage</code>.</p>
+    <div class="callout tip">
+      <p>The 10-step checklist covers: continuity pre-check, underfill removal, reflow, ball removal, pad cleaning, new ball application, alignment, reflow, post-check, and visual inspection under microscope.</p>
+    </div>
+  </div>
+
+  <div class="section" id="water-score">
+    <h2>Water Damage Severity Score</h2>
+    <p>Access via <strong>REPAIR → 💧 WATER SCORE</strong>. Rate corrosion severity across 8 board zones to generate a triage priority score.</p>
+    <h3>Zones rated</h3>
+    <p>CPU/SoC, PMIC/Power rails, Charger IC, Touch/Display connector, Audio codec, RF/Cellular modem, Battery connector, Board connectors/FPC.</p>
+    <h3>Rating scale</h3>
+    <p>Each zone is rated 0–5. 0 = clean, 5 = severe corrosion or bridging. The total score and verdict are shown instantly:</p>
+    <table class="ref-table">
+      <tr><th>0–20%</th><td>Minimal — IPA clean, likely recoverable</td></tr>
+      <tr><th>20–40%</th><td>Moderate — targeted cleaning required</td></tr>
+      <tr><th>40–60%</th><td>High — multiple zones affected</td></tr>
+      <tr><th>&gt;60%</th><td>Severe — major corrosion, low recovery odds</td></tr>
+    </table>
+    <p>Click <strong>SAVE SCORE TO REPAIR LOG</strong> to append the full zone breakdown to the repair log for the current board.</p>
+  </div>
+
+  <div class="section" id="microsolder">
+    <h2>Micro-Soldering Checklist</h2>
+    <p>Access via <strong>REPAIR → 🔧 MICRO-SOLDER</strong>. Step-by-step safety checklists for five common micro-soldering operations.</p>
+    <h3>Available checklists</h3>
+    <table class="ref-table">
+      <tr><th>Jumper Wire</th><td>12 steps: pad identification, tinning, wire routing, flux, continuity verification</td></tr>
+      <tr><th>Lifted Pad Repair</th><td>10 steps: mask scraping, trace exposure, jump-to-via if pad gone</td></tr>
+      <tr><th>BGA Reflow</th><td>8 steps: flux application, temperature profile, cooldown, inspection</td></tr>
+      <tr><th>BGA Reball</th><td>12 steps: chip removal through post-reflow X-ray inspection</td></tr>
+      <tr><th>Wire Bond</th><td>10 steps: bond pad prep, wire gauge selection, ball/wedge bonds, pull test</td></tr>
+    </table>
+    <p>Check off steps as you go. Click <strong>LOG COMPLETION</strong> to record the operation type and completion count in the repair log. Click <strong>RESET</strong> to start a fresh run.</p>
+  </div>
+
+  <div class="section" id="photo-log">
+    <h2>Before/After Photo Log</h2>
+    <p>Access via <strong>REPAIR → 📷 PHOTO LOG</strong>. Attach photos to each repair session, organized by stage.</p>
+    <h3>Adding photos</h3>
+    <ol>
+      <li>Select a stage from the dropdown: <strong>BEFORE</strong>, <strong>DURING</strong>, <strong>AFTER</strong>, or <strong>DAMAGE</strong></li>
+      <li>Click <strong>+ PHOTO</strong> to select one or more images</li>
+      <li>Photos appear as thumbnails in the grid with their stage label</li>
+    </ol>
+    <p>Photos are stored per board ID using <code>localStorage</code> (base64-encoded). Before and After photos automatically appear in the <strong>Customer Report PDF</strong>.</p>
+    <div class="callout warning">
+      <p>Large high-resolution images can exceed localStorage limits (~5–10MB). Resize photos to 1920×1080 or smaller before importing for best results.</p>
+    </div>
+  </div>
+
+  <div class="section" id="repair-history">
+    <h2>Repair History</h2>
+    <p>Access via <strong>REPAIR → 🕓 REPAIR HISTORY</strong>. A timestamped log of all repair notes for the current board model — persists across sessions.</p>
+    <ul>
+      <li>Type a note and click <strong>ADD</strong> (or press Enter) to append an entry</li>
+      <li>All entries are stored per board ID — they reappear whenever you load the same board</li>
+      <li>Click ✕ on any entry to delete it</li>
+      <li>The most recent 6 entries appear in the <strong>Customer Report</strong></li>
+    </ul>
+    <div class="callout tip">
+      <p>Use this for: fault findings, known issues on this specific board, previous repair attempts, and reference measurements that you want to keep permanently (not just in the current session).</p>
+    </div>
+  </div>
+
+  <div class="section" id="community-notes">
+    <h2>Community Notes</h2>
+    <p>Access via <strong>REPAIR → 👥 COMMUNITY NOTES</strong>. Share and read tips for the current board model from your repair network.</p>
+    <ul>
+      <li>Notes are synced to the server when running <code>node server.js</code> — accessible from any device on the same server</li>
+      <li>Enter a note, optionally add your name, and click <strong>POST</strong></li>
+      <li>Each note shows the author and timestamp</li>
+      <li>Delete any note with the ✕ button</li>
+      <li>Notes are stored per board ID on the server in the <code>notes/</code> directory as JSON files</li>
+    </ul>
+    <div class="callout info">
+      <p><strong>Server sync:</strong> When running the local proxy server, notes are stored server-side and shared across all devices connecting to that server. Without a server, notes fall back to local storage only.</p>
+    </div>
+  </div>
+
+  <div class="section" id="video-refs">
+    <h2>Video References</h2>
+    <p>Access via <strong>REPAIR → 🎬 VIDEO REFS</strong>. Save repair tutorial links for the current board model.</p>
+    <ul>
+      <li>Paste a YouTube or video URL and optionally add a title, then click <strong>ADD</strong></li>
+      <li>YouTube thumbnails are fetched and shown automatically</li>
+      <li>Click any video title or URL to open it in a new tab</li>
+      <li>References are stored per board ID and persist across sessions</li>
+    </ul>
+  </div>
+
+  <div class="section" id="customer-report">
+    <h2>Customer Report PDF</h2>
+    <p>Access via <strong>BOARD → 📝 CUSTOMER REPORT</strong>. Generates a professional, print-ready repair summary for the customer.</p>
+    <h3>What's included</h3>
+    <ul>
+      <li>Shop name and date</li>
+      <li>Job ticket number and board ID / revision</li>
+      <li>Customer name and contact info</li>
+      <li>Device name and fault description</li>
+      <li>Repair status</li>
+      <li>Parts used (line-item table with quantities and costs)</li>
+      <li>Repair notes (from Repair Log and Repair History)</li>
+      <li>Before / After photos (from Photo Log)</li>
+      <li>Total estimate from the ticket</li>
+    </ul>
+    <p>Click <strong>📤 PRINT / SAVE PDF</strong> to open the browser print dialog. In Chrome/Edge, choose <strong>Save as PDF</strong> for a clean single-file output.</p>
+    <div class="callout tip">
+      <p>Fill in the job ticket (customer name, device, symptom, parts, estimate) and add photos before generating the report for the best result.</p>
+    </div>
+  </div>
+
+  <div class="section" id="qr-code">
+    <h2>QR Code</h2>
+    <p>Access via <strong>BOARD → ⬡ QR CODE</strong>. Generates a visual QR-style code encoding the current board ID, revision, and linked job ticket number.</p>
+    <ul>
+      <li>The encoded text is shown below the code and can be copied with <strong>COPY TEXT</strong></li>
+      <li>Click <strong>DOWNLOAD</strong> to save the QR image as PNG</li>
+      <li>Print it and stick it on the device or repair bag for quick identification</li>
+    </ul>
+    <div class="callout info">
+      <p>The QR code is a visual representation of the repair data. It encodes: board ID, revision, job number, and date. It can be read by any QR scanner app.</p>
+    </div>
+  </div>
+
+  <div class="section" id="invoice">
+    <h2>Invoice Generator</h2>
+    <p>Access via <strong>BOARD → 💲 INVOICE</strong>. Generate a professional, print-ready invoice with your shop branding, logo, and itemized billing.</p>
+
+    <h3>First-time setup — Shop Settings</h3>
+    <p>The left panel has a <strong>YOUR SHOP</strong> section. Fill it in once and click <strong>SAVE SHOP SETTINGS</strong> — it persists in <code>localStorage</code> and pre-fills every future invoice automatically.</p>
+    <table class="ref-table">
+      <tr><th>Logo</th><td>Click the logo box to upload your shop logo (PNG/JPG). Stored locally, never uploaded anywhere.</td></tr>
+      <tr><th>Shop Name</th><td>Appears as the large header on the invoice</td></tr>
+      <tr><th>Address</th><td>Two lines: street address and city/state/zip</td></tr>
+      <tr><th>Phone / Email / Website</th><td>All appear in the header block</td></tr>
+      <tr><th>Tax ID / ABN</th><td>EIN, ABN, VAT number — shown in small text below address</td></tr>
+      <tr><th>Payment Notes</th><td>Venmo handle, bank details, Zelle, etc. — shown in highlighted box on invoice</td></tr>
+      <tr><th>Footer / Warranty</th><td>e.g. "30-day warranty on parts and labor" — shown at bottom of invoice</td></tr>
+    </table>
+
+    <h3>Invoice auto-fill from job ticket</h3>
+    <p>If a job ticket is active when you open the invoice, it automatically fills in:</p>
+    <ul>
+      <li>Customer name, contact info, and device description</li>
+      <li>All parts from the ticket's parts log become line items with quantities and costs</li>
+      <li>A labor line is added based on the ticket's time log (rounded to 0.5h)</li>
+    </ul>
+
+    <h3>Line items</h3>
+    <p>Each line item has a description, quantity, and unit price. The total is calculated live. Click <strong>+ ADD ROW</strong> for additional items. Click ✕ to remove any row.</p>
+
+    <h3>Totals</h3>
+    <table class="ref-table">
+      <tr><th>Tax Rate %</th><td>Applied to the post-discount subtotal. Set to 0 if not applicable.</td></tr>
+      <tr><th>Discount $</th><td>Flat discount deducted before tax is applied</td></tr>
+      <tr><th>TOTAL DUE</th><td>Subtotal − Discount + Tax. Shown in the bold footer row.</td></tr>
+    </table>
+
+    <h3>Invoice numbering</h3>
+    <p>Invoice numbers are auto-incremented (INV-0001, INV-0002, …). The counter advances when you click <strong>PRINT / SAVE PDF</strong> or <strong>SAVE SHOP SETTINGS</strong>. Edit the number field manually if you need a custom sequence.</p>
+
+    <h3>Printing</h3>
+    <p>Click <strong>📤 PRINT / SAVE PDF</strong>. In Chrome/Edge: <em>Print → Destination → Save as PDF</em>. The print stylesheet hides all editor UI — only the invoice document prints.</p>
+    <p>Use the <strong>PREVIEW</strong> tab to see a full-width preview before printing. Switch back to <strong>EDIT</strong> to make changes.</p>
+
+    <div class="callout tip">
+      <p>The invoice and customer report serve different purposes: the <strong>Invoice</strong> is a billing document (itemized charges, payment terms, total due). The <strong>Customer Report</strong> is a repair summary (what was found, what was fixed, before/after photos). Give customers both for a professional experience.</p>
+    </div>
+  </div>
+
+  <!-- OSCILLOSCOPE -->
+  <div class="section" id="oscilloscope">
+    <h2>Oscilloscope</h2>
+    <p>BoardScope can connect to a USB oscilloscope for waveform capture, protocol decoding, and signal analysis. Open the oscilloscope panel via the <strong>📈 SCOPE</strong> button in the header.</p>
+
+    <h3>Supported Oscilloscopes</h3>
+    <table>
+      <tr><th>Brand</th><th>Models</th><th>Connection</th></tr>
+      <tr><td>Hantek</td><td>6022BE, 6022BL, 6010BC</td><td>WebUSB (direct USB)</td></tr>
+      <tr><td>OWON</td><td>SDS1022I, SDS1102, SDS7102, XDS series, HDS series</td><td>WebSerial (USB CDC)</td></tr>
+      <tr><td>Rigol</td><td>DS1000Z series</td><td>WebSerial (SCPI)</td></tr>
+      <tr><td>Lilliput</td><td>PDS series</td><td>WebSerial</td></tr>
+      <tr><td>Generic SCPI</td><td>Any SCPI-compatible scope</td><td>WebSerial (:WAVeform commands)</td></tr>
+    </table>
+
+    <h3>Connecting</h3>
+    <ol>
+      <li>Connect your oscilloscope via USB</li>
+      <li>Click the <strong>📈 SCOPE</strong> button to open the oscilloscope panel</li>
+      <li>Click <strong>CONNECT</strong> — the browser's device picker appears</li>
+      <li>Select your oscilloscope and click Connect</li>
+      <li>If no hardware is detected, <strong>Demo Mode</strong> is available for testing the UI</li>
+    </ol>
+
+    <h3>Features</h3>
+    <div class="card-grid">
+      <div class="card-sm"><h4>Dual-Channel Capture</h4><p>Capture CH1 and CH2 simultaneously with configurable voltage scale and timebase.</p></div>
+      <div class="card-sm"><h4>Protocol Decoders</h4><p>Decode I2C, SPI, and UART signals from captured waveforms.</p></div>
+      <div class="card-sm"><h4>Auto Measurements</h4><p>Vpp, Vrms, Vavg, frequency, period, duty cycle, rise time, fall time — calculated automatically.</p></div>
+      <div class="card-sm"><h4>Export Formats</h4><p>CSV, PNG screenshot, VCD (Value Change Dump for GTKWave/PulseView), .sr (sigrok format for PulseView).</p></div>
+    </div>
+
+    <h3>Protocol Decoders</h3>
+    <table>
+      <tr><th>Protocol</th><th>Channels</th><th>What it decodes</th></tr>
+      <tr><td>I2C</td><td>SDA + SCL</td><td>START/STOP conditions, ADDRESS (with R/W bit), DATA bytes, ACK/NACK</td></tr>
+      <tr><td>SPI</td><td>MOSI + SCK</td><td>DATA bytes on rising or falling clock edge</td></tr>
+      <tr><td>UART</td><td>TX (idle high)</td><td>Individual bytes with optional ASCII character display</td></tr>
+    </table>
+
+    <h3>Export Formats</h3>
+    <table>
+      <tr><th>Format</th><th>Extension</th><th>Opens in</th></tr>
+      <tr><td>CSV</td><td>.csv</td><td>Excel, Google Sheets, any spreadsheet app</td></tr>
+      <tr><td>PNG</td><td>.png</td><td>Any image viewer — waveform screenshot with measurements overlay</td></tr>
+      <tr><td>VCD</td><td>.vcd</td><td>GTKWave, PulseView, any VCD viewer</td></tr>
+      <tr><td>sigrok</td><td>.sr</td><td>PulseView, sigrok-cli — full analog capture with metadata</td></tr>
+    </table>
+
+    <div class="callout info">
+      <p><strong>Demo Mode:</strong> If no oscilloscope is connected, click <strong>DEMO</strong> to see animated sine/square waveforms with live measurements. Useful for testing the UI and export features without hardware.</p>
+    </div>
+  </div>
+
+  <!-- COMPONENT LIBRARY -->
+  <div class="section" id="component-library">
+    <h2>Component Library</h2>
+    <p>A visual database of common ICs with pinout diagrams, failure modes, and replacement guides. Access via <strong>📚 LIBRARY</strong> in the REPAIR dropdown.</p>
+
+    <h3>What's Included</h3>
+    <p>The built-in library covers the most common ICs found in MacBook and laptop repairs:</p>
+    <table>
+      <tr><th>IC</th><th>Category</th><th>Common On</th></tr>
+      <tr><td>ISL9240</td><td>Charger IC (USB-C PD)</td><td>820-00165, 820-3437, 820-00850</td></tr>
+      <tr><td>ISL6259</td><td>Charger IC (MagSafe)</td><td>820-3437, 820-2915, 820-3115</td></tr>
+      <tr><td>CD3215</td><td>USB-C Port Controller</td><td>820-00165, 820-00850, 820-01598</td></tr>
+      <tr><td>TPS51980</td><td>Dual Buck (CPU/GPU)</td><td>820-3437, 820-00165</td></tr>
+      <tr><td>LP8550</td><td>LED Backlight Driver</td><td>820-3437, 820-00165, 820-3662</td></tr>
+      <tr><td>SN74LVC1G125</td><td>Bus Buffer / Logic</td><td>820-00165, 820-3437, 820-00850, 820-3662</td></tr>
+    </table>
+
+    <h3>Each Component Entry Shows</h3>
+    <ul>
+      <li><strong>Pinout diagram</strong> — pin numbers, names, types (POWER, GND, I2C, OUTPUT, etc.)</li>
+      <li><strong>Common failure modes</strong> — symptom, cause, test procedure, expected value, fix</li>
+      <li><strong>Replacement parts</strong> — known drop-in substitutes</li>
+      <li><strong>Quick links</strong> — Datasheet, LCSC pricing, Octopart cross-distributor search</li>
+      <li><strong>Board associations</strong> — which board models use this IC</li>
+    </ul>
+
+    <h3>Categories</h3>
+    <div class="card-grid">
+      <div class="card-sm"><h4>🔌 Charger IC</h4><p>USB-C PD, MagSafe, buck-boost controllers</p></div>
+      <div class="card-sm"><h4>⚡ Power Management</h4><p>Buck/boost regulators, PMICs, VRMs</p></div>
+      <div class="card-sm"><h4>🧠 CPU / SoC</h4><p>Intel, Apple Silicon, AMD processors</p></div>
+      <div class="card-sm"><h4>🖥️ Display</h4><p>Backlight drivers, panel controllers, eDP bridges</p></div>
+      <div class="card-sm"><h4>🔊 Audio</h4><p>Codecs, amplifiers, headphone detection</p></div>
+      <div class="card-sm"><h4>🔗 USB-C / Thunderbolt</h4><p>Port controllers, retimers, ESD protection</p></div>
+      <div class="card-sm"><h4>💾 Storage</h4><p>SSD controllers, eMMC, NAND interfaces</p></div>
+      <div class="card-sm"><h4>🔀 Logic / Buffers</h4><p>Level shifters, bus buffers, gates</p></div>
+      <div class="card-sm"><h4>📡 Sensors</h4><p>Thermal sensors, accelerometers, ambient light</p></div>
+      <div class="card-sm"><h4>🔧 Passives</h4><p>Common mode chokes, TVS diodes, ferrites</p></div>
+    </div>
+
+    <h3>Community Contributions</h3>
+    <p>Add your own component entries via the <strong>+ ADD COMPONENT</strong> button. Custom entries are saved to localStorage and can be exported/imported as JSON for sharing with your team.</p>
+  </div>
+
+  <!-- MACRO RECORDER -->
+  <div class="section" id="macros">
+    <h2>Macro Recorder</h2>
+    <p>Record and replay sequences of measurements, searches, and actions to automate repetitive diagnostic workflows. Access via <strong>🔁 MACROS</strong> in the REPAIR dropdown.</p>
+
+    <h3>Built-In Macros</h3>
+    <table>
+      <tr><th>Macro</th><th>What it does</th><th>Steps</th></tr>
+      <tr><td>Power Rail Check</td><td>Measures PPBUS, PP3V42, PP5V, PP3V3, PP1V8 in sequence</td><td>5 rails × (search + measure + save)</td></tr>
+      <tr><td>USB-C Port Test</td><td>Checks VBUS, DP, DN, CC1, CC2 diode drops</td><td>5 pins × diode mode</td></tr>
+      <tr><td>Display Connector Test</td><td>Verifies LCD_VDD, LCD_BKLT, LVDS_CLK</td><td>3 signals (voltage + diode)</td></tr>
+      <tr><td>Audio Path Test</td><td>Traces codec to speaker output</td><td>Codec select + SPK_L/R resistance</td></tr>
+      <tr><td>Charging Circuit Test</td><td>Full charger IC diagnostic</td><td>VBUS, ACOK, BATT, EN voltage checks</td></tr>
+    </table>
+
+    <h3>Recording Your Own Macros</h3>
+    <ol>
+      <li>Click <strong>⏺ RECORD</strong> and give your macro a name</li>
+      <li>Perform your diagnostic steps — searches, component selections, pad clicks, measurements are all recorded</li>
+      <li>Click <strong>⏹ STOP</strong> to save the macro</li>
+      <li>Click <strong>▶ PLAY</strong> to replay the sequence</li>
+    </ol>
+
+    <h3>Recordable Actions</h3>
+    <ul>
+      <li><strong>Search</strong> — component or net search</li>
+      <li><strong>Select Component</strong> — click a component by reference</li>
+      <li><strong>Click Pad</strong> — click a specific pad/pin by net name</li>
+      <li><strong>Measure</strong> — wait for a stable multimeter reading</li>
+      <li><strong>Save Measurement</strong> — log the reading to the current net</li>
+      <li><strong>Zoom</strong> — fit view or zoom to component</li>
+      <li><strong>PDF Page</strong> — navigate to a specific schematic page</li>
+      <li><strong>Toggle Side</strong> — switch top/bottom layer</li>
+      <li><strong>Wait</strong> — configurable delay between actions</li>
+    </ul>
+
+    <h3>Export / Import</h3>
+    <p>Macros are stored as JSON and can be exported as <code>.macro.json</code> files for sharing. Import via the <strong>📥 IMPORT</strong> button.</p>
+  </div>
+
+  <!-- POST-REPAIR TEST SUITE -->
+  <div class="section" id="test-suite">
+    <h2>Post-Repair Test Suite</h2>
+    <p>Automated test sequences to verify repairs before returning devices to customers. Access via <strong>✅ TEST SUITE</strong> in the BOARD dropdown.</p>
+
+    <h3>How It Works</h3>
+    <ol>
+      <li>Select a test suite matching your board model (or use the generic Quick Power Check)</li>
+      <li>Click <strong>RUN</strong> — the suite executes each test in sequence</li>
+      <li>Each test highlights the target net on the board and waits for a stable multimeter reading</li>
+      <li>Results are compared against expected values with configurable tolerance</li>
+      <li>A pass/fail report is generated with all measurements</li>
+    </ol>
+
+    <h3>Pre-Built Test Suites</h3>
+    <h4>MacBook (Intel)</h4>
+    <table>
+      <tr><th>Suite</th><th>Board</th><th>Rails Tested</th></tr>
+      <tr><td>MBP 13" 2013-14</td><td>820-3437-B</td><td>PPBUS, PP3V42, PP5V, PP3V3_S5/S4, PP1V8, PP1V05, SMC</td></tr>
+      <tr><td>MBP 15" 2013-14</td><td>820-3787-A</td><td>Full power sequence via MagSafe 85W</td></tr>
+      <tr><td>MBP 13" 2015</td><td>820-4924-A</td><td>ISL6259 charger, PP3V42 checkpoint</td></tr>
+      <tr><td>MBP 13" 2016 TB</td><td>820-00165-A</td><td>USB-C PD, ISL9240, USBC_VBUS 20V</td></tr>
+      <tr><td>MBP 13" 2016 No TB</td><td>820-00923-A</td><td>USB-C, no Touch Bar variant</td></tr>
+      <tr><td>MBP 13" 2017</td><td>820-00850-A</td><td>Kaby Lake, ISL9240</td></tr>
+      <tr><td>MBP 13" 2018-19 TB</td><td>820-01521-A</td><td>Coffee Lake, T2 chip, PP3V3_S0SW_T2</td></tr>
+      <tr><td>MBP 16" 2019</td><td>820-01814-A</td><td>Ice Lake, T2, PPVCORE_S0</td></tr>
+      <tr><td>MBP 13" 2020 Intel</td><td>820-01987-A</td><td>Last Intel 13" MBP</td></tr>
+      <tr><td>MBP 13" M1</td><td>820-02390-A</td><td>Apple Silicon: PPBUS, PP3V42, PP3V3, PP1V8, PP0V9, PPDDR</td></tr>
+      <tr><td>MBA 13" 2013-14</td><td>820-3598-A</td><td>Haswell, MagSafe 2</td></tr>
+      <tr><td>MBA 13" 2019</td><td>820-01598-A</td><td>USB-C, no T2</td></tr>
+      <tr><td>MBA M1 2020</td><td>820-02388-A</td><td>Apple Silicon, no fan</td></tr>
+      <tr><td>MacBook 12" 2015-16</td><td>820-00138/00239</td><td>Single USB-C, TPS65982</td></tr>
+    </table>
+
+    <h4>Other Apple Devices</h4>
+    <table>
+      <tr><th>Suite</th><th>Devices</th><th>Key Rails</th></tr>
+      <tr><td>iMac 27" 2017</td><td>820-00951-A</td><td>12V standby, 5V, PP3V42, PPVCORE_GPU</td></tr>
+      <tr><td>Mac Mini 2018</td><td>820-00939-A</td><td>T2 chip, external PSU</td></tr>
+      <tr><td>iPhone 11-15</td><td>All models</td><td>PP_VCC_MAIN, PP1V8_ALWAYS, PP3V0_NAND, USB_VBUS</td></tr>
+      <tr><td>iPad Pro M1</td><td>11" / 12.9" 2021</td><td>BATT_SYS, PP1V8, LCD_VDD, LCD_BKLT boost</td></tr>
+      <tr><td>iPad Air 4</td><td>A14, USB-C</td><td>BATT_SYS, PP1V8, PP3V0_NAND, USB_VBUS</td></tr>
+    </table>
+
+    <h4>Generic</h4>
+    <div class="card-sm"><p><strong>Quick Power Check</strong> — 3-rail sanity check for any unknown board: PPBUS (12.6V ±1.0), PP3V3_S5 (3.3V ±0.3), PP1V8_S0 (1.8V ±0.2)</p></div>
+
+    <h3>Test Types</h3>
+    <table>
+      <tr><th>Type</th><th>How it works</th></tr>
+      <tr><td>Measurement</td><td>Highlights net, waits for stable multimeter reading, compares to expected ± tolerance</td></tr>
+      <tr><td>Continuity</td><td>Manual probe check — prompts technician to verify connection</td></tr>
+      <tr><td>Short Check</td><td>Checks OBD diode reference — flags if < 0.05V</td></tr>
+      <tr><td>Visual</td><td>Prompts technician for pass/fail visual inspection</td></tr>
+    </table>
+
+    <h3>AI-Generated Test Suites</h3>
+    <p>Type a board model or symptom and click <strong>AI GENERATE</strong> to create a custom test suite. The AI analyzes the board and generates a sequence of measurement tests with expected values and tolerances.</p>
+
+    <h3>Reports</h3>
+    <p>After a suite completes, click <strong>EXPORT REPORT</strong> to generate an HTML test report with pass/fail status, measured vs expected values, and timestamps. Print to PDF for customer documentation.</p>
+  </div>
+
+  <!-- TEAM COLLABORATION -->
+  <div class="section" id="team">
+    <h2>Team Collaboration</h2>
+    <p>Share your BoardScope session with a remote technician in real-time using WebRTC peer-to-peer connections. Access via <strong>👥 COLLABORATE</strong> in the header.</p>
+
+    <h3>How It Works</h3>
+    <ol>
+      <li>Click <strong>CREATE SESSION</strong> — a 6-digit room code is generated</li>
+      <li>Share the room code with your remote technician</li>
+      <li>The remote technician opens BoardScope, clicks <strong>JOIN SESSION</strong>, and enters the code</li>
+      <li>Both screens sync in real-time: board view, PDF page, component selections, measurements, and annotations</li>
+    </ol>
+
+    <h3>Features</h3>
+    <ul>
+      <li><strong>State synchronization</strong> — board position, zoom, selected component, highlighted nets, PDF page</li>
+      <li><strong>Cursor sharing</strong> — see your partner's cursor position with a colored indicator</li>
+      <li><strong>Chat</strong> — text messages between participants</li>
+      <li><strong>Annotation sharing</strong> — PDF annotations appear on both screens</li>
+      <li><strong>Host/Participant roles</strong> — host sends initial state to new joiners</li>
+    </ul>
+
+    <div class="callout info">
+      <p><strong>Network:</strong> Collaboration uses WebRTC with Google STUN servers for NAT traversal. Both participants need Chrome or Edge (WebRTC support). No data is sent to any server — all communication is peer-to-peer.</p>
+    </div>
+  </div>
+
+  <!-- LICENSE -->
+  <div class="section" id="license">
+    <h2>License</h2>
+    <p>BoardScope uses Polar.sh for license management. Pro features require a valid license key.</p>
+
+    <h3>License Types</h3>
+    <table>
+      <tr><th>Plan</th><th>Duration</th><th>Features</th></tr>
+      <tr><td>Lifetime</td><td>Permanent — no expiry</td><td>All Pro features, free updates</td></tr>
+      <tr><td>Yearly</td><td>12 months from activation</td><td>All Pro features, updates during subscription period</td></tr>
+    </table>
+
+    <h3>Activating a License</h3>
+    <ol>
+      <li>Open <strong>Settings → License</strong></li>
+      <li>Enter your license key (format: <code>BS-XXXX-XXXX-XXXX-XXXX</code>)</li>
+      <li>Click <strong>Activate</strong> — the key is validated against the Polar server</li>
+      <li>Pro features unlock immediately</li>
+    </ol>
+
+    <h3>What's Free vs Pro</h3>
+    <table>
+      <tr><th>Feature</th><th>Free</th><th>Pro</th></tr>
+      <tr><td>Boardview loading</td><td>✓</td><td>✓</td></tr>
+      <tr><td>PDF viewing</td><td>✓</td><td>✓</td></tr>
+      <tr><td>Net highlighting</td><td>✓</td><td>✓</td></tr>
+      <tr><td>OBD integration</td><td>✓</td><td>✓</td></tr>
+      <tr><td>Voltage / Diode Maps</td><td>✓</td><td>✓</td></tr>
+      <tr><td>AI Diagnosis</td><td>—</td><td>✓</td></tr>
+      <tr><td>Multi-board tabs</td><td>—</td><td>✓</td></tr>
+      <tr><td>Short Circuit Finder</td><td>—</td><td>✓</td></tr>
+      <tr><td>Fault Tree diagnostics</td><td>—</td><td>✓</td></tr>
+      <tr><td>Oscilloscope</td><td>—</td><td>✓</td></tr>
+      <tr><td>Macro Recorder</td><td>—</td><td>✓</td></tr>
+      <tr><td>Test Suite</td><td>—</td><td>✓</td></tr>
+      <tr><td>Team Collaboration</td><td>—</td><td>✓</td></tr>
+      <tr><td>Component Library</td><td>—</td><td>✓</td></tr>
+      <tr><td>Shop Management</td><td>—</td><td>✓</td></tr>
+    </table>
+
+    <div class="callout info">
+      <p><strong>Offline validation:</strong> If the Polar server is unreachable, BoardScope accepts keys in dev mode. In production, always set <code>POLAR_ORG_ID</code> in your environment for server-side validation.</p>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div style="border-top:1px solid var(--border);padding-top:24px;color:var(--text3);font-size:11px;font-family:var(--mono)">
+    BOARDSCOPE v5.4 &nbsp;·&nbsp; Manual last updated 2026-04-20 &nbsp;·&nbsp; Feedback via GitHub Issues
+  </div>
+
+</main>
+
+<script>
+// Active nav highlight on scroll
+const sections = document.querySelectorAll('.section');
+const navLinks = document.querySelectorAll('.nav-link');
+function onScroll() {
+  let current = '';
+  sections.forEach(s => {
+    if (window.scrollY >= s.offsetTop - 80) current = s.id;
+  });
+  navLinks.forEach(a => {
+    a.classList.toggle('active', a.getAttribute('href') === '#' + current);
+  });
+}
+window.addEventListener('scroll', onScroll, {passive:true});
+onScroll();
+
+// Enhanced theme system with multiple themes
+const themeSelect = document.getElementById('theme-select');
+
+function applyTheme(theme) {
+  // Remove all theme classes
+  document.body.classList.remove('light', 'theme-sky', 'theme-figma');
+  
+  // Apply new theme
+  switch(theme) {
+    case 'light':
+      document.body.classList.add('light');
+      break;
+    case 'sky-dark':
+      document.body.classList.add('theme-sky');
+      break;
+    case 'sky-light':
+      document.body.classList.add('theme-sky', 'light');
+      break;
+    case 'figma-dark':
+      document.body.classList.add('theme-figma');
+      break;
+    case 'figma-light':
+      document.body.classList.add('theme-figma', 'light');
+      break;
+    case 'dark':
+    default:
+      // Default dark theme, no classes needed
+      break;
+  }
+  
+  localStorage.setItem('manual_theme', theme);
+  themeSelect.value = theme;
+}
+
+// Theme selector change handler
+themeSelect.addEventListener('change', (e) => {
+  applyTheme(e.target.value);
+});
+
+// Load saved theme or default to dark
+const savedTheme = localStorage.getItem('manual_theme') || 'dark';
+applyTheme(savedTheme);
+
+// Smooth scroll enhancements
+document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+  anchor.addEventListener('click', function (e) {
+    e.preventDefault();
+    const target = document.querySelector(this.getAttribute('href'));
+    if (target) {
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      // Add a subtle highlight animation
+      target.style.animation = 'highlight 0.6s ease';
+      setTimeout(() => target.style.animation = '', 600);
+    }
+  });
+});
+
+// Add highlight animation
+const style = document.createElement('style');
+style.textContent = `
+  @keyframes highlight {
+    0%, 100% { background: transparent; }
+    50% { background: rgba(0,217,166,0.08); }
+  }
+  
+  /* Scroll progress indicator */
+  #scroll-progress {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 0%;
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent), var(--blue));
+    z-index: 100;
+    transition: width 0.1s ease;
+  }
+  
+  /* Fade-in animation for sections */
+  .section {
+    animation: fadeInUp 0.6s ease both;
+  }
+  
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  /* Stagger animation delays */
+  .section:nth-child(1) { animation-delay: 0.05s; }
+  .section:nth-child(2) { animation-delay: 0.1s; }
+  .section:nth-child(3) { animation-delay: 0.15s; }
+`;
+document.head.appendChild(style);
+
+// Add scroll progress indicator
+const progressBar = document.createElement('div');
+progressBar.id = 'scroll-progress';
+document.body.appendChild(progressBar);
+
+window.addEventListener('scroll', () => {
+  const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
+  const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+  const scrolled = (winScroll / height) * 100;
+  progressBar.style.width = scrolled + '%';
+}, { passive: true });
+</script>
+</body>
+</html>

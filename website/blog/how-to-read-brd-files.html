@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>How to Read .BRD Files: Complete Beginner's Guide to Boardview</title>
+<meta name="description" content="Complete guide to reading and understanding .brd files. Learn boardview basics, component identification, net tracing, and voltage measurement for PCB repair.">
+<meta name="keywords" content="how to read brd files, brd file format, boardview guide, how to use boardview, brd file viewer">
+<meta name="author" content="BoardScope">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://boardscope.ca/blog/how-to-read-brd-files.html">
+
+<!-- Open Graph -->
+<meta property="og:title" content="How to Read .BRD Files: Complete Beginner's Guide">
+<meta property="og:description" content="Learn how to read .brd files, identify components, trace nets, and use boardview software for PCB repair.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://boardscope.ca/blog/how-to-read-brd-files.html">
+
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:      #0b0d0f;
+    --bg2:     #111418;
+    --bg3:     #181c22;
+    --border:  #1e2430;
+    --accent:  #00d9a6;
+    --accent2: #5294f8;
+    --text:    #e8edf5;
+    --text2:   #9aa3b5;
+    --text3:   #5a6276;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    overflow-x: hidden;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 40px; height: 60px;
+    background: rgba(11,13,15,0.7);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .nav-logo {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 15px; font-weight: 700; letter-spacing: .5px; color: var(--text);
+    text-decoration: none;
+  }
+  .nav-logo-mark {
+    width: 28px; height: 28px; background: var(--accent);
+    border-radius: 6px; display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 900; color: #000; letter-spacing: -1px;
+  }
+  .nav-links { display: flex; align-items: center; gap: 32px; }
+  .nav-links a {
+    font-size: 13px; color: var(--text2); text-decoration: none; letter-spacing: .3px;
+    transition: color .2s;
+  }
+  .nav-links a:hover { color: var(--text); }
+  .nav-cta {
+    background: var(--accent); color: #000; font-size: 13px; font-weight: 700;
+    padding: 8px 20px; border-radius: 6px; text-decoration: none; letter-spacing: .3px;
+    transition: opacity .2s;
+  }
+  .nav-cta:hover { opacity: .85; }
+
+  /* ── ARTICLE HEADER ── */
+  .article-header {
+    padding: 140px 40px 60px;
+    max-width: 900px;
+    margin: 0 auto;
+    text-align: center;
+  }
+  .article-tag {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(0,217,166,0.1); border: 1px solid rgba(0,217,166,0.3);
+    color: var(--accent); font-size: 11px; font-weight: 700; letter-spacing: 1.5px;
+    padding: 5px 14px; border-radius: 20px; margin-bottom: 20px;
+    text-transform: uppercase;
+  }
+  .article-header h1 {
+    font-size: clamp(32px, 5vw, 56px);
+    font-weight: 800; line-height: 1.2;
+    letter-spacing: -1.5px; margin-bottom: 20px;
+  }
+  .article-header h1 span { color: var(--accent); }
+  .article-meta {
+    font-size: 14px; color: var(--text2); display: flex; justify-content: center; gap: 20px; flex-wrap: wrap;
+  }
+
+  /* ── ARTICLE CONTENT ── */
+  .article-content {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 0 40px 100px;
+  }
+  .article-content h2 {
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -1px;
+    margin: 60px 0 20px;
+    color: var(--text);
+  }
+  .article-content h3 {
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -.5px;
+    margin: 40px 0 16px;
+    color: var(--text);
+  }
+  .article-content p {
+    font-size: 16px;
+    line-height: 1.8;
+    color: var(--text2);
+    margin-bottom: 20px;
+  }
+  .article-content ul, .article-content ol {
+    margin: 24px 0 24px 24px;
+    font-size: 16px;
+    line-height: 1.8;
+    color: var(--text2);
+  }
+  .article-content li {
+    margin-bottom: 12px;
+  }
+  .article-content strong {
+    color: var(--accent);
+  }
+  .article-content code {
+    background: var(--bg2);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'Monaco', monospace;
+    font-size: 14px;
+    color: var(--accent);
+  }
+  .highlight-box {
+    background: rgba(0,217,166,0.08);
+    border-left: 4px solid var(--accent);
+    padding: 24px;
+    border-radius: 8px;
+    margin: 32px 0;
+    font-size: 15px;
+    line-height: 1.7;
+  }
+  .highlight-box strong {
+    color: var(--accent);
+  }
+
+  /* ── CTA BOX ── */
+  .cta-box {
+    background: linear-gradient(135deg, rgba(0,217,166,0.06) 0%, rgba(82,148,248,0.04) 100%);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 40px;
+    margin: 60px 0;
+    text-align: center;
+  }
+  .cta-box h3 {
+    font-size: 20px;
+    margin: 0 0 16px;
+  }
+  .cta-box p {
+    margin-bottom: 24px;
+  }
+  .btn-primary {
+    display: inline-block;
+    background: var(--accent); color: #000; font-size: 15px; font-weight: 700;
+    padding: 14px 32px; border-radius: 8px; text-decoration: none;
+    letter-spacing: .3px; transition: all .2s;
+    box-shadow: 0 0 32px rgba(0,217,166,0.3);
+  }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 0 48px rgba(0,217,166,0.45); }
+
+  /* ── FOOTER ── */
+  footer {
+    background: var(--bg); border-top: 1px solid var(--border);
+    padding: 40px; display: flex; justify-content: space-between; align-items: center;
+    flex-wrap: wrap; gap: 16px;
+  }
+  .footer-logo { font-size: 14px; font-weight: 700; color: var(--text); }
+  .footer-logo span { color: var(--accent); }
+  footer p { font-size: 12px; color: var(--text3); }
+  .footer-links { display: flex; gap: 24px; }
+  .footer-links a { font-size: 12px; color: var(--text3); text-decoration: none; transition: color .2s; }
+  .footer-links a:hover { color: var(--text2); }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 768px) {
+    nav { padding: 0 20px; }
+    .nav-links { display: none; }
+    .article-header { padding: 100px 24px 40px; }
+    .article-content { padding: 0 24px 80px; }
+    .cta-box { padding: 32px 24px; }
+    footer { flex-direction: column; text-align: center; padding: 32px 24px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ── NAV ── -->
+<nav>
+  <a class="nav-logo" href="../index.html">
+    <div class="nav-logo-mark">Bs</div>
+    BoardScope
+  </a>
+  <div class="nav-links">
+    <a href="../index.html#features">Features</a>
+    <a href="../index.html#how">How It Works</a>
+    <a href="../pricing.html">Pricing</a>
+  </div>
+  <a class="nav-cta" href="../pricing.html">Get Pro</a>
+</nav>
+
+<!-- ── ARTICLE HEADER ── -->
+<div class="article-header">
+  <div class="article-tag">📚 Complete Guide</div>
+  <h1>How to Read <span>.BRD Files</span></h1>
+  <div class="article-meta">
+    <span>📖 15 min read</span>
+    <span>🛠️ Beginner-friendly</span>
+    <span>✓ No experience needed</span>
+  </div>
+</div>
+
+<!-- ── ARTICLE CONTENT ── -->
+<div class="article-content">
+
+<h2>Introduction: What Are .BRD Files?</h2>
+
+<p>If you're getting started with board-level repair, you'll quickly encounter <strong>.brd files</strong>. These are boardview files — digital representations of PCB (printed circuit board) layouts. They show component placement, connections, power rails, and signal paths.</p>
+
+<p>Think of a .brd file like a map of your circuit board. Instead of navigating by memory, you can search for components, trace signal paths, measure voltages, and identify faults visually.</p>
+
+<p>In this guide, you'll learn:</p>
+<ul>
+  <li>What .brd files are and where to find them</li>
+  <li>How to open .brd files in boardview software</li>
+  <li>How to identify components on the board</li>
+  <li>How to trace nets (electrical connections)</li>
+  <li>How to use boardview for actual repair diagnostics</li>
+  <li>Real-world repair scenarios</li>
+</ul>
+
+<div class="highlight-box">
+  <strong>Pro Tip:</strong> Most board files are available free online. Repair communities, service manuals, and open databases share .brd files for popular devices (iPhones, MacBooks, gaming consoles, etc.). You can also extract them from original design files if you have access.
+</div>
+
+<h2>What's Inside a .BRD File?</h2>
+
+<p>A .brd file contains complete layout information about a PCB. When you open it in boardview software, you see:</p>
+
+<ul>
+  <li><strong>Component placement:</strong> Exact locations of every chip, capacitor, resistor, connector</li>
+  <li><strong>Part references:</strong> Unique identifiers (U1, U2, R10, C5, etc.)</li>
+  <li><strong>Board layers:</strong> Top side, bottom side, or both</li>
+  <li><strong>Nets:</strong> Electrical connections between components</li>
+  <li><strong>Pads & vias:</strong> Solder points where components connect</li>
+  <li><strong>Silkscreen:</strong> Labels and reference designators printed on the board</li>
+</ul>
+
+<h2>Step 1: Finding & Opening a .BRD File</h2>
+
+<h3>Where to Find Board Files</h3>
+
+<p>Popular sources for .brd files include:</p>
+
+<ul>
+  <li><strong>iFixit</strong> — Free repair guides for hundreds of devices, including board schematics</li>
+  <li><strong>OpenBoardData</strong> — Community database of board files (open-source)</li>
+  <li><strong>EEVblog Forum</strong> — Electronics engineers share board files and schematics</li>
+  <li><strong>Service manual sites</strong> — Authorized service manuals often include board layouts</li>
+  <li><strong>Repair communities</strong> — Phone repair, MacBook repair groups share files privately</li>
+</ul>
+
+<h3>Opening a .BRD File</h3>
+
+<p>To open a .brd file, you need boardview software. Popular options include:</p>
+
+<ul>
+  <li><strong>BoardScope (Free)</strong> — Open any .brd format instantly, no registration required</li>
+  <li><strong>FlexBV</strong> — Professional tool ($150, permanent license)</li>
+  <li><strong>ViewerView</strong> — Browser-based, limited features</li>
+</ul>
+
+<p>The process is simple:</p>
+<ol>
+  <li>Download boardview software (we recommend <a href="https://github.com/louistoshi/boardscope.ca/releases" style="color: var(--accent); text-decoration: none;">BoardScope</a>, it's free)</li>
+  <li>Download your board's .brd file from a repair community or manual database</li>
+  <li>Open the software and drag the .brd file into it</li>
+  <li>The board layout appears instantly</li>
+</ol>
+
+<h2>Step 2: Understanding the Board Layout</h2>
+
+<h3>The Two Sides: Top & Bottom</h3>
+
+<p>Most PCBs have components on both sides. In boardview, you can usually toggle between:</p>
+
+<ul>
+  <li><strong>Top side:</strong> Components and traces you see when looking at the board normally</li>
+  <li><strong>Bottom side:</strong> Components on the reverse, and additional traces</li>
+</ul>
+
+<p><strong>For repair:</strong> If a component looks damaged on the bottom, you can flip to see it clearly. You can also measure voltages on hidden pads by knowing their location from the boardview.</p>
+
+<h3>Reading Component References</h3>
+
+<p>Every component has a unique identifier printed on it and shown in the boardview:</p>
+
+<ul>
+  <li><code>U1, U2, U3...</code> = Integrated circuits (microcontrollers, power management, audio, etc.)</li>
+  <li><code>R1, R2, R3...</code> = Resistors</li>
+  <li><code>C1, C2, C3...</code> = Capacitors</li>
+  <li><code>L1, L2...</code> = Inductors</li>
+  <li><code>Q1, Q2...</code> = Transistors</li>
+  <li><code>D1, D2...</code> = Diodes</li>
+  <li><code>SW1, SW2...</code> = Switches</li>
+  <li><code>J1, J2...</code> = Connectors or headers</li>
+</ul>
+
+<p><strong>Why this matters:</strong> When a technician tells you "R10 is shorted," you can instantly find R10 on the boardview and see what it connects to.</p>
+
+<h2>Step 3: Tracing Nets (Signal Paths)</h2>
+
+<p>This is where boardview gets powerful. <strong>Nets</strong> are electrical connections between components. A net might include:</p>
+
+<ul>
+  <li>A pin on a microcontroller</li>
+  <li>A trace on the PCB</li>
+  <li>Pins on 3-5 other components</li>
+  <li>Vias (connections between board layers)</li>
+</ul>
+
+<h3>How to Search & Highlight Nets</h3>
+
+<p>In boardview software:</p>
+<ol>
+  <li>Right-click on any component pin or net name</li>
+  <li>Select "Highlight Net" or "Search Net"</li>
+  <li>The entire electrical path lights up</li>
+</ol>
+
+<p><strong>Practical example:</strong> If a device has no power, you'd trace the power net from the battery connector through the power management IC to the main processor. If a section doesn't light up, there's a break in the connection.</p>
+
+<div class="highlight-box">
+  <strong>Real Repair Scenario:</strong> A customer's phone won't turn on. You connect it to the boardview. Search for the power net. You see it lights up from the battery connector through the power IC, but stops at capacitor C15. You measure the capacitor with a multimeter — it's open. Replace it, test again, phone powers on.
+</div>
+
+<h2>Step 4: Identifying Voltage Rails & Power Paths</h2>
+
+<p>Modern boards have multiple power rails (3.3V, 1.8V, 1.2V, 5V, etc.). Boardview helps you trace which components depend on which voltage.</p>
+
+<h3>Common Power Rails</h3>
+
+<ul>
+  <li><strong>3.3V</strong> — Main digital voltage for processors, memory, most ICs</li>
+  <li><strong>1.8V</strong> — I/O and some processor core voltage</li>
+  <li><strong>1.2V</strong> — High-speed logic, memory, sometimes DRAM core</li>
+  <li><strong>5V</strong> — USB power, audio, some analog circuits</li>
+  <li><strong>VBATT</strong> — Direct battery voltage (unregulated)</li>
+</ul>
+
+<p>Search for these rail names in the boardview to see all components that depend on them.</p>
+
+<h2>Step 5: Measuring Voltages with Boardview</h2>
+
+<p>This is where boardview becomes your diagnostic partner.</p>
+
+<h3>Adding Voltage Measurements</h3>
+
+<p>Advanced boardview software (like BoardScope Pro) lets you:</p>
+
+<ol>
+  <li>Connect a USB multimeter to your computer</li>
+  <li>Measure a voltage on the board</li>
+  <li>Log it in boardview with a single click</li>
+  <li>See color-coded pass/fail overlays on the board</li>
+</ol>
+
+<p>This way, you can visually see which power rails are good and which are failing — without switching between apps or keeping notes.</p>
+
+<h2>Step 6: Using Boardview for Real Repairs</h2>
+
+<h3>Diagnosis Workflow</h3>
+
+<p><strong>Example: MacBook won't charge</strong></p>
+
+<ol>
+  <li>Open the MacBook board's .brd file in boardview</li>
+  <li>Search for "VBATT" (battery voltage) net</li>
+  <li>Trace it from the battery connector to the charging circuit IC</li>
+  <li>Measure key voltages: Battery voltage (11-13V for 13" models)</li>
+  <li>If VBATT is missing, trace backward to find the break (burnt diode, bad connector, shorted IC)</li>
+  <li>Check upstream voltage rails to the charging IC</li>
+  <li>Replace or rework the faulty component</li>
+  <li>Retest with boardview overlay to confirm all rails are restored</li>
+</ol>
+
+<h3>Common Diagnostic Sequences</h3>
+
+<p><strong>Device won't power on:</strong> Trace main power from battery → power management IC → processor. Check for shorts and voltage drops.</p>
+
+<p><strong>Device powers on but no display:</strong> Check display power rail (usually 3.3V or 5V). Check backlight voltage (often 10-20V). Check signal lines from processor to display.</p>
+
+<p><strong>No audio:</strong> Trace audio power rails. Check audio codec connections. Look for shorted components on audio paths.</p>
+
+<p><strong>USB not working:</strong> Trace USB power and signal lines from connector through protection diodes to the main processor.</p>
+
+<h2>Advanced Tips: Beyond the Basics</h2>
+
+<h3>Using Schematics with Boardview</h3>
+
+<p>The boardview shows physical layout. The schematic shows electrical relationships. Together, they're powerful:</p>
+
+<ul>
+  <li>Boardview shows WHERE things are</li>
+  <li>Schematic shows WHY they're connected</li>
+</ul>
+
+<p>Modern boardview software (BoardScope) lets you link to schematic PDFs, so clicking a component jumps to its schematic symbol.</p>
+
+<h3>Comparing Boards with Boardview</h3>
+
+<p>If you have two boards — one working, one broken — you can:</p>
+
+<ol>
+  <li>Open both in boardview side-by-side</li>
+  <li>Compare component placement</li>
+  <li>Check for missing components on the broken board</li>
+  <li>This often reveals the issue instantly</li>
+</ol>
+
+<h3>Learning Board Design Patterns</h3>
+
+<p>Over time, you'll recognize patterns:</p>
+
+<ul>
+  <li>Power distribution patterns</li>
+  <li>Common IC layouts</li>
+  <li>Signal routing conventions</li>
+  <li>Known failure points on specific boards</li>
+</ul>
+
+<p>Studying boardview files of different devices teaches you board design fundamentals without needing formal education.</p>
+
+<!-- ── CTA BOX ── -->
+<div class="cta-box">
+  <h3>Ready to practice?</h3>
+  <p>Download BoardScope free and open your first .brd file. Most boards load instantly. No account required.</p>
+  <a class="btn-primary" href="https://github.com/louistoshi/boardscope.ca/releases">Download BoardScope Free</a>
+</div>
+
+<h2>Common Questions About .BRD Files</h2>
+
+<h3>Q: Are .brd files legal to use?</h3>
+<p><strong>A:</strong> Yes. Manufacturers publish board schematics in service manuals. Communities share them freely for repair and educational purposes. Using them to repair devices you own is completely legal. (Using them to clone or manufacture boards is not.)</p>
+
+<h3>Q: Can I extract .brd files from devices myself?</h3>
+<p><strong>A:</strong> Technically yes if you have CAD files (Altium, Kicad, Eagle), but most repair techs get them from service manuals or repair communities instead.</p>
+
+<h3>Q: What if my board file is outdated?</h3>
+<p><strong>A:</strong> Board layouts are stable. Even if the software version changed, the physical layout is usually identical. Minor revision differences don't affect practical repair work.</p>
+
+<h3>Q: Can I use boardview to identify counterfeit components?</h3>
+<p><strong>A:</strong> Partially. You can compare silkscreen markings and part numbers to the boardview. Counterfeit parts might have wrong markings. But visual inspection is more reliable than boardview alone.</p>
+
+<h2>Next Steps</h2>
+
+<p>Now that you understand .brd file basics:</p>
+
+<ol>
+  <li><strong>Download BoardScope</strong> — Get familiar with the interface</li>
+  <li><strong>Find your first board file</strong> — Search OpenBoardData or iFixit for a device you work on</li>
+  <li><strong>Practice tracing nets</strong> — Pick 3-5 components and see what they connect to</li>
+  <li><strong>Read a schematic alongside</strong> — Understand WHY nets are connected</li>
+  <li><strong>Apply it to a real repair</strong> — Use boardview to diagnose an actual faulty device</li>
+</ol>
+
+<p>Once you've practiced on 5-10 boards, reading .brd files becomes second nature. You'll spot issues faster and repair more confidently.</p>
+
+<h2>Summary</h2>
+
+<ul>
+  <li>.brd files are digital maps of PCB layouts</li>
+  <li>They show component placement, connections, and power rails</li>
+  <li>Boardview software makes them searchable and measurable</li>
+  <li>Tracing nets visually speeds up fault diagnosis</li>
+  <li>Combined with a multimeter, boardview is a powerful diagnostic tool</li>
+  <li>Free resources exist — start learning today</li>
+</ul>
+
+<p><strong>Happy repairing!</strong></p>
+
+</div>
+
+<!-- ── FOOTER ── -->
+<footer>
+  <div class="footer-logo">Board<span>Scope</span></div>
+  <p>© 2025 BoardScope. Professional PCB Boardview & Repair Analysis.</p>
+  <div class="footer-links">
+    <a href="https://github.com/louistoshi/boardscope.ca/releases">Download</a>
+    <a href="../manual.html">Manual</a>
+    <a href="../index.html">Home</a>
+  </div>
+</footer>
+
+<script>
+  const nav = document.querySelector('nav');
+  window.addEventListener('scroll', () => {
+    const scrolled = window.scrollY > 60;
+    nav.style.background = scrolled
+      ? 'rgba(11,13,15,0.95)'
+      : 'rgba(11,13,15,0.7)';
+  }, { passive: true });
+</script>
+</body>
+</html>

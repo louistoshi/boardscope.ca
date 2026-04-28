@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BoardScope Pro Lifetime Banner</title>
+    <style>
+        :root {
+            --bg: #0d0f12;
+            --bg-accent: #161a1f;
+            --primary: #00d9a6;
+            --secondary: #5294f8;
+            --text: #f0f3fa;
+            --text-dim: #94a3b8;
+            --border: #1e2230;
+            --card-bg: rgba(22, 26, 31, 0.8);
+        }
+
+        * { 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box; 
+            font-family: 'Inter', -apple-system, sans-serif; 
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            width: 1920px;
+            height: 1080px;
+            background: var(--bg);
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Grid Background Pattern */
+        body::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background-image: linear-gradient(var(--border) 1px, transparent 1px), 
+                              linear-gradient(90deg, var(--border) 1px, transparent 1px);
+            background-size: 60px 60px;
+            opacity: 0.3;
+            mask-image: radial-gradient(circle at center, black, transparent 80%);
+        }
+
+        .container {
+            width: 1400px;
+            display: flex;
+            align-items: center;
+            gap: 80px;
+            z-index: 10;
+        }
+
+        .content { flex: 1; }
+
+        .badge {
+            display: inline-block;
+            padding: 10px 20px;
+            background: linear-gradient(90deg, rgba(0, 217, 166, 0.2), rgba(82, 148, 248, 0.2));
+            border: 1px solid rgba(0, 217, 166, 0.5);
+            color: #fff;
+            border-radius: 100px;
+            font-weight: 700;
+            font-size: 1.2rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 24px;
+            box-shadow: 0 0 20px rgba(0, 217, 166, 0.2);
+        }
+
+        h1 { font-size: 5.5rem; font-weight: 800; margin-bottom: 16px; letter-spacing: -3px; line-height: 1; }
+        h1 span { 
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .description { font-size: 1.8rem; color: var(--text-dim); margin-bottom: 48px; line-height: 1.5; max-width: 700px; }
+
+        .features { list-style: none; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .features li { 
+            font-size: 1.4rem; 
+            display: flex; 
+            align-items: center; 
+            gap: 12px;
+            color: var(--text);
+        }
+        .features li::before { content: "✓"; color: var(--primary); font-weight: 900; }
+
+        .pricing-card {
+            width: 500px;
+            background: var(--card-bg);
+            border: 1px solid var(--primary);
+            border-radius: 32px;
+            padding: 80px 60px;
+            text-align: center;
+            box-shadow: 0 0 80px rgba(0, 217, 166, 0.15), inset 0 0 20px rgba(0, 217, 166, 0.05);
+            position: relative;
+            backdrop-filter: blur(10px);
+        }
+
+        .price { font-size: 7rem; font-weight: 800; margin: 20px 0; color: #fff; }
+        .price span { font-size: 2rem; color: var(--text-dim); vertical-align: middle; }
+        
+        .label { 
+            font-size: 1.4rem; 
+            font-weight: 700; 
+            color: var(--primary); 
+            text-transform: uppercase; 
+            letter-spacing: 3px;
+        }
+
+        .cta-mimic {
+            margin-top: 40px;
+            padding: 20px;
+            background: var(--primary);
+            color: var(--bg);
+            border-radius: 16px;
+            font-weight: 800;
+            font-size: 1.5rem;
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="content">
+            <div class="badge">PRO EDITION</div>
+            <h1>BoardScope <span>Pro</span></h1>
+            <p class="description">The most advanced logic board diagnostic suite for modern repair workflows.</p>
+            <ul class="features">
+                <li>AI Diagnostic Engine</li>
+                <li>Macro Recording</li>
+                <li>Post-Repair Test Suite</li>
+                <li>Thermal Map Overlay</li>
+                <li>Unlimited Board Files</li>
+                <li>Priority Support</li>
+            </ul>
+        </div>
+        <div class="pricing-card">
+            <div class="label">Lifetime Access</div>
+            <div class="price">$129<span>.00</span></div>
+            <p style="color: var(--text-dim); font-size: 1.3rem;">One-time payment.<br>All future updates included.</p>
+            <div class="cta-mimic">Get Lifetime Pro</div>
+        </div>
+    </div>
+</body>
+</html>
