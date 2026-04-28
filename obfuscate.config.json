@@ -1,0 +1,18 @@
+{
+  "compact": true,
+  "controlFlowFlattening": true,
+  "controlFlowFlatteningThreshold": 0.4,
+  "deadCodeInjection": true,
+  "deadCodeInjectionThreshold": 0.1,
+  "debugProtection": false,
+  "disableConsoleOutput": true,
+  "stringArray": true,
+  "stringArrayEncoding": ["rc4"],
+  "stringArrayThreshold": 0.75,
+  "rotateStringArray": true,
+  "shuffleStringArray": true,
+  "splitStrings": true,
+  "splitStringsChunkLength": 5,
+  "transformObjectKeys": true,
+  "unicodeEscapeSequence": false
+}

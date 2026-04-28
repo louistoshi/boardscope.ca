@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PCB Net Tracing Explained — Find Faults Faster in Board Repair</title>
+<meta name="description" content="Master PCB net tracing techniques. Learn how to identify signal paths, trace power rails, find shorts and opens, and diagnose board faults using net highlighting.">
+<meta name="keywords" content="PCB net tracing, net highlighting, signal tracing, trace net, boardview net search, fault finding, short circuit detection">
+<meta name="author" content="BoardScope">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://boardscope.ca/blog/pcb-net-tracing.html">
+
+<!-- Open Graph -->
+<meta property="og:title" content="PCB Net Tracing Explained — Find Faults Faster">
+<meta property="og:description" content="Learn professional net tracing techniques to diagnose board-level faults and trace signal paths like an expert technician.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://boardscope.ca/blog/pcb-net-tracing.html">
+
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:      #0b0d0f;
+    --bg2:     #111418;
+    --bg3:     #181c22;
+    --border:  #1e2430;
+    --accent:  #00d9a6;
+    --accent2: #5294f8;
+    --text:    #e8edf5;
+    --text2:   #9aa3b5;
+    --text3:   #5a6276;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    overflow-x: hidden;
+  }
+
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 40px; height: 60px;
+    background: rgba(11,13,15,0.7);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .nav-logo {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 15px; font-weight: 700; letter-spacing: .5px; color: var(--text);
+    text-decoration: none;
+  }
+  .nav-logo-mark {
+    width: 28px; height: 28px; background: var(--accent);
+    border-radius: 6px; display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 900; color: #000; letter-spacing: -1px;
+  }
+  .nav-links { display: flex; align-items: center; gap: 32px; }
+  .nav-links a {
+    font-size: 13px; color: var(--text2); text-decoration: none; letter-spacing: .3px;
+    transition: color .2s;
+  }
+  .nav-links a:hover { color: var(--text); }
+  .nav-cta {
+    background: var(--accent); color: #000; font-size: 13px; font-weight: 700;
+    padding: 8px 20px; border-radius: 6px; text-decoration: none; letter-spacing: .3px;
+    transition: opacity .2s;
+  }
+  .nav-cta:hover { opacity: .85; }
+
+  .article-header {
+    padding: 140px 40px 60px;
+    max-width: 900px;
+    margin: 0 auto;
+    text-align: center;
+  }
+  .article-tag {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(0,217,166,0.1); border: 1px solid rgba(0,217,166,0.3);
+    color: var(--accent); font-size: 11px; font-weight: 700; letter-spacing: 1.5px;
+    padding: 5px 14px; border-radius: 20px; margin-bottom: 20px;
+    text-transform: uppercase;
+  }
+  .article-header h1 {
+    font-size: clamp(32px, 5vw, 56px);
+    font-weight: 800; line-height: 1.2;
+    letter-spacing: -1.5px; margin-bottom: 20px;
+  }
+  .article-header h1 span { color: var(--accent); }
+  .article-meta {
+    font-size: 14px; color: var(--text2); display: flex; justify-content: center; gap: 20px; flex-wrap: wrap;
+  }
+
+  .article-content {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 0 40px 100px;
+  }
+  .article-content h2 {
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -1px;
+    margin: 60px 0 20px;
+    color: var(--text);
+  }
+  .article-content h3 {
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -.5px;
+    margin: 40px 0 16px;
+    color: var(--text);
+  }
+  .article-content p {
+    font-size: 16px;
+    line-height: 1.8;
+    color: var(--text2);
+    margin-bottom: 20px;
+  }
+  .article-content ul, .article-content ol {
+    margin: 24px 0 24px 24px;
+    font-size: 16px;
+    line-height: 1.8;
+    color: var(--text2);
+  }
+  .article-content li {
+    margin-bottom: 12px;
+  }
+  .article-content strong {
+    color: var(--accent);
+  }
+  .article-content code {
+    background: var(--bg2);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'Monaco', monospace;
+    font-size: 14px;
+    color: var(--accent);
+  }
+  .highlight-box {
+    background: rgba(0,217,166,0.08);
+    border-left: 4px solid var(--accent);
+    padding: 24px;
+    border-radius: 8px;
+    margin: 32px 0;
+    font-size: 15px;
+    line-height: 1.7;
+  }
+  .highlight-box strong {
+    color: var(--accent);
+  }
+
+  .cta-box {
+    background: linear-gradient(135deg, rgba(0,217,166,0.06) 0%, rgba(82,148,248,0.04) 100%);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 40px;
+    margin: 60px 0;
+    text-align: center;
+  }
+  .cta-box h3 {
+    font-size: 20px;
+    margin: 0 0 16px;
+  }
+  .cta-box p {
+    margin-bottom: 24px;
+  }
+  .btn-primary {
+    display: inline-block;
+    background: var(--accent); color: #000; font-size: 15px; font-weight: 700;
+    padding: 14px 32px; border-radius: 8px; text-decoration: none;
+    letter-spacing: .3px; transition: all .2s;
+    box-shadow: 0 0 32px rgba(0,217,166,0.3);
+  }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 0 48px rgba(0,217,166,0.45); }
+
+  footer {
+    background: var(--bg); border-top: 1px solid var(--border);
+    padding: 40px; display: flex; justify-content: space-between; align-items: center;
+    flex-wrap: wrap; gap: 16px;
+  }
+  .footer-logo { font-size: 14px; font-weight: 700; color: var(--text); }
+  .footer-logo span { color: var(--accent); }
+  footer p { font-size: 12px; color: var(--text3); }
+  .footer-links { display: flex; gap: 24px; }
+  .footer-links a { font-size: 12px; color: var(--text3); text-decoration: none; transition: color .2s; }
+  .footer-links a:hover { color: var(--text2); }
+
+  @media (max-width: 768px) {
+    nav { padding: 0 20px; }
+    .nav-links { display: none; }
+    .article-header { padding: 100px 24px 40px; }
+    .article-content { padding: 0 24px 80px; }
+    .cta-box { padding: 32px 24px; }
+    footer { flex-direction: column; text-align: center; padding: 32px 24px; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="../index.html">
+    <div class="nav-logo-mark">Bs</div>
+    BoardScope
+  </a>
+  <div class="nav-links">
+    <a href="../index.html#features">Features</a>
+    <a href="../index.html#how">How It Works</a>
+    <a href="../pricing.html">Pricing</a>
+  </div>
+  <a class="nav-cta" href="../pricing.html">Get Pro</a>
+</nav>
+
+<div class="article-header">
+  <div class="article-tag">🔌 Advanced Technique</div>
+  <h1>PCB Net <span>Tracing Explained</span></h1>
+  <div class="article-meta">
+    <span>📖 17 min read</span>
+    <span>🛠️ Intermediate level</span>
+    <span>✓ Professional technique</span>
+  </div>
+</div>
+
+<div class="article-content">
+
+<h2>Introduction: What is Net Tracing?</h2>
+
+<p><strong>Net tracing</strong> is the art of following electrical connections through a PCB to understand signal flow and identify faults. It's one of the most powerful diagnostic techniques in board-level repair.</p>
+
+<p>When you trace a net, you're answering a simple question: "Where does this electrical signal go, and what does it connect to?"</p>
+
+<p>In this guide, you'll learn:</p>
+<ul>
+  <li>What nets are and why they matter</li>
+  <li>How to trace power rails systematically</li>
+  <li>How to follow signal paths from input to output</li>
+  <li>How to identify shorts, opens, and faults using net tracing</li>
+  <li>Real-world repair scenarios solved with net tracing</li>
+  <li>Advanced techniques: constellation view, multi-board comparison</li>
+</ul>
+
+<h2>Understanding Nets: The Foundation</h2>
+
+<p>A <strong>net</strong> is an electrical connection. It might include:</p>
+
+<ul>
+  <li>A pin on a microchip</li>
+  <li>A copper trace on the PCB</li>
+  <li>A via (connection between board layers)</li>
+  <li>Pins on multiple other components</li>
+  <li>A solder pad on a connector</li>
+</ul>
+
+<p>In boardview, nets are usually shown as:</p>
+
+<ul>
+  <li>Colored lines connecting components</li>
+  <li>Highlighted paths when you click or search</li>
+  <li>Named connections (like <code>GND</code>, <code>3.3V</code>, <code>DATA_IN</code>)</li>
+</ul>
+
+<h3>Types of Nets You'll Encounter</h3>
+
+<p><strong>Power nets:</strong> Carry voltage to components</p>
+<ul>
+  <li>Examples: 3.3V, 1.8V, 5V, GND (ground)</li>
+  <li>Usually thicker traces, more critical</li>
+  <li>Failures here cause widespread system problems</li>
+</ul>
+
+<p><strong>Signal nets:</strong> Carry information between components</p>
+<ul>
+  <li>Examples: CLK (clock), DATA, INT (interrupt), CS (chip select)</li>
+  <li>Thinner traces, more numerous</li>
+  <li>Failures here cause specific feature loss</li>
+</ul>
+
+<p><strong>Ground nets:</strong> Return path for electricity</p>
+<ul>
+  <li>Often multiple groundplanes for stability</li>
+  <li>If ground is broken, nothing works</li>
+  <li>Ground shorts are catastrophic</li>
+</ul>
+
+<h2>Step 1: Starting Your Trace — Choose Your Net</h2>
+
+<h3>Where to Start?</h3>
+
+<p>Choose a net based on your diagnosis:</p>
+
+<ul>
+  <li><strong>Device won't power on:</strong> Start with main power net (VBATT → 3.3V rail)</li>
+  <li><strong>No display:</strong> Trace display power (usually 5V or 3.3V for backlight)</li>
+  <li><strong>No audio:</strong> Trace audio power and codec signals</li>
+  <li><strong>USB not detected:</strong> Trace USB power and signal lines</li>
+  <li><strong>Intermittent behavior:</strong> Trace power supply to the failing component</li>
+</ul>
+
+<h3>Using Boardview to Search Nets</h3>
+
+<p>In boardview software like BoardScope:</p>
+
+<ol>
+  <li>Right-click on any component pin</li>
+  <li>Select "Highlight Net" or "Search"</li>
+  <li>The entire net lights up in a color</li>
+  <li>You can now see every component connected to this signal</li>
+</ol>
+
+<p><strong>Pro tip:</strong> Some software shows "constellation view" — all connected components arranged as a diagram, making relationships clear.</p>
+
+<h2>Step 2: Tracing Power Paths</h2>
+
+<h3>The Power Supply Chain</h3>
+
+<p>On modern devices, power follows a strict hierarchy:</p>
+
+<ol>
+  <li><strong>Battery/USB:</strong> Primary power source (VBATT)</li>
+  <li><strong>Protection:</strong> Diodes, fuses protect against reverse polarity</li>
+  <li><strong>Power Management IC (PMIC):</strong> Converts battery voltage to required rails</li>
+  <li><strong>Regulators:</strong> Individual regulators for each voltage rail</li>
+  <li><strong>Capacitor banks:</strong> Filter and stabilize voltage</li>
+  <li><strong>Components:</strong> Processors, memory, RF chips receive regulated power</li>
+</ol>
+
+<h3>Tracing Example: MacBook Power</h3>
+
+<p><strong>Scenario: MacBook won't charge</strong></p>
+
+<ol>
+  <li>Start at battery connector (power source)</li>
+  <li>Trace VBATT net through protection diode</li>
+  <li>Follow to Power Management IC (usually labeled PMIC or SMC)</li>
+  <li>Check for voltage at PMIC input (should be 11-13V)</li>
+  <li>If voltage present at input but missing at output, PMIC is damaged</li>
+  <li>If voltage missing at input, check protection diode (might be shorted)</li>
+  <li>Replace faulty component, retest</li>
+</ol>
+
+<div class="highlight-box">
+  <strong>Diagnostic Tip:</strong> As you trace, measure voltages at each step. In boardview, log the measurements. This creates a "voltage trail" showing where the power is lost. The last good voltage is just before the fault.
+</div>
+
+<h2>Step 3: Tracing Signal Paths</h2>
+
+<h3>Clock Signals</h3>
+
+<p>Clock signals are critical. They synchronize all digital operations.</p>
+
+<ul>
+  <li>Usually named <code>CLK</code>, <code>XCLK</code>, or with frequency (32MHz, 50MHz)</li>
+  <li>If clock fails, the processor can't execute instructions</li>
+  <li>Device appears completely dead</li>
+</ul>
+
+<p>Trace clock from oscillator → processor. If missing, the oscillator crystal or its supporting components are likely damaged.</p>
+
+<h3>Data Lines</h3>
+
+<p>Data lines carry actual information (memory reads/writes, display data, USB packets).</p>
+
+<p><strong>Example: NAND memory data lines</strong></p>
+<ul>
+  <li>Name: <code>DATA0</code>, <code>DATA1</code>... <code>DATA7</code> (usually 8 lines for parallel connections)</li>
+  <li>Route: Processor → NAND memory chip</li>
+  <li>If broken: Device boots but can't read storage</li>
+</ul>
+
+<p>Trace from processor through protective components (resistors, diodes) to the memory chip. A short here would prevent data communication.</p>
+
+<h3>Interrupt & Control Lines</h3>
+
+<p>These signal events that need attention:</p>
+
+<ul>
+  <li><code>INT</code> (interrupt) — Tells processor something happened</li>
+  <li><code>CS</code> (chip select) — Enables one component to communicate</li>
+  <li><code>WR</code> (write), <code>RD</code> (read) — Control data direction</li>
+</ul>
+
+<p>Trace these from source to destination. A broken control line means the component can't be addressed.</p>
+
+<h2>Step 4: Identifying Common Faults Using Net Traces</h2>
+
+<h3>Open Circuit (Broken Connection)</h3>
+
+<p><strong>Symptom:</strong> Component receives power but no signal</p>
+
+<p><strong>How to detect via net tracing:</strong></p>
+<ul>
+  <li>Trace the signal net</li>
+  <li>Measure voltage at each component pin along the path</li>
+  <li>Find where voltage disappears</li>
+  <li>That's where the trace is broken (burnt trace, disconnected pad, broken via)</li>
+</ul>
+
+<h3>Short Circuit (Unintended Connection)</h3>
+
+<p><strong>Symptom:</strong> Device draws excessive current, components get hot, system resets randomly</p>
+
+<p><strong>How to detect via net tracing:</strong></p>
+<ul>
+  <li>Trace the power rail</li>
+  <li>A short means power (3.3V) is connected to ground</li>
+  <li>The voltage collapses from 3.3V to near 0V</li>
+  <li>Measure along the trace — find where voltage drops</li>
+  <li>That location has the short (damaged capacitor, burnt resistor, bridged solder)</li>
+</ul>
+
+<div class="highlight-box">
+  <strong>Pro Technique:</strong> Use a thermal imaging camera and boardview together. The thermal image shows hot spots. Then trace the net at that location in boardview. The short is usually at the intersection of the hottest components.
+</div>
+
+<h3>Weak Connection (High Resistance)</h3>
+
+<p><strong>Symptom:</strong> Intermittent failures, performance slowdown, occasional crashes</p>
+
+<p><strong>How to detect via net tracing:</strong></p>
+<ul>
+  <li>Trace the signal net</li>
+  <li>Measure voltage along the path under load</li>
+  <li>High-resistance connections show voltage sags (droop)</li>
+  <li>The component with the worst droop is the culprit (oxidized pad, fractured trace, bad via)</li>
+</ul>
+
+<h2>Step 5: Advanced Net Tracing Techniques</h2>
+
+<h3>Constellation View</h3>
+
+<p>Some boardview software shows a "constellation" of all components on a net, arranged in a circle or diagram. This shows relationships at a glance:</p>
+
+<ul>
+  <li>All components on a net are grouped</li>
+  <li>You can see which components share signals</li>
+  <li>Makes multi-pin connections visible</li>
+</ul>
+
+<h3>Multi-Board Comparison</h3>
+
+<p>If you have a working board and a broken board:</p>
+
+<ol>
+  <li>Open both in boardview</li>
+  <li>Trace the same net on both boards</li>
+  <li>Compare the paths</li>
+  <li>Are there different components? Missing capacitors? Bridges?</li>
+  <li>The difference is often the fault</li>
+</ol>
+
+<h3>Measuring Under Load</h3>
+
+<p><strong>Static measurement (board powered, nothing running):</strong> Gives baseline voltage</p>
+
+<p><strong>Dynamic measurement (board booting, running, processing):</strong> Shows real-world behavior</p>
+
+<p>A voltage that looks good at rest might droop dangerously under load. Always measure during operation.</p>
+
+<h2>Real-World Repair Scenarios</h2>
+
+<h3>Scenario 1: iPhone Won't Turn On</h3>
+
+<p><strong>Customer complaint:</strong> Connected to charger, no response</p>
+
+<p><strong>Diagnosis approach:</strong></p>
+<ol>
+  <li>Load iPhone schematic and boardview</li>
+  <li>Trace VBATT (battery voltage) from connector</li>
+  <li>Measure at each step: charger input, charging IC output, main power rail</li>
+  <li>Find the voltage drop — that's the faulty stage</li>
+  <li>If voltage present at charger IC input but missing at output, IC is bad</li>
+  <li>If voltage present at main power rail but device doesn't boot, check processor power sequence (multiple rails must come up in correct order)</li>
+</ol>
+
+<p><strong>Common root causes found via net tracing:</strong></p>
+<ul>
+  <li>Burnt charging diode (battery can't supply power)</li>
+  <li>Shorted power capacitor (main rail collapses)</li>
+  <li>Broken power IC (voltage not distributed)</li>
+</ul>
+
+<h3>Scenario 2: MacBook Kernel Panic During Boot</h3>
+
+<p><strong>Customer complaint:</strong> Random crashes, sometimes boots, sometimes doesn't</p>
+
+<p><strong>Diagnosis approach:</strong></p>
+<ol>
+  <li>Trace 3.3V rail (processor supply)</li>
+  <li>Measure voltage stability during boot</li>
+  <li>Look for droop or oscillation</li>
+  <li>Droop suggests weak power delivery — bad capacitor or connector</li>
+  <li>Oscillation suggests noise — bad filter or ground connection</li>
+  <li>Compare to working board if available</li>
+</ol>
+
+<p><strong>Common root causes:</strong></p>
+<ul>
+  <li>Swollen capacitor (increased ESR, poor filtering)</li>
+  <li>Oxidized power connector (contact resistance varies with temperature)</li>
+  <li>Fractured trace under processor (intermittent connection)</li>
+</ul>
+
+<h3>Scenario 3: USB Not Detected</h3>
+
+<p><strong>Customer complaint:</strong> Device charges but computer doesn't recognize it</p>
+
+<p><strong>Diagnosis approach:</strong></p>
+<ol>
+  <li>Trace USB power (usually 5V) — measure at USB connector</li>
+  <li>If power present, continue to USB controller IC</li>
+  <li>Trace USB data lines (D+ and D-)</li>
+  <li>These should go from connector through protection diodes to USB IC</li>
+  <li>Measure data line voltages (should oscillate during communication, DC at rest)</li>
+  <li>If data lines stuck high or low, communication circuit is damaged</li>
+</ol>
+
+<p><strong>Common root causes:</strong></p>
+<ul>
+  <li>Burnt USB protection diode (shorts data line to ground)</li>
+  <li>Damaged USB IC or crystal</li>
+  <li>Broken data trace from connector to IC</li>
+</ul>
+
+<h2>Tools That Make Net Tracing Easier</h2>
+
+<h3>Boardview Software</h3>
+
+<p><strong>Must-have features:</strong></p>
+<ul>
+  <li>Net highlighting (visual path display)</li>
+  <li>Search functionality (find nets by name)</li>
+  <li>Cross-reference with schematic</li>
+  <li>Measurement logging (record voltages directly in the tool)</li>
+  <li>Multi-layer support (trace through board layers)</li>
+</ul>
+
+<p>BoardScope includes all of these and adds AI-powered fault suggestions.</p>
+
+<h3>USB Multimeter</h3>
+
+<p>Measure voltages while boardview shows the path. Log results directly in boardview for documentation.</p>
+
+<h3>Thermal Imaging</h3>
+
+<p>Hot spots often indicate shorts or high resistance. Correlate thermal image with net traces to pinpoint faults.</p>
+
+<h3>Logic Analyzer (Advanced)</h3>
+
+<p>Capture signal behavior on data and clock lines. Understand timing issues, verify communication.</p>
+
+<div class="cta-box">
+  <h3>Master net tracing with better tools</h3>
+  <p>BoardScope makes net tracing visual and measurable. Trace, measure, and log in one interface. Download free today.</p>
+  <a class="btn-primary" href="https://github.com/louistoshi/boardscope.ca/releases">Download BoardScope Free</a>
+</div>
+
+<h2>Common Mistakes to Avoid</h2>
+
+<p><strong>Mistake 1: Tracing visually without measuring</strong> — A net might look connected but have high resistance. Always measure.</p>
+
+<p><strong>Mistake 2: Ignoring ground connections</strong> — Ground is as important as power. Trace ground paths too.</p>
+
+<p><strong>Mistake 3: Static-only testing</strong> — Measure voltages while the device is working (booting, running apps).</p>
+
+<p><strong>Mistake 4: Not consulting the schematic</strong> — Boardview shows connections; schematic explains WHY. Use both.</p>
+
+<p><strong>Mistake 5: Assuming the first fault is the only fault</strong> — Water damage often causes multiple shorts. Keep tracing.</p>
+
+<h2>Practice Exercises</h2>
+
+<p>Master net tracing by practicing on real boards:</p>
+
+<ol>
+  <li>Download 3 different board files (iPhone, MacBook, game console)</li>
+  <li>Search for "GND" — see how ground connects everything</li>
+  <li>Search for "3.3V" — trace the main processor power</li>
+  <li>Search for "CLK" — understand clock distribution</li>
+  <li>On a broken board, trace power from battery → processor, measuring at each stage</li>
+  <li>Compare traces on working vs broken board for the same device</li>
+</ol>
+
+<h2>Summary</h2>
+
+<ul>
+  <li>Nets are electrical connections in PCBs</li>
+  <li>Net tracing follows signal paths to diagnose faults</li>
+  <li>Power net tracing finds supply problems</li>
+  <li>Signal net tracing finds communication failures</li>
+  <li>Always measure voltages as you trace</li>
+  <li>Boardview software makes tracing visual and fast</li>
+  <li>Combine with schematic for complete understanding</li>
+  <li>Practice on multiple board types to build intuition</li>
+</ul>
+
+<p>Net tracing is a skill that improves with practice. After 10-15 boards, you'll be spotting faults in minutes.</p>
+
+</div>
+
+<footer>
+  <div class="footer-logo">Board<span>Scope</span></div>
+  <p>© 2025 BoardScope. Professional PCB Boardview & Repair Analysis.</p>
+  <div class="footer-links">
+    <a href="https://github.com/louistoshi/boardscope.ca/releases">Download</a>
+    <a href="../manual.html">Manual</a>
+    <a href="../index.html">Home</a>
+  </div>
+</footer>
+
+<script>
+  const nav = document.querySelector('nav');
+  window.addEventListener('scroll', () => {
+    const scrolled = window.scrollY > 60;
+    nav.style.background = scrolled
+      ? 'rgba(11,13,15,0.95)'
+      : 'rgba(11,13,15,0.7)';
+  }, { passive: true });
+</script>
+</body>
+</html>

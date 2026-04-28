@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Best PCB Repair Software 2026 — Board-Level Diagnostics & Analysis</title>
+<meta name="description" content="The best PCB repair software for board-level technicians. AI-powered diagnostics, hardware integration, repair documentation, and hardware support.">
+<meta name="keywords" content="PCB repair software, board repair tool, electronics repair diagnostics, boardview software, repair diagnostics tool, board level repair">
+<meta name="author" content="BoardScope">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://boardscope.ca/pcb-repair-software.html">
+
+<!-- International & Global Reach -->
+<meta name="geo.placename" content="Global">
+<meta name="geo.region" content="Global">
+<meta http-equiv="content-language" content="en-us">
+<link rel="alternate" hreflang="en" href="https://boardscope.ca/pcb-repair-software.html">
+<meta property="og:locale" content="en_US">
+<meta name="distribution" content="global">
+
+<!-- Open Graph (Social Sharing) -->
+<meta property="og:title" content="Best PCB Repair Software 2026">
+<meta property="og:description" content="AI-powered board diagnostics, hardware integration, automated testing, and repair documentation all in one tool.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://boardscope.ca/pcb-repair-software.html">
+
+<!-- Structured Data -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "BoardScope",
+  "description": "Best PCB repair and diagnostics software for board-level repair technicians",
+  "url": "https://boardscope.ca/pcb-repair-software.html",
+  "applicationCategory": "DesktopApplication"
+}
+</script>
+
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:      #0b0d0f;
+    --bg2:     #111418;
+    --bg3:     #181c22;
+    --border:  #1e2430;
+    --accent:  #00d9a6;
+    --accent2: #5294f8;
+    --text:    #e8edf5;
+    --text2:   #9aa3b5;
+    --text3:   #5a6276;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    overflow-x: hidden;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 40px; height: 60px;
+    background: rgba(11,13,15,0.7);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .nav-logo {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 15px; font-weight: 700; letter-spacing: .5px; color: var(--text);
+    text-decoration: none;
+  }
+  .nav-logo-mark {
+    width: 28px; height: 28px; background: var(--accent);
+    border-radius: 6px; display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 900; color: #000; letter-spacing: -1px;
+  }
+  .nav-links { display: flex; align-items: center; gap: 32px; }
+  .nav-links a {
+    font-size: 13px; color: var(--text2); text-decoration: none; letter-spacing: .3px;
+    transition: color .2s;
+  }
+  .nav-links a:hover { color: var(--text); }
+  .nav-cta {
+    background: var(--accent); color: #000; font-size: 13px; font-weight: 700;
+    padding: 8px 20px; border-radius: 6px; text-decoration: none; letter-spacing: .3px;
+    transition: opacity .2s;
+  }
+  .nav-cta:hover { opacity: .85; }
+
+  /* ── HERO ── */
+  .hero {
+    padding: 140px 40px 80px;
+    max-width: 900px;
+    margin: 0 auto;
+    text-align: center;
+  }
+  .hero-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(0,217,166,0.1); border: 1px solid rgba(0,217,166,0.3);
+    color: var(--accent); font-size: 11px; font-weight: 700; letter-spacing: 1.5px;
+    padding: 5px 14px; border-radius: 20px; margin-bottom: 28px;
+    text-transform: uppercase;
+  }
+  .hero-badge::before {
+    content: ''; width: 6px; height: 6px; border-radius: 50%;
+    background: var(--accent); animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: .3; }
+  }
+  .hero h1 {
+    font-size: clamp(36px, 6vw, 64px);
+    font-weight: 800; line-height: 1.1;
+    letter-spacing: -2px; margin-bottom: 22px;
+  }
+  .hero h1 span { color: var(--accent); }
+  .hero p {
+    font-size: clamp(16px, 2vw, 18px);
+    color: var(--text2); line-height: 1.7;
+    margin-bottom: 40px; max-width: 680px; margin-left: auto; margin-right: auto;
+  }
+  .hero-actions { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+  .btn-primary {
+    background: var(--accent); color: #000; font-size: 15px; font-weight: 700;
+    padding: 14px 32px; border-radius: 8px; text-decoration: none;
+    letter-spacing: .3px; transition: all .2s;
+    box-shadow: 0 0 32px rgba(0,217,166,0.3);
+  }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 0 48px rgba(0,217,166,0.45); }
+  .btn-secondary {
+    background: rgba(255,255,255,0.07); color: var(--text);
+    font-size: 15px; font-weight: 600; padding: 14px 32px; border-radius: 8px;
+    text-decoration: none; border: 1px solid rgba(255,255,255,0.1);
+    letter-spacing: .3px; transition: all .2s;
+  }
+  .btn-secondary:hover { background: rgba(255,255,255,0.11); }
+
+  /* ── SECTIONS ── */
+  section { padding: 80px 40px; max-width: 1100px; margin: 0 auto; }
+  .section-tag {
+    font-size: 11px; font-weight: 700; letter-spacing: 2px;
+    color: var(--accent); text-transform: uppercase; margin-bottom: 14px;
+  }
+  .section-title {
+    font-size: clamp(28px, 4vw, 48px); font-weight: 800;
+    letter-spacing: -1.5px; line-height: 1.1; margin-bottom: 16px;
+  }
+  .section-sub {
+    font-size: 16px; color: var(--text2); line-height: 1.65;
+    max-width: 600px; margin-bottom: 60px;
+  }
+
+  /* ── FEATURE GRID ── */
+  .features-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 2px; background: var(--border); border: 1px solid var(--border);
+    border-radius: 12px; overflow: hidden;
+  }
+  .feature-card {
+    background: var(--bg2); padding: 32px;
+    transition: background .2s;
+  }
+  .feature-card:hover { background: var(--bg3); }
+  .feature-icon {
+    width: 44px; height: 44px; border-radius: 10px;
+    background: rgba(0,217,166,0.1); border: 1px solid rgba(0,217,166,0.2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; margin-bottom: 20px;
+  }
+  .feature-card h3 {
+    font-size: 16px; font-weight: 700; margin-bottom: 10px; letter-spacing: -.3px;
+  }
+  .feature-card p { font-size: 14px; color: var(--text2); line-height: 1.6; }
+
+  /* ── STEPS ── */
+  .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 40px; margin-top: 60px; }
+  .step { display: flex; flex-direction: column; gap: 16px; }
+  .step-num {
+    font-size: 11px; font-weight: 700; letter-spacing: 2px; color: var(--accent);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .step-num::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+  .step h3 { font-size: 17px; font-weight: 700; letter-spacing: -.3px; }
+  .step p  { font-size: 14px; color: var(--text2); line-height: 1.65; }
+
+  /* ── CTA SECTION ── */
+  #cta {
+    text-align: center; max-width: 100%;
+    background: linear-gradient(135deg, rgba(0,217,166,0.06) 0%, rgba(82,148,248,0.04) 100%);
+    border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+  }
+  #cta .inner { max-width: 800px; margin: 0 auto; padding: 100px 40px; }
+
+  /* ── FOOTER ── */
+  footer {
+    background: var(--bg); border-top: 1px solid var(--border);
+    padding: 40px; display: flex; justify-content: space-between; align-items: center;
+    flex-wrap: wrap; gap: 16px;
+  }
+  .footer-logo { font-size: 14px; font-weight: 700; color: var(--text); }
+  .footer-logo span { color: var(--accent); }
+  footer p { font-size: 12px; color: var(--text3); }
+  .footer-links { display: flex; gap: 24px; }
+  .footer-links a { font-size: 12px; color: var(--text3); text-decoration: none; transition: color .2s; }
+  .footer-links a:hover { color: var(--text2); }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 768px) {
+    nav { padding: 0 20px; }
+    .nav-links { display: none; }
+    .hero { padding: 100px 24px 60px; }
+    section { padding: 60px 24px; }
+    footer { flex-direction: column; text-align: center; padding: 32px 24px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ── NAV ── -->
+<nav>
+  <a class="nav-logo" href="index.html">
+    <div class="nav-logo-mark">Bs</div>
+    BoardScope
+  </a>
+  <div class="nav-links">
+    <a href="index.html#features">Features</a>
+    <a href="index.html#how">How It Works</a>
+    <a href="pricing.html">Pricing</a>
+  </div>
+  <a class="nav-cta" href="pricing.html">Get Pro</a>
+</nav>
+
+<!-- ── HERO ── -->
+<section class="hero">
+  <div class="hero-badge">Professional Repair Diagnostics</div>
+  <h1>
+    The best <span>PCB repair software</span><br>
+    for board-level diagnostics
+  </h1>
+  <p>
+    AI-powered diagnosis, hardware integration, automated testing, repair documentation, and multi-board analysis — everything modern repair technicians need in one tool.
+  </p>
+  <div class="hero-actions">
+    <a class="btn-primary" href="https://github.com/louistoshi/boardscope.ca/releases">Download Free</a>
+    <a class="btn-secondary" href="pricing.html">View Pricing →</a>
+  </div>
+</section>
+
+<!-- ── CORE FEATURES ── -->
+<section>
+  <div class="section-tag">What You Get</div>
+  <h2 class="section-title">Everything for board repair</h2>
+  <p class="section-sub">From initial diagnosis to final verification — BoardScope is built for the real workflow of board repair technicians.</p>
+
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon">📋</div>
+      <h3>Boardview Analysis</h3>
+      <p>Load .brd files instantly. Interactive pan, zoom, and component search. Support for all major formats and both board sides.</p>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon">🤖</div>
+      <h3>AI Diagnosis</h3>
+      <p>Describe any symptom. Claude, GPT-4, or Gemini analyzes your board, measurements, and fault patterns to suggest solutions.</p>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon">⚡</div>
+      <h3>Hardware Integration</h3>
+      <p>Connect USB multimeters and oscilloscopes. Live voltage readings and waveforms flow directly into BoardScope analysis.</p>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon">🗺️</div>
+      <h3>Volt & Diode Maps</h3>
+      <p>Overlay measured voltages as heat maps. See power distribution, voltage drops, and component functionality at a glance.</p>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon">⚠️</div>
+      <h3>Fault Tree Guidance</h3>
+      <p>Step-by-step repair trees for MacBook, Dell, HP, and more. AI-generated diagnostic flowcharts for any symptom.</p>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon">📝</div>
+      <h3>Repair Documentation</h3>
+      <p>Log repairs per component. Add notes, photos, measurements, and video references. Build team knowledge over time.</p>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon">🎬</div>
+      <h3>Macro Recorder</h3>
+      <p>Record measurement sequences. Replay them identically on every board of the same model. Consistent diagnostics at scale.</p>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon">✅</div>
+      <h3>Test Suite Automation</h3>
+      <p>Define automated test sequences. Verify repairs with pass/fail reports. Export to HTML or PDF for documentation.</p>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon">💧</div>
+      <h3>Liquid Damage Analysis</h3>
+      <p>Map corroded areas. Score severity by zone. Track reballing workflows for BGA chips — all overlaid on the boardview.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ── WORKFLOW ── -->
+<div style="background: var(--bg2); max-width: 100%;">
+  <section>
+    <div class="section-tag">Workflow</div>
+    <h2 class="section-title">From board to fix in minutes</h2>
+    <p class="section-sub">A repair-focused workflow that matches how real technicians work.</p>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">01</div>
+        <h3>Load the board</h3>
+        <p>Drag in the .brd file. BoardScope renders it instantly — components, nets, pads, both sides visible.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">02</div>
+        <h3>Run AI diagnosis</h3>
+        <p>Describe the symptom in plain English. AI analyzes the board layout and suggests likely failure points.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">03</div>
+        <h3>Measure with hardware</h3>
+        <p>Connect your multimeter or oscilloscope. Record voltages and waveforms. Data flows directly into the boardview.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">04</div>
+        <h3>Repair & verify</h3>
+        <p>Apply fixes. Run the Test Suite to confirm every rail is back in spec. Export reports for documentation.</p>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- ── HARDWARE SUPPORT ── -->
+<section>
+  <div class="section-tag">Hardware Support</div>
+  <h2 class="section-title">Works with your bench tools</h2>
+  <p class="section-sub">Connect real test equipment. Readings integrate directly into your diagnostics.</p>
+
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon">🔢</div>
+      <h3>Multimeter Integration</h3>
+      <p>UNI-T UT61E, Mastech MS8250D, OWON, Voltcraft, Victor, and any FS9721-based meter. USB connection, live readings.</p>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon">📐</div>
+      <h3>Oscilloscope Support</h3>
+      <p>Hantek 6022BE, OWON SDS/XDS, Rigol DS1000Z, and SCPI-compatible scopes. Waveforms captured in real time.</p>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon">🌡️</div>
+      <h3>Thermal Imaging</h3>
+      <p>Load thermal camera images. Align them over the boardview. Correlate hot spots with specific components and power rails.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ── USE CASES ── -->
+<section>
+  <div class="section-tag">Industry Solutions</div>
+  <h2 class="section-title">Built for repair shops & technicians</h2>
+  <p class="section-sub">From iPhone repair to enterprise laptop troubleshooting.</p>
+
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon">📱</div>
+      <h3>Phone & Tablet Repair</h3>
+      <p>iPhone, Android, iPad — BoardScope diagnostics accelerate fault finding on complex mobile boards.</p>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon">💻</div>
+      <h3>Laptop & MacBook Repair</h3>
+      <p>Pre-built fault trees for MacBook, Dell, HP, Lenovo. AI can generate trees for any model and symptom.</p>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon">🎮</div>
+      <h3>Gaming Console Repair</h3>
+      <p>Nintendo Switch, PlayStation, Xbox — complex boards made simple with AI-powered diagnosis and net tracing.</p>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon">⚙️</div>
+      <h3>Industrial Equipment</h3>
+      <p>Enterprise routers, switches, industrial controllers. Measure power rails, trace signal paths, document repairs.</p>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon">🔬</div>
+      <h3>Electronics Labs</h3>
+      <p>Prototype verification, design validation, student training. Interactive visualization accelerates learning.</p>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon">🏭</div>
+      <h3>Manufacturing QA</h3>
+      <p>Validate boards, verify component placement, troubleshoot production issues faster with visual analysis.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ── PRICING ── -->
+<section style="text-align: center;">
+  <div class="section-tag">Pricing</div>
+  <h2 class="section-title">Affordable for everyone</h2>
+  <p class="section-sub" style="max-width: 700px; margin-left: auto; margin-right: auto;">
+    <strong>Free forever:</strong> Core boardview features. Load .brd files, measure voltages, document repairs.
+    <br><br>
+    <strong>Pro ($59/year or $129 lifetime):</strong> AI diagnosis, macro recorder, test suite, multi-board tabs, and everything in Free.
+    <br><br>
+    No vendor lock-in. No annual surprises. Cancel anytime.
+  </p>
+</section>
+
+<!-- ── CTA ── -->
+<div id="cta">
+  <div class="inner">
+    <div class="section-tag">Get Started</div>
+    <h2 class="section-title">Download and start diagnosing</h2>
+    <p>
+      Get BoardScope free. Open your first board file in seconds. Try Pro features free for 30 days. No credit card required.
+    </p>
+    <div class="hero-actions" style="margin-top: 40px;">
+      <a class="btn-primary" href="https://github.com/louistoshi/boardscope.ca/releases">Download Now</a>
+      <a class="btn-secondary" href="pricing.html">View All Plans →</a>
+    </div>
+  </div>
+</div>
+
+<!-- ── FOOTER ── -->
+<footer>
+  <div class="footer-logo">Board<span>Scope</span></div>
+  <p>© 2025 BoardScope. Professional PCB Boardview & Repair Analysis.</p>
+  <div class="footer-links">
+    <a href="https://github.com/louistoshi/boardscope.ca/releases">Download</a>
+    <a href="manual.html">Manual</a>
+    <a href="index.html">Home</a>
+  </div>
+</footer>
+
+<script>
+  const nav = document.querySelector('nav');
+  window.addEventListener('scroll', () => {
+    const scrolled = window.scrollY > 60;
+    nav.style.background = scrolled
+      ? 'rgba(11,13,15,0.95)'
+      : 'rgba(11,13,15,0.7)';
+  }, { passive: true });
+</script>
+</body>
+</html>

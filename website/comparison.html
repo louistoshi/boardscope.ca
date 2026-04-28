@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BoardScope vs OpenBoardView vs FlexBV — 2025 Comparison</title>
+<meta name="description" content="An honest comparison of the top PCB boardview tools: BoardScope, OpenBoardView, and FlexBV. See which tool is right for your professional repair shop.">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0b0d0f; --bg2: #111418; --bg3: #181c22;
+    --border: #1e2430; --accent: #00d9a6; --text: #e8edf5;
+    --text2: #9aa3b5; --text3: #5a6276; --blue: #5294f8;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.7; padding: 80px 24px;
+  }
+  .container { max-width: 800px; margin: 0 auto; }
+  .tag { color: var(--accent); font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 12px; display: block; }
+  h1 { font-size: clamp(32px, 5vw, 48px); font-weight: 800; letter-spacing: -1.5px; line-height: 1.1; margin-bottom: 24px; }
+  p { color: var(--text2); margin-bottom: 24px; font-size: 17px; }
+  h2 { font-size: 24px; font-weight: 700; color: var(--text); margin: 48px 0 16px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+  h3 { font-size: 18px; font-weight: 700; color: var(--accent); margin-bottom: 8px; }
+  .verdict { font-size: 14px; font-style: italic; color: var(--text3); margin-bottom: 16px; display: block; }
+  ul { margin-bottom: 24px; padding-left: 20px; color: var(--text2); }
+  li { margin-bottom: 8px; }
+  strong { color: var(--text); }
+  table { width: 100%; border-collapse: collapse; margin: 40px 0; background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  th, td { padding: 16px; text-align: left; border-bottom: 1px solid var(--border); font-size: 14px; }
+  th { background: var(--bg3); color: var(--accent); font-weight: 700; text-transform: uppercase; font-size: 11px; letter-spacing: 1px; }
+  tr:last-child td { border-bottom: none; }
+  .cta-block { background: var(--bg2); border: 1px solid var(--border); padding: 40px; border-radius: 12px; text-align: center; margin-top: 60px; }
+  .btn { display: inline-block; background: var(--accent); color: #000; font-weight: 700; padding: 12px 32px; border-radius: 6px; text-decoration: none; margin-top: 20px; transition: opacity .2s; }
+  .btn:hover { opacity: 0.85; }
+  .nav-back { color: var(--text3); text-decoration: none; font-size: 13px; margin-bottom: 40px; display: inline-block; transition: color .2s; }
+  .nav-back:hover { color: var(--accent); }
+</style>
+</head>
+<body>
+  <div class="container">
+    <a href="index.html" class="nav-back">← Back to Home</a>
+    <span class="tag">Analysis & Comparison</span>
+    <h1>BoardView in 2025: Choosing the Right Tool for Your Bench</h1>
+    <p>If you do board-level repair, you know that your boardviewer is the most important tool on your desk after your microscope and iron. For years, the choices were limited. Today, we have three main contenders: <strong>OpenBoardView</strong>, <strong>FlexBV</strong>, and <strong>BoardScope</strong>. Which one is right for your workflow? We take an honest look at the pros and cons of each.</p>
+
+    <h2>1. OpenBoardView (OBV)</h2>
+    <span class="verdict">The Verdict: The community standard for basic viewing.</span>
+    <ul>
+      <li><strong>The Good:</strong> It’s free, open-source, and incredibly lightweight. It has the largest community, meaning almost every .brd file you find online was tested to work in OBV first. If you just need to see where a net goes and you don't want to spend a dime, this is the gold standard.</li>
+      <li><strong>The Bad:</strong> The UI is dated and lacks modern features. There is no schematic (PDF) integration, no way to log measurements, and no advanced diagnostic tools. It’s a "viewer," not a "workbench."</li>
+    </ul>
+
+    <h2>2. FlexBV</h2>
+    <span class="verdict">The Verdict: The reliable veteran for PDF syncing.</span>
+    <ul>
+      <li><strong>The Good:</strong> Paul (the creator) is a legend in the repair community. FlexBV was the first to really nail the "Schematic + Boardview" synchronization. It’s robust, handles large files well, and has been the go-to paid choice for professional MacBook and PC repair for years.</li>
+      <li><strong>The Bad:</strong> While it’s powerful, the interface can feel cluttered and has a steep learning curve. It focused heavily on the "viewing" aspect but hasn't expanded into the "diagnostic logic" or "business management" side of the repair shop.</li>
+    </ul>
+
+    <h2>3. BoardScope</h2>
+    <span class="verdict">The Verdict: The "Next-Gen" Command Center for high-speed shops.</span>
+    <ul>
+      <li><strong>The Good:</strong> BoardScope was built for the 2025 technician. It takes the PDF/Board sync of FlexBV and adds a layer of Intelligence. With built-in AI diagnostics, live USB Multimeter overlays, and automated Fault Trees, it's designed to help you find the problem, not just see the board. It also includes shop tools (invoicing and job logs) that the others don't have.</li>
+      <li><strong>The Bad:</strong> As a newer tool, our community-contributed database of "Known Bad" components is still growing compared to the years of data behind older tools. It also requires a more modern computer to run its high-resolution interface smoothly.</li>
+    </ul>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Feature</th>
+          <th>OpenBoardView</th>
+          <th>FlexBV</th>
+          <th>BoardScope</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Cost</td>
+          <td>Free</td>
+          <td>Paid</td>
+          <td>Free / Pro</td>
+        </tr>
+        <tr>
+          <td>PDF Sync</td>
+          <td>❌ No</td>
+          <td>✅ Yes</td>
+          <td>✅ Yes</td>
+        </tr>
+        <tr>
+          <td>Multimeter Sync</td>
+          <td>❌ No</td>
+          <td>❌ No</td>
+          <td>✅ Yes (Live)</td>
+        </tr>
+        <tr>
+          <td>AI Diagnosis</td>
+          <td>❌ No</td>
+          <td>❌ No</td>
+          <td>✅ Yes</td>
+        </tr>
+        <tr>
+          <td>Shop Tools</td>
+          <td>❌ No</td>
+          <td>❌ No</td>
+          <td>✅ Yes</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="cta-block">
+      <h3>Ready to upgrade your workbench?</h3>
+      <p>Try BoardScope for free today and see the difference a modern Command Center makes.</p>
+      <a href="https://github.com/louistoshi/boardscope-app/releases" class="btn">Download BoardScope Free</a>
+    </div>
+  </div>
+</body>
+</html>

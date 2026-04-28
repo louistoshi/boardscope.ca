@@ -1,0 +1,167 @@
+{
+  "name": "boardscope",
+  "version": "5.4.1",
+  "description": "PCB Boardview & Schematic Analysis Tool for board repair — shop management, AI diagnosis, live multimeter",
+  "main": "electron-main.js",
+  "author": "BoardScope <support@boardscope.com>",
+  "homepage": "https://boardscope.ca/",
+  "license": "MIT",
+  "scripts": {
+    "start": "node server.js",
+    "electron:dev": "electron .",
+    "obfuscate": "node --max-old-space-size=4096 ./node_modules/.bin/javascript-obfuscator electron-main.js --output dist-obfuscated/electron-main.js --config obfuscate.config.json && node --max-old-space-size=4096 ./node_modules/.bin/javascript-obfuscator preload.js --output dist-obfuscated/preload.js --config obfuscate.config.json && cp server.js dist-obfuscated/server.js && node --max-old-space-size=4096 ./node_modules/.bin/javascript-obfuscator sw.js --output dist-obfuscated/sw.js --config obfuscate.config.json",
+    "electron:build": "electron-builder",
+    "electron:build:secure": "npm run obfuscate && cp dist-obfuscated/electron-main.js electron-main.js && cp dist-obfuscated/preload.js preload.js && cp dist-obfuscated/server.js server.js && cp dist-obfuscated/sw.js sw.js && electron-builder",
+    "build:win": "electron-builder --win",
+    "build:mac": "electron-builder --mac",
+    "build:linux": "electron-builder --linux",
+    "build:all": "electron-builder --win --mac --linux",
+    "build:secure:win": "npm run electron:build:secure -- --win",
+    "build:secure:mac": "npm run electron:build:secure -- --mac",
+    "build:secure:linux": "npm run electron:build:secure -- --linux",
+    "build:secure:all": "npm run electron:build:secure -- --win --mac --linux",
+    "build:mas": "electron-builder --mac mas"
+  },
+  "build": {
+    "appId": "com.boardscope.app",
+    "productName": "BoardScope",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "electron-main.js",
+      "preload.js",
+      "server.js",
+      "boardview.html",
+      "manual.html",
+      "sw.js",
+      "manifest.json",
+      "assets/**/*",
+      "data/**/*",
+      "docs/**/*",
+      "scripts/**/*",
+      "!.api_key",
+      "!api key",
+      "!boardview-figma.html",
+      "!boardview-macos.html",
+      "!**/*.brd",
+      "!BUILDING.md",
+      "!POLAR_SETUP.md"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "assets/icon.ico",
+      "fileAssociations": [
+        {
+          "ext": "brd",
+          "name": "BoardScope Board File",
+          "description": "PCB Board View File"
+        }
+      ]
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        },
+        {
+          "target": "pkg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
+      "icon": "assets/icon.icns",
+      "category": "public.app-category.developer-tools",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist",
+      "identity": "louis robert (QWV8X6H5C8)",
+      "fileAssociations": [
+        {
+          "ext": "brd",
+          "name": "BoardScope Board File",
+          "description": "PCB Board View File"
+        }
+      ]
+    },
+    "mas": {
+      "target": ["pkg"],
+      "type": "distribution",
+      "category": "public.app-category.developer-tools",
+      "entitlements": "build/entitlements.mas.plist",
+      "entitlementsInherit": "build/entitlements.mas.inherit.plist",
+      "identity": "louis robert (QWV8X6H5C8)",
+      "provisioningProfile": "secrets/BoardScope.provisioningprofile"
+    },
+    "linux": {
+      "maintainer": "BoardScope <support@boardscope.com>",
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "deb",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "assets/icon.png",
+      "category": "Development",
+      "fileAssociations": [
+        {
+          "ext": "brd",
+          "name": "BoardScope Board File",
+          "description": "PCB Board View File"
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": true,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    },
+    "dmg": {
+      "contents": [
+        {
+          "x": 130,
+          "y": 220
+        },
+        {
+          "x": 410,
+          "y": 220,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ]
+    }
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.3.1",
+    "@capacitor/core": "^8.3.1",
+    "@capacitor/ios": "^8.3.1",
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1",
+    "javascript-obfuscator": "^5.4.1",
+    "svg2png": "^4.1.1"
+  }
+}

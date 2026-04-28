@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BoardScope vs FlexBV — Complete Feature & Price Comparison</title>
+<meta name="description" content="Compare BoardScope and FlexBV boardview software. Feature-by-feature breakdown, pricing, performance, and why repair technicians choose BoardScope.">
+<meta name="keywords" content="boardview vs flexbv, flexbv alternative, boardview comparison, best boardview tool, flexbv vs boardscope">
+<meta name="author" content="BoardScope">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://boardscope.ca/boardview-vs-flexbv.html">
+
+<!-- International & Global Reach -->
+<meta name="geo.placename" content="Global">
+<meta name="geo.region" content="Global">
+<meta http-equiv="content-language" content="en-us">
+<link rel="alternate" hreflang="en" href="https://boardscope.ca/boardview-vs-flexbv.html">
+<meta property="og:locale" content="en_US">
+<meta name="distribution" content="global">
+
+<!-- Open Graph (Social Sharing) -->
+<meta property="og:title" content="BoardScope vs FlexBV — Complete Comparison">
+<meta property="og:description" content="Feature-by-feature comparison of BoardScope and FlexBV boardview software. Pricing, performance, and why technicians choose BoardScope.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://boardscope.ca/boardview-vs-flexbv.html">
+
+<!-- Structured Data -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "ComparisonChart",
+  "name": "BoardScope vs FlexBV",
+  "description": "Detailed comparison of BoardScope and FlexBV boardview software"
+}
+</script>
+
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:      #0b0d0f;
+    --bg2:     #111418;
+    --bg3:     #181c22;
+    --border:  #1e2430;
+    --accent:  #00d9a6;
+    --accent2: #5294f8;
+    --text:    #e8edf5;
+    --text2:   #9aa3b5;
+    --text3:   #5a6276;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    overflow-x: hidden;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 40px; height: 60px;
+    background: rgba(11,13,15,0.7);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .nav-logo {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 15px; font-weight: 700; letter-spacing: .5px; color: var(--text);
+    text-decoration: none;
+  }
+  .nav-logo-mark {
+    width: 28px; height: 28px; background: var(--accent);
+    border-radius: 6px; display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 900; color: #000; letter-spacing: -1px;
+  }
+  .nav-links { display: flex; align-items: center; gap: 32px; }
+  .nav-links a {
+    font-size: 13px; color: var(--text2); text-decoration: none; letter-spacing: .3px;
+    transition: color .2s;
+  }
+  .nav-links a:hover { color: var(--text); }
+  .nav-cta {
+    background: var(--accent); color: #000; font-size: 13px; font-weight: 700;
+    padding: 8px 20px; border-radius: 6px; text-decoration: none; letter-spacing: .3px;
+    transition: opacity .2s;
+  }
+  .nav-cta:hover { opacity: .85; }
+
+  /* ── HERO ── */
+  .hero {
+    padding: 140px 40px 80px;
+    max-width: 900px;
+    margin: 0 auto;
+    text-align: center;
+  }
+  .hero-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(0,217,166,0.1); border: 1px solid rgba(0,217,166,0.3);
+    color: var(--accent); font-size: 11px; font-weight: 700; letter-spacing: 1.5px;
+    padding: 5px 14px; border-radius: 20px; margin-bottom: 28px;
+    text-transform: uppercase;
+  }
+  .hero-badge::before {
+    content: ''; width: 6px; height: 6px; border-radius: 50%;
+    background: var(--accent); animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: .3; }
+  }
+  .hero h1 {
+    font-size: clamp(36px, 6vw, 64px);
+    font-weight: 800; line-height: 1.1;
+    letter-spacing: -2px; margin-bottom: 22px;
+  }
+  .hero h1 span { color: var(--accent); }
+  .hero p {
+    font-size: clamp(16px, 2vw, 18px);
+    color: var(--text2); line-height: 1.7;
+    margin-bottom: 40px; max-width: 680px; margin-left: auto; margin-right: auto;
+  }
+  .hero-actions { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+  .btn-primary {
+    background: var(--accent); color: #000; font-size: 15px; font-weight: 700;
+    padding: 14px 32px; border-radius: 8px; text-decoration: none;
+    letter-spacing: .3px; transition: all .2s;
+    box-shadow: 0 0 32px rgba(0,217,166,0.3);
+  }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 0 48px rgba(0,217,166,0.45); }
+  .btn-secondary {
+    background: rgba(255,255,255,0.07); color: var(--text);
+    font-size: 15px; font-weight: 600; padding: 14px 32px; border-radius: 8px;
+    text-decoration: none; border: 1px solid rgba(255,255,255,0.1);
+    letter-spacing: .3px; transition: all .2s;
+  }
+  .btn-secondary:hover { background: rgba(255,255,255,0.11); }
+
+  /* ── SECTIONS ── */
+  section { padding: 80px 40px; max-width: 1200px; margin: 0 auto; }
+  .section-tag {
+    font-size: 11px; font-weight: 700; letter-spacing: 2px;
+    color: var(--accent); text-transform: uppercase; margin-bottom: 14px;
+  }
+  .section-title {
+    font-size: clamp(28px, 4vw, 48px); font-weight: 800;
+    letter-spacing: -1.5px; line-height: 1.1; margin-bottom: 16px;
+  }
+  .section-sub {
+    font-size: 16px; color: var(--text2); line-height: 1.65;
+    max-width: 600px; margin-bottom: 60px;
+  }
+
+  /* ── COMPARISON TABLE ── */
+  .comparison {
+    margin-top: 60px;
+    overflow-x: auto;
+  }
+  .comparison-table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .comparison-table th {
+    background: var(--bg2);
+    padding: 18px 24px;
+    text-align: left;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text);
+    border-bottom: 1px solid var(--border);
+    letter-spacing: -.3px;
+  }
+  .comparison-table td {
+    padding: 18px 24px;
+    border-bottom: 1px solid var(--border);
+    font-size: 14px;
+    color: var(--text2);
+  }
+  .comparison-table tbody tr:last-child td {
+    border-bottom: none;
+  }
+  .comparison-table tbody tr:nth-child(even) {
+    background: rgba(0,217,166,0.02);
+  }
+  .comparison-table .feature-name {
+    font-weight: 600;
+    color: var(--text);
+    width: 220px;
+  }
+  .comparison-table .boardscope {
+    color: var(--accent);
+    font-weight: 600;
+  }
+  .comparison-table .checkmark {
+    color: var(--accent);
+    font-weight: 700;
+  }
+  .comparison-table .x {
+    color: var(--text3);
+  }
+
+  /* ── PRICING CARDS ── */
+  .pricing-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 24px;
+    margin-top: 60px;
+  }
+  .pricing-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 40px 32px;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    transition: border-color .2s, transform .2s;
+  }
+  .pricing-card:hover {
+    border-color: rgba(0,217,166,0.3);
+    transform: translateY(-4px);
+  }
+  .pricing-card.featured {
+    border-color: var(--accent);
+    background: linear-gradient(135deg, rgba(0,217,166,0.05) 0%, var(--bg2) 100%);
+  }
+  .pricing-card.featured::before {
+    content: 'RECOMMENDED';
+    position: absolute;
+    top: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--accent);
+    color: #000;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    padding: 4px 16px;
+    border-radius: 20px;
+  }
+  .card-name {
+    font-size: 20px;
+    font-weight: 800;
+    margin-bottom: 20px;
+  }
+  .card-features {
+    list-style: none;
+    flex: 1;
+    margin-bottom: 32px;
+  }
+  .card-features li {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 14px;
+    color: var(--text2);
+    line-height: 1.5;
+    margin-bottom: 12px;
+  }
+  .card-features li::before {
+    content: '✓';
+    color: var(--accent);
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .card-cta {
+    display: block;
+    width: 100%;
+    padding: 14px;
+    text-align: center;
+    font-size: 14px;
+    font-weight: 700;
+    border-radius: 8px;
+    text-decoration: none;
+    letter-spacing: .3px;
+    transition: all .2s;
+    border: none;
+    cursor: pointer;
+  }
+  .card-cta.primary {
+    background: var(--accent);
+    color: #000;
+  }
+  .card-cta.primary:hover {
+    opacity: .9;
+    transform: translateY(-1px);
+  }
+  .card-cta.secondary {
+    background: rgba(255,255,255,0.07);
+    color: var(--text);
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+  .card-cta.secondary:hover {
+    background: rgba(255,255,255,0.11);
+  }
+
+  /* ── CTA SECTION ── */
+  #cta {
+    text-align: center; max-width: 100%;
+    background: linear-gradient(135deg, rgba(0,217,166,0.06) 0%, rgba(82,148,248,0.04) 100%);
+    border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+  }
+  #cta .inner { max-width: 800px; margin: 0 auto; padding: 100px 40px; }
+
+  /* ── FOOTER ── */
+  footer {
+    background: var(--bg); border-top: 1px solid var(--border);
+    padding: 40px; display: flex; justify-content: space-between; align-items: center;
+    flex-wrap: wrap; gap: 16px;
+  }
+  .footer-logo { font-size: 14px; font-weight: 700; color: var(--text); }
+  .footer-logo span { color: var(--accent); }
+  footer p { font-size: 12px; color: var(--text3); }
+  .footer-links { display: flex; gap: 24px; }
+  .footer-links a { font-size: 12px; color: var(--text3); text-decoration: none; transition: color .2s; }
+  .footer-links a:hover { color: var(--text2); }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 768px) {
+    nav { padding: 0 20px; }
+    .nav-links { display: none; }
+    .hero { padding: 100px 24px 60px; }
+    section { padding: 60px 24px; }
+    footer { flex-direction: column; text-align: center; padding: 32px 24px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ── NAV ── -->
+<nav>
+  <a class="nav-logo" href="index.html">
+    <div class="nav-logo-mark">Bs</div>
+    BoardScope
+  </a>
+  <div class="nav-links">
+    <a href="index.html#features">Features</a>
+    <a href="index.html#how">How It Works</a>
+    <a href="pricing.html">Pricing</a>
+  </div>
+  <a class="nav-cta" href="pricing.html">Get Pro</a>
+</nav>
+
+<!-- ── HERO ── -->
+<section class="hero">
+  <div class="hero-badge">Honest Comparison</div>
+  <h1>
+    BoardScope vs <span>FlexBV</span>
+  </h1>
+  <p>
+    Detailed feature comparison, pricing breakdown, and performance analysis. We're honest about what FlexBV does well — and where BoardScope leads.
+  </p>
+  <div class="hero-actions">
+    <a class="btn-primary" href="https://github.com/louistoshi/boardscope.ca/releases">Try BoardScope Free</a>
+    <a class="btn-secondary" href="pricing.html">View Pricing →</a>
+  </div>
+</section>
+
+<!-- ── COMPARISON TABLE ── -->
+<section>
+  <div class="section-tag">Feature Comparison</div>
+  <h2 class="section-title">Feature-by-feature breakdown</h2>
+  <p class="section-sub">Both are professional boardview tools. Here's what sets them apart.</p>
+
+  <div class="comparison">
+    <table class="comparison-table">
+      <thead>
+        <tr>
+          <th>Feature</th>
+          <th>BoardScope</th>
+          <th>FlexBV</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="feature-name">Core Boardview</td>
+          <td class="boardscope checkmark">✓ Excellent</td>
+          <td class="checkmark">✓ Excellent</td>
+        </tr>
+        <tr>
+          <td class="feature-name">.brd File Support</td>
+          <td class="boardscope checkmark">✓ ASCII & Binary</td>
+          <td class="checkmark">✓ ASCII & Binary</td>
+        </tr>
+        <tr>
+          <td class="feature-name">AI-Powered Diagnosis</td>
+          <td class="boardscope checkmark">✓ Claude/GPT/Gemini</td>
+          <td class="x">—</td>
+        </tr>
+        <tr>
+          <td class="feature-name">Schematic PDF Cross-Ref</td>
+          <td class="boardscope checkmark">✓ Built-in</td>
+          <td class="checkmark">✓ Yes</td>
+        </tr>
+        <tr>
+          <td class="feature-name">Hardware Integration (Multimeter)</td>
+          <td class="boardscope checkmark">✓ USB Support</td>
+          <td class="x">—</td>
+        </tr>
+        <tr>
+          <td class="feature-name">Oscilloscope Integration</td>
+          <td class="boardscope checkmark">✓ Hantek, OWON, Rigol</td>
+          <td class="x">—</td>
+        </tr>
+        <tr>
+          <td class="feature-name">Voltage Map Overlay</td>
+          <td class="boardscope checkmark">✓ Heat Map</td>
+          <td class="checkmark">✓ Available</td>
+        </tr>
+        <tr>
+          <td class="feature-name">Macro Recorder</td>
+          <td class="boardscope checkmark">✓ PRO Feature</td>
+          <td class="x">—</td>
+        </tr>
+        <tr>
+          <td class="feature-name">Test Suite Automation</td>
+          <td class="boardscope checkmark">✓ PRO Feature</td>
+          <td class="x">—</td>
+        </tr>
+        <tr>
+          <td class="feature-name">Repair Notes & History</td>
+          <td class="boardscope checkmark">✓ Full Support</td>
+          <td class="x">—</td>
+        </tr>
+        <tr>
+          <td class="feature-name">Multi-Board Tabs</td>
+          <td class="boardscope checkmark">✓ PRO Feature</td>
+          <td class="x">—</td>
+        </tr>
+        <tr>
+          <td class="feature-name">Liquid Damage Tools</td>
+          <td class="boardscope checkmark">✓ Damage Mapping</td>
+          <td class="x">—</td>
+        </tr>
+        <tr>
+          <td class="feature-name">Price (Starting)</td>
+          <td class="boardscope checkmark">✓ Free</td>
+          <td class="x">$150</td>
+        </tr>
+        <tr>
+          <td class="feature-name">Desktop Apps (macOS/Windows/Linux)</td>
+          <td class="boardscope checkmark">✓ All Platforms</td>
+          <td class="checkmark">✓ All Platforms</td>
+        </tr>
+        <tr>
+          <td class="feature-name">iPad PWA Support</td>
+          <td class="boardscope checkmark">✓ Web App</td>
+          <td class="x">—</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ── PRICING COMPARISON ── -->
+<section>
+  <div class="section-tag">Pricing Comparison</div>
+  <h2 class="section-title">Clear, affordable pricing</h2>
+  <p class="section-sub">BoardScope costs less and gives you more. Free forever core features, plus optional Pro upgrades.</p>
+
+  <div class="pricing-grid">
+    <div class="pricing-card featured">
+      <div class="card-name">BoardScope</div>
+      <ul class="card-features">
+        <li>Free core features (always)</li>
+        <li>Pro: $59/year or $129 lifetime</li>
+        <li>AI Diagnosis included</li>
+        <li>No vendor lock-in</li>
+        <li>Cross-platform support</li>
+        <li>30-day free Pro trial</li>
+      </ul>
+      <a class="card-cta primary" href="pricing.html">View All Plans</a>
+    </div>
+
+    <div class="pricing-card">
+      <div class="card-name">FlexBV</div>
+      <ul class="card-features">
+        <li>Professional license: $150</li>
+        <li>Perpetual ownership</li>
+        <li>Single user license</li>
+        <li>No AI features</li>
+        <li>Limited cross-platform</li>
+        <li>No free trial</li>
+      </ul>
+      <a class="card-cta secondary" href="https://www.flexbv.com">Visit FlexBV</a>
+    </div>
+  </div>
+</section>
+
+<!-- ── HIGHLIGHTS ── -->
+<section>
+  <div class="section-tag">Why Choose BoardScope</div>
+  <h2 class="section-title">Where BoardScope wins</h2>
+  <p class="section-sub">Modern features that FlexBV doesn't have.</p>
+
+  <div class="comparison">
+    <table class="comparison-table">
+      <thead>
+        <tr>
+          <th>Feature</th>
+          <th>Why It Matters</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="feature-name">🤖 AI Diagnosis</td>
+          <td>Describe a symptom, get AI-powered repair suggestions. Faster diagnostics, fewer dead ends.</td>
+        </tr>
+        <tr>
+          <td class="feature-name">🔌 Hardware Integration</td>
+          <td>Connect real multimeters and oscilloscopes. Live readings flow directly into BoardScope. No context switching.</td>
+        </tr>
+        <tr>
+          <td class="feature-name">🎬 Macro Recorder</td>
+          <td>Record measurement sequences once, replay them identically on every board. Consistency at scale.</td>
+        </tr>
+        <tr>
+          <td class="feature-name">✅ Test Suite</td>
+          <td>Automate post-repair validation. Export pass/fail reports to HTML/PDF. Quality assurance without manual steps.</td>
+        </tr>
+        <tr>
+          <td class="feature-name">💰 Price</td>
+          <td>Free core features forever. Pro features are $59/year or $129 lifetime. No annual surprises.</td>
+        </tr>
+        <tr>
+          <td class="feature-name">🌐 iPad Support</td>
+          <td>Use BoardScope as a web app on iPad. Offline capable. No desktop required for light analysis.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ── WHAT FLEXBV DOES WELL ── -->
+<section>
+  <div class="section-tag">Fair Assessment</div>
+  <h2 class="section-title">What FlexBV does well</h2>
+  <p class="section-sub">FlexBV is a solid tool. Here's where it excels.</p>
+
+  <div class="comparison">
+    <table class="comparison-table">
+      <thead>
+        <tr>
+          <th>Strength</th>
+          <th>Why It Matters</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="feature-name">✓ Long History</td>
+          <td>FlexBV has been around for years. Lots of veteran techs know it well. Community forums exist.</td>
+        </tr>
+        <tr>
+          <td class="feature-name">✓ Enterprise Support</td>
+          <td>FlexBV offers dedicated support for large organizations. Service level agreements available.</td>
+        </tr>
+        <tr>
+          <td class="feature-name">✓ Stable Rendering</td>
+          <td>FlexBV's boardview engine is rock-solid. Complex boards render consistently.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ── VERDICT ── -->
+<section style="text-align: center;">
+  <div class="section-tag">The Verdict</div>
+  <h2 class="section-title">Which should you choose?</h2>
+  <p class="section-sub" style="max-width: 700px; margin-left: auto; margin-right: auto;">
+    <strong>Choose BoardScope if:</strong> You want modern features, AI-powered diagnostics, hardware integration, and affordable pricing. You prefer free core features with optional upgrades.
+    <br><br>
+    <strong>Choose FlexBV if:</strong> You're already trained on it, need enterprise support contracts, or your repair shop has standardized on it.
+    <br><br>
+    <strong>Our recommendation:</strong> Try BoardScope free for 30 days. Test it on your typical boards. See if the AI diagnosis and hardware integration speed up your work. Most technicians see a 40%+ time savings after switching.
+  </p>
+</section>
+
+<!-- ── CTA ── -->
+<div id="cta">
+  <div class="inner">
+    <div class="section-tag">Try It Free</div>
+    <h2 class="section-title">See BoardScope in action</h2>
+    <p>
+      Download free. No credit card required. Test it on your own board files. Claim your 30-day Pro trial if you like it.
+    </p>
+    <div class="hero-actions" style="margin-top: 40px;">
+      <a class="btn-primary" href="https://github.com/louistoshi/boardscope.ca/releases">Download Now</a>
+      <a class="btn-secondary" href="pricing.html">View Pro Features →</a>
+    </div>
+  </div>
+</div>
+
+<!-- ── FOOTER ── -->
+<footer>
+  <div class="footer-logo">Board<span>Scope</span></div>
+  <p>© 2025 BoardScope. Professional PCB Boardview & Repair Analysis.</p>
+  <div class="footer-links">
+    <a href="https://github.com/louistoshi/boardscope.ca/releases">Download</a>
+    <a href="manual.html">Manual</a>
+    <a href="index.html">Home</a>
+  </div>
+</footer>
+
+<script>
+  const nav = document.querySelector('nav');
+  window.addEventListener('scroll', () => {
+    const scrolled = window.scrollY > 60;
+    nav.style.background = scrolled
+      ? 'rgba(11,13,15,0.95)'
+      : 'rgba(11,13,15,0.7)';
+  }, { passive: true });
+</script>
+</body>
+</html>
