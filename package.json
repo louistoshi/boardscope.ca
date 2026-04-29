@@ -9,9 +9,9 @@
   "scripts": {
     "start": "node server.js",
     "electron:dev": "electron .",
-    "obfuscate": "node --max-old-space-size=4096 ./node_modules/.bin/javascript-obfuscator electron-main.js --output dist-obfuscated/electron-main.js --config obfuscate.config.json && node --max-old-space-size=4096 ./node_modules/.bin/javascript-obfuscator preload.js --output dist-obfuscated/preload.js --config obfuscate.config.json && cp server.js dist-obfuscated/server.js && node --max-old-space-size=4096 ./node_modules/.bin/javascript-obfuscator sw.js --output dist-obfuscated/sw.js --config obfuscate.config.json",
+    "obfuscate": "node --max-old-space-size=4096 ./node_modules/javascript-obfuscator/bin/javascript-obfuscator.js electron-main.js --output dist-obfuscated/electron-main.js --config obfuscate.config.json && node --max-old-space-size=4096 ./node_modules/javascript-obfuscator/bin/javascript-obfuscator.js preload.js --output dist-obfuscated/preload.js --config obfuscate.config.json && node -e \"require('fs').copyFileSync('server.js', 'dist-obfuscated/server.js')\" && node --max-old-space-size=4096 ./node_modules/javascript-obfuscator/bin/javascript-obfuscator.js sw.js --output dist-obfuscated/sw.js --config obfuscate.config.json",
     "electron:build": "electron-builder",
-    "electron:build:secure": "npm run obfuscate && cp dist-obfuscated/electron-main.js electron-main.js && cp dist-obfuscated/preload.js preload.js && cp dist-obfuscated/server.js server.js && cp dist-obfuscated/sw.js sw.js && electron-builder",
+    "electron:build:secure": "npm run obfuscate && node -e \"require('fs').copyFileSync('dist-obfuscated/electron-main.js', 'electron-main.js'); require('fs').copyFileSync('dist-obfuscated/preload.js', 'preload.js'); require('fs').copyFileSync('dist-obfuscated/server.js', 'server.js'); require('fs').copyFileSync('dist-obfuscated/sw.js', 'sw.js');\" && electron-builder",
     "build:win": "electron-builder --win",
     "build:mac": "electron-builder --mac",
     "build:linux": "electron-builder --linux",
