@@ -17,9 +17,11 @@ jobs:
       - uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
         with:
+          repository: louistoshi/boardscope.ca
+          tag_name: ${{ github.ref_name }}
           files: "dist/BoardScope Setup *.exe"
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.PUBLIC_REPO_TOKEN }}
   build-macos:
     runs-on: macos-latest
     steps:
@@ -36,11 +38,13 @@ jobs:
       - uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
         with:
+          repository: louistoshi/boardscope.ca
+          tag_name: ${{ github.ref_name }}
           files: |
             dist/BoardScope-*.dmg
             dist/BoardScope-*.pkg
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.PUBLIC_REPO_TOKEN }}
   build-linux:
     runs-on: ubuntu-latest
     steps:
@@ -53,8 +57,10 @@ jobs:
       - uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
         with:
+          repository: louistoshi/boardscope.ca
+          tag_name: ${{ github.ref_name }}
           files: |
             dist/*.AppImage
             dist/*.deb
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.PUBLIC_REPO_TOKEN }}
