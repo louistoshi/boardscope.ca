@@ -13,7 +13,9 @@ jobs:
         with:
           node-version: 18
       - run: npm ci
-      - run: npm run build:secure:win
+      - run: npm run build:secure:win -- --publish never
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
         with:
@@ -30,11 +32,12 @@ jobs:
         with:
           node-version: 18
       - run: npm ci
-      - run: npm run build:secure:mac
+      - run: npm run build:secure:mac -- --publish never
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_ID_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
         with:
@@ -53,7 +56,9 @@ jobs:
         with:
           node-version: 18
       - run: npm ci
-      - run: npm run build:secure:linux
+      - run: npm run build:secure:linux -- --publish never
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
         with:
