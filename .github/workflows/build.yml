@@ -34,6 +34,8 @@ jobs:
       - run: npm ci
       - run: npm run build:secure:mac -- --publish never
         env:
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_ID_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
@@ -61,11 +63,3 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
-        with:
-          repository: louistoshi/boardscope.ca
-          tag_name: ${{ github.ref_name }}
-          files: |
-            dist/*.AppImage
-            dist/*.deb
-        env:
-          GITHUB_TOKEN: ${{ secrets.PUBLIC_REPO_TOKEN }}
