@@ -25,7 +25,6 @@
   "build": {
     "appId": "com.boardscope.app",
     "productName": "BoardScope",
-    "asar": false,
     "directories": {
       "output": "dist"
     },
@@ -99,6 +98,9 @@
       "identity": "285766E0969A48EEADE5A916855F6BFE1E24530B",
       "entitlements": "build/entitlements.mac.plist",
       "entitlementsInherit": "build/entitlements.mac.plist",
+      "notarize": {
+        "teamId": "QWV8X6H5C8"
+      },
       "fileAssociations": [
         {
           "ext": "brd",
