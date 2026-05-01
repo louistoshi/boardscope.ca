@@ -9,7 +9,7 @@
   "scripts": {
     "start": "node server.js",
     "electron:dev": "electron .",
-    "obfuscate": "node --max-old-space-size=6144 ./node_modules/javascript-obfuscator/bin/javascript-obfuscator electron-main.js --output dist-obfuscated/electron-main.js --config obfuscate-large.config.json && node --max-old-space-size=6144 ./node_modules/javascript-obfuscator/bin/javascript-obfuscator preload.js --output dist-obfuscated/preload.js --config obfuscate-large.config.json && node -e \"require('fs').copyFileSync('server.js', 'dist-obfuscated/server.js')\" && node --max-old-space-size=6144 ./node_modules/javascript-obfuscator/bin/javascript-obfuscator sw.js --output dist-obfuscated/sw.js --config obfuscate-large.config.json",
+    "obfuscate": "node --max-old-space-size=6144 ./node_modules/javascript-obfuscator/bin/javascript-obfuscator electron-main.js --output dist-obfuscated/electron-main.js --config obfuscate-large.config.json && node --max-old-space-size=6144 ./node_modules/javascript-obfuscator/bin/javascript-obfuscator preload.js --output dist-obfuscated/preload.js --config obfuscate-large.config.json && node -e \"require('fs').copyFileSync('server.js', 'dist-obfuscated/server.js')\" && node -e \"require('fs').copyFileSync('sw.js', 'dist-obfuscated/sw.js')\"",
     "electron:build": "electron-builder",
     "electron:build:secure": "npm run obfuscate && node -e \"require('fs').copyFileSync('dist-obfuscated/electron-main.js', 'electron-main.js'); require('fs').copyFileSync('dist-obfuscated/preload.js', 'preload.js'); require('fs').copyFileSync('dist-obfuscated/server.js', 'server.js'); require('fs').copyFileSync('dist-obfuscated/sw.js', 'sw.js');\" && electron-builder",
     "build:win": "electron-builder --win",
@@ -25,6 +25,7 @@
   "build": {
     "appId": "com.boardscope.app",
     "productName": "BoardScope",
+    "asar": false,
     "directories": {
       "output": "dist"
     },
@@ -36,10 +37,12 @@
       "manual.html",
       "sw.js",
       "manifest.json",
+      ".polar_config",
       "assets/**/*",
       "data/**/*",
       "docs/**/*",
       "scripts/**/*",
+      "node_modules/**/*",
       "!.api_key",
       "!api key",
       "!boardview-figma.html",
@@ -47,6 +50,12 @@
       "!**/*.brd",
       "!BUILDING.md",
       "!POLAR_SETUP.md"
+    ],
+    "extraResources": [
+      {
+        "from": "node_modules",
+        "to": "app/node_modules"
+      }
     ],
     "win": {
       "target": [
@@ -87,9 +96,9 @@
       "category": "public.app-category.developer-tools",
       "hardenedRuntime": true,
       "gatekeeperAssess": false,
+      "identity": "285766E0969A48EEADE5A916855F6BFE1E24530B",
       "entitlements": "build/entitlements.mac.plist",
       "entitlementsInherit": "build/entitlements.mac.plist",
-      "identity": "louis robert (QWV8X6H5C8)",
       "fileAssociations": [
         {
           "ext": "brd",
@@ -104,7 +113,6 @@
       "category": "public.app-category.developer-tools",
       "entitlements": "build/entitlements.mas.plist",
       "entitlementsInherit": "build/entitlements.mas.inherit.plist",
-      "identity": "louis robert (QWV8X6H5C8)",
       "provisioningProfile": "secrets/BoardScope.provisioningprofile"
     },
     "linux": {
