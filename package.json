@@ -25,6 +25,7 @@
   "build": {
     "appId": "com.boardscope.app",
     "productName": "BoardScope",
+    "asar": false,
     "directories": {
       "output": "dist"
     },
