@@ -1,0 +1,1312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BoardScope — User Manual</title>
+<style>
+:root {
+  --bg:#0b0d0f; --bg2:#13151a; --bg3:#1b1e25;
+  --border:#252830; --border2:#32363f;
+  --text:#dde1ea; --text2:#8b90a0; --text3:#454a56;
+  --accent:#00c896; --accent-dim:#00785a;
+  --amber:#f0a030; --red:#e05050; --blue:#3d8ef0;
+  --purple:#a060f0;
+  --r:6px; --mono:'JetBrains Mono','Courier New',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  background:var(--bg);color:var(--text);
+  font-family:'Georgia',serif;
+  font-size:15px;line-height:1.7;
+}
+
+/* ── SIDEBAR NAV ── */
+nav{
+  position:fixed;top:0;left:0;bottom:0;width:240px;
+  background:var(--bg2);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;overflow:hidden;z-index:100;
+}
+.nav-logo{
+  padding:20px 18px 16px;border-bottom:1px solid var(--border);flex-shrink:0;
+}
+.nav-logo .brand{
+  font-family:var(--mono);font-size:16px;font-weight:700;
+  letter-spacing:3px;color:var(--accent);
+}
+.nav-logo .sub{
+  font-family:var(--mono);font-size:9px;color:var(--text3);
+  letter-spacing:2px;margin-top:3px;
+}
+.nav-scroll{flex:1;overflow-y:auto;padding:10px 0}
+.nav-section{
+  font-family:var(--mono);font-size:8px;color:var(--text3);
+  letter-spacing:2px;padding:14px 18px 4px;font-weight:700;
+}
+.nav-item{
+  display:block;padding:6px 18px;font-family:var(--mono);font-size:10px;
+  color:var(--text2);text-decoration:none;letter-spacing:.5px;
+  border-left:2px solid transparent;transition:all .15s;
+}
+.nav-item:hover{color:var(--accent);background:rgba(0,200,150,.05);border-left-color:var(--accent)}
+.nav-item.active{color:var(--accent);border-left-color:var(--accent);background:rgba(0,200,150,.07)}
+.nav-badge{
+  font-size:8px;background:var(--bg3);border:1px solid var(--border2);
+  color:var(--text3);padding:1px 5px;border-radius:3px;float:right;margin-top:1px;
+}
+
+/* ── MAIN CONTENT ── */
+main{margin-left:240px;max-width:900px;padding:48px 52px 80px;}
+
+/* ── COVER ── */
+.cover{
+  margin-bottom:60px;padding-bottom:40px;border-bottom:1px solid var(--border);
+}
+.cover-eyebrow{
+  font-family:var(--mono);font-size:10px;color:var(--text3);
+  letter-spacing:3px;margin-bottom:16px;
+}
+.cover-title{
+  font-family:var(--mono);font-size:42px;font-weight:700;
+  color:var(--accent);letter-spacing:4px;line-height:1.1;margin-bottom:8px;
+}
+.cover-sub{
+  font-family:var(--mono);font-size:14px;color:var(--text2);
+  letter-spacing:2px;margin-bottom:28px;
+}
+.cover-meta{
+  display:flex;gap:24px;flex-wrap:wrap;
+}
+.cover-chip{
+  font-family:var(--mono);font-size:10px;padding:4px 12px;
+  background:var(--bg3);border:1px solid var(--border2);
+  border-radius:var(--r);color:var(--text2);letter-spacing:.5px;
+}
+.cover-chip span{color:var(--accent)}
+
+/* ── SECTIONS ── */
+.section{margin-bottom:56px}
+h2{
+  font-family:var(--mono);font-size:11px;font-weight:700;
+  color:var(--accent);letter-spacing:3px;text-transform:uppercase;
+  padding-bottom:10px;border-bottom:1px solid var(--border);margin-bottom:24px;
+  scroll-margin-top:24px;
+}
+h3{
+  font-family:var(--mono);font-size:13px;font-weight:700;
+  color:var(--text);letter-spacing:1px;margin:28px 0 12px;
+}
+h4{
+  font-family:var(--mono);font-size:11px;color:var(--amber);
+  letter-spacing:.5px;margin:20px 0 8px;
+}
+p{margin-bottom:14px;color:var(--text2);}
+p:last-child{margin-bottom:0}
+strong{color:var(--text);font-weight:600}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* ── CALLOUTS ── */
+.callout{
+  border-left:3px solid var(--accent);background:rgba(0,200,150,.06);
+  padding:14px 18px;border-radius:0 var(--r) var(--r) 0;margin:20px 0;
+}
+.callout.tip{border-color:var(--accent)}
+.callout.warn{border-color:var(--amber);background:rgba(240,160,48,.06)}
+.callout.info{border-color:var(--blue);background:rgba(61,142,240,.06)}
+.callout-label{
+  font-family:var(--mono);font-size:9px;letter-spacing:2px;font-weight:700;
+  margin-bottom:6px;
+}
+.callout.tip  .callout-label{color:var(--accent)}
+.callout.warn .callout-label{color:var(--amber)}
+.callout.info .callout-label{color:var(--blue)}
+.callout p{margin-bottom:0;font-size:14px}
+
+/* ── TOOL CARDS ── */
+.tool-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0}
+.tool-card{
+  background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);
+  padding:14px 16px;
+}
+.tool-card-hdr{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.tool-icon{font-size:16px}
+.tool-name{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--text);letter-spacing:.5px}
+.tool-card p{font-size:13px;color:var(--text3);margin:0}
+
+/* ── KEYBOARD SHORTCUTS ── */
+.shortcut-table{width:100%;border-collapse:collapse;margin:16px 0}
+.shortcut-table th{
+  font-family:var(--mono);font-size:9px;letter-spacing:1.5px;color:var(--text3);
+  padding:6px 10px;text-align:left;border-bottom:1px solid var(--border);font-weight:700;
+}
+.shortcut-table td{
+  padding:7px 10px;border-bottom:1px solid var(--border);font-size:13px;color:var(--text2);
+}
+.shortcut-table tr:last-child td{border-bottom:none}
+kbd{
+  font-family:var(--mono);font-size:10px;background:var(--bg3);
+  border:1px solid var(--border2);color:var(--text);padding:2px 7px;
+  border-radius:4px;white-space:nowrap;
+}
+
+/* ── STEP LIST ── */
+.steps{list-style:none;margin:16px 0;counter-reset:step}
+.steps li{
+  counter-increment:step;display:flex;gap:14px;margin-bottom:16px;
+  padding-bottom:16px;border-bottom:1px solid var(--border);
+}
+.steps li:last-child{border-bottom:none;margin-bottom:0}
+.step-num{
+  font-family:var(--mono);font-size:11px;font-weight:700;
+  color:var(--bg);background:var(--accent);border-radius:50%;
+  width:22px;height:22px;display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;margin-top:2px;
+}
+.step-body strong{font-family:var(--mono);font-size:12px;color:var(--text);display:block;margin-bottom:4px}
+.step-body p{font-size:13px;margin:0}
+
+/* ── FILE FORMAT TABLE ── */
+.fmt-table{width:100%;border-collapse:collapse;margin:16px 0}
+.fmt-table th{
+  font-family:var(--mono);font-size:9px;letter-spacing:1.5px;color:var(--text3);
+  padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);
+  background:var(--bg2);font-weight:700;
+}
+.fmt-table td{padding:9px 12px;border-bottom:1px solid var(--border);font-size:13px;color:var(--text2)}
+.fmt-table tr:hover td{background:var(--bg2)}
+.fmt-ext{font-family:var(--mono);color:var(--accent);font-size:11px}
+.fmt-yes{color:var(--accent);font-family:var(--mono);font-size:11px}
+.fmt-no{color:var(--text3);font-family:var(--mono);font-size:11px}
+
+/* ── WORKFLOW DIAGRAM ── */
+.workflow{display:flex;align-items:center;gap:0;margin:24px 0;flex-wrap:wrap}
+.wf-step{
+  background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);
+  padding:10px 14px;font-family:var(--mono);font-size:10px;text-align:center;
+  min-width:100px;
+}
+.wf-step .wf-icon{font-size:20px;display:block;margin-bottom:4px}
+.wf-step .wf-label{color:var(--text2);letter-spacing:.5px}
+.wf-arrow{color:var(--text3);font-size:18px;padding:0 6px;flex-shrink:0}
+
+/* ── COLOR LEGEND ── */
+.color-legend{display:flex;flex-direction:column;gap:6px;margin:16px 0}
+.color-row{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text2)}
+.color-swatch{width:16px;height:16px;border-radius:3px;flex-shrink:0;border:1px solid rgba(255,255,255,.1)}
+
+/* ── INLINE CODE ── */
+code{
+  font-family:var(--mono);font-size:12px;background:var(--bg3);
+  border:1px solid var(--border2);padding:1px 6px;border-radius:3px;color:var(--accent);
+}
+pre{
+  background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);
+  padding:16px 20px;overflow-x:auto;margin:16px 0;
+}
+pre code{background:none;border:none;padding:0;font-size:12px;color:var(--text2)}
+
+/* ── TOC ── */
+.toc{
+  background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);
+  padding:20px 24px;margin-bottom:48px;
+}
+.toc-title{font-family:var(--mono);font-size:9px;color:var(--text3);letter-spacing:2px;margin-bottom:14px}
+.toc-cols{display:grid;grid-template-columns:1fr 1fr;gap:4px 24px}
+.toc a{font-family:var(--mono);font-size:11px;color:var(--text2);display:block;padding:3px 0}
+.toc a:hover{color:var(--accent)}
+.toc .toc-num{color:var(--text3);margin-right:8px}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+
+/* ── RESPONSIVE ── */
+@media(max-width:768px){
+  nav{display:none}
+  main{margin-left:0;padding:24px 20px 60px}
+  .tool-grid{grid-template-columns:1fr}
+  .toc-cols{grid-template-columns:1fr}
+  .workflow{flex-direction:column}
+  .cover-title{font-size:28px}
+}
+
+/* ── PRINT ── */
+@media print{
+  nav{display:none}
+  main{margin-left:0;max-width:100%}
+  .callout{break-inside:avoid}
+  .tool-card{break-inside:avoid}
+}
+</style>
+</head>
+<body>
+
+<!-- ══ SIDEBAR ══ -->
+<nav>
+  <div class="nav-logo">
+    <div class="brand">BOARDSCOPE</div>
+    <div class="sub">USER MANUAL v2.0</div>
+  </div>
+  <div class="nav-scroll">
+    <div class="nav-section">GETTING STARTED</div>
+    <a class="nav-item" href="#quickstart">Quick Start</a>
+    <a class="nav-item" href="#install">Installation</a>
+    <a class="nav-item" href="#desktop-app">Desktop App</a>
+    <a class="nav-item" href="#pwa">iPad / PWA</a>
+    <a class="nav-item" href="#fileformats">File Formats</a>
+    <a class="nav-item" href="#interface">Interface Overview</a>
+
+    <div class="nav-section">CORE FEATURES</div>
+    <a class="nav-item" href="#boardview">Board View</a>
+    <a class="nav-item" href="#schematic">Schematic PDF</a>
+    <a class="nav-item" href="#board-tabs">Multi-Board Tabs</a>
+    <a class="nav-item" href="#crossref">Cross-Reference</a>
+    <a class="nav-item" href="#nets">Net Highlighting</a>
+    <a class="nav-item" href="#obd">OpenBoardData</a>
+
+    <div class="nav-section">AI FEATURES</div>
+    <a class="nav-item" href="#ai-setup">AI Setup</a>
+    <a class="nav-item" href="#ai-analyze">AI Analysis</a>
+    <a class="nav-item" href="#ai-providers">AI Providers</a>
+
+    <div class="nav-section">ANALYSIS TOOLS</div>
+    <a class="nav-item" href="#voltmap">Voltage Map</a>
+    <a class="nav-item" href="#diodemap">Diode Map</a>
+    <a class="nav-item" href="#shorts">Short Finder</a>
+    <a class="nav-item" href="#continuity">Continuity</a>
+    <a class="nav-item" href="#testpoints">Test Points</a>
+    <a class="nav-item" href="#powertree">Power Tree</a>
+    <a class="nav-item" href="#compare">Compare Mode</a>
+
+    <div class="nav-section">REPAIR WORKFLOW</div>
+    <a class="nav-item" href="#probemode">Probe Mode</a>
+    <a class="nav-item" href="#faulttree">Fault Tree</a>
+    <a class="nav-item" href="#repairlog">Repair Log</a>
+    <a class="nav-item" href="#notes">Component Notes</a>
+    <a class="nav-item" href="#aliases">Net Aliases</a>
+    <a class="nav-item" href="#overlay">Photo Overlay</a>
+
+    <div class="nav-section">LICENSE</div>
+    <a class="nav-item" href="#license">Pro License</a>
+    <a class="nav-item" href="#license-activate">Activate License</a>
+
+    <div class="nav-section">REFERENCE</div>
+    <a class="nav-item" href="#shortcuts">Keyboard Shortcuts</a>
+    <a class="nav-item" href="#tips">Tips & Tricks</a>
+    <a class="nav-item" href="#troubleshoot">Troubleshooting</a>
+  </div>
+</nav>
+
+<!-- ══ MAIN ══ -->
+<main>
+
+<!-- COVER -->
+<div class="cover">
+  <div class="cover-eyebrow">TECHNICAL DOCUMENTATION</div>
+  <div class="cover-title">BOARDSCOPE</div>
+  <div class="cover-sub">PCB Boardview & Schematic Analysis Tool</div>
+  <div class="cover-meta">
+    <span class="cover-chip">Version <span>2.0.0</span></span>
+    <span class="cover-chip">Desktop app — <span>Windows, macOS, Linux</span></span>
+    <span class="cover-chip">iPad / PWA — <span>install from Safari</span></span>
+    <span class="cover-chip">AI analysis — <span>Claude, GPT-4, Gemini</span></span>
+    <span class="cover-chip">Node.js proxy for <span>OBD data</span></span>
+    <span class="cover-chip">Touch + desktop <span>supported</span></span>
+  </div>
+</div>
+
+<!-- TABLE OF CONTENTS -->
+<div class="toc">
+  <div class="toc-title">CONTENTS</div>
+  <div class="toc-cols">
+    <div>
+      <a href="#quickstart"><span class="toc-num">01</span>Quick Start</a>
+      <a href="#install"><span class="toc-num">02</span>Installation</a>
+      <a href="#desktop-app"><span class="toc-num">03</span>Desktop App</a>
+      <a href="#pwa"><span class="toc-num">04</span>iPad / PWA</a>
+      <a href="#fileformats"><span class="toc-num">05</span>File Formats</a>
+      <a href="#interface"><span class="toc-num">06</span>Interface Overview</a>
+      <a href="#boardview"><span class="toc-num">07</span>Board View</a>
+      <a href="#schematic"><span class="toc-num">08</span>Schematic PDF</a>
+      <a href="#board-tabs"><span class="toc-num">09</span>Multi-Board Tabs</a>
+      <a href="#crossref"><span class="toc-num">10</span>Cross-Reference</a>
+      <a href="#nets"><span class="toc-num">11</span>Net Highlighting</a>
+      <a href="#obd"><span class="toc-num">12</span>OpenBoardData</a>
+    </div>
+    <div>
+      <a href="#ai-setup"><span class="toc-num">13</span>AI Setup</a>
+      <a href="#ai-analyze"><span class="toc-num">14</span>AI Analysis</a>
+      <a href="#ai-providers"><span class="toc-num">15</span>AI Providers</a>
+      <a href="#voltmap"><span class="toc-num">16</span>Voltage Map</a>
+      <a href="#diodemap"><span class="toc-num">17</span>Diode Map</a>
+      <a href="#shorts"><span class="toc-num">18</span>Short Finder</a>
+      <a href="#continuity"><span class="toc-num">19</span>Continuity Checker</a>
+      <a href="#testpoints"><span class="toc-num">20</span>Test Points</a>
+      <a href="#probemode"><span class="toc-num">21</span>Probe Mode</a>
+      <a href="#faulttree"><span class="toc-num">22</span>Fault Tree</a>
+      <a href="#license"><span class="toc-num">23</span>Pro License</a>
+      <a href="#shortcuts"><span class="toc-num">24</span>Keyboard Shortcuts</a>
+      <a href="#tips"><span class="toc-num">25</span>Tips & Tricks</a>
+    </div>
+  </div>
+</div>
+
+<!-- ══ 01 QUICK START ══ -->
+<div class="section" id="quickstart">
+<h2>01 — Quick Start</h2>
+<p>BoardScope is available as a native desktop app (Windows, macOS, Linux) or as a web app. Get up and running in under two minutes.</p>
+
+<div class="workflow">
+  <div class="wf-step"><span class="wf-icon">📁</span><span class="wf-label">INSTALL</span></div>
+  <div class="wf-arrow">→</div>
+  <div class="wf-step"><span class="wf-icon">🖥</span><span class="wf-label">LAUNCH APP</span></div>
+  <div class="wf-arrow">→</div>
+  <div class="wf-step"><span class="wf-icon">📋</span><span class="wf-label">LOAD BRD</span></div>
+  <div class="wf-arrow">→</div>
+  <div class="wf-step"><span class="wf-icon">🔧</span><span class="wf-label">REPAIR</span></div>
+</div>
+
+<ol class="steps">
+  <li>
+    <div class="step-num">1</div>
+    <div class="step-body">
+      <strong>Install the desktop app</strong>
+      <p>Download the installer for your platform from <a href="https://thelogiclab.app" target="_blank">thelogiclab.app</a>. Run the installer and launch BoardScope.</p>
+    </div>
+  </li>
+  <li>
+    <div class="step-num">2</div>
+    <div class="step-body">
+      <strong>Load your files</strong>
+      <p>Click <strong>+ BRD / BVR</strong> to load a boardview file, and <strong>+ PDF</strong> to load the schematic. You can also drag and drop files anywhere on the window.</p>
+    </div>
+  </li>
+  <li>
+    <div class="step-num">3</div>
+    <div class="step-body">
+      <strong>Let OBD load</strong>
+      <p>If your board is in the OpenBoardData database (most Apple boards are), voltage and diode data will auto-fetch in the background. Watch the status bar — it will say <em>OBD: LOADED</em> when ready.</p>
+    </div>
+  </li>
+</ol>
+
+<div class="callout tip">
+  <div class="callout-label">💡 TIP</div>
+  <p>You can also run BoardScope as a web app by opening <code>boardview.html</code> in a browser and running <code>node server.js</code> for OBD data. The desktop app includes everything built-in — no server needed.</p>
+</div>
+</div>
+
+<!-- ══ 02 INSTALLATION ══ -->
+<div class="section" id="install">
+<h2>02 — Installation</h2>
+
+<h3>Requirements</h3>
+<p>BoardScope desktop has no external dependencies. For the web version, you need <strong>Node.js</strong> (version 14 or later) for the local proxy server. Node.js is free and available at <a href="https://nodejs.org" target="_blank">nodejs.org</a>.</p>
+
+<div class="callout info">
+  <div class="callout-label">ℹ INFO</div>
+  <p>The desktop app includes the server built-in. No <code>node server.js</code> required when using the native app.</p>
+</div>
+
+<h3>Windows</h3>
+<p>Download the <code>BoardScope Setup X.X.X.exe</code> installer. Run it and follow the installation wizard. You can choose the install location and whether to create desktop/start menu shortcuts.</p>
+
+<h3>macOS</h3>
+<p>Download the <code>BoardScope X.X.X.dmg</code> file (choose the arm64 version for M1/M2/M3 Macs, or the standard version for Intel Macs). Double-click to mount, then drag BoardScope to the Applications folder.</p>
+<p><strong>First launch:</strong> If macOS says the app is from an unidentified developer, right-click (or Control-click) the app and select <strong>Open</strong>, then click <strong>Open</strong> again in the dialog.</p>
+
+<h3>Linux</h3>
+<p>Two formats are available:</p>
+<ul style="margin:8px 0 8px 20px;color:var(--text2);font-size:14px;line-height:2">
+  <li><strong>AppImage:</strong> <code>chmod +x BoardScope-*.AppImage</code> then run it directly. No installation needed.</li>
+  <li><strong>.deb package:</strong> <code>sudo dpkg -i boardscope_*.deb</code> for Debian/Ubuntu systems.</li>
+</ul>
+
+<h3>Running on a local network (web version)</h3>
+<p>To access BoardScope from a tablet or another device on the same network, edit <code>server.js</code> and change <code>'127.0.0.1'</code> to <code>'0.0.0.0'</code>. Then access it via your computer's local IP address, e.g. <code>http://192.168.1.10:8080</code>.</p>
+</div>
+
+<!-- ══ 03 DESKTOP APP ══ -->
+<div class="section" id="desktop-app">
+<h2>03 — Desktop App</h2>
+<p>BoardScope is available as a native desktop application built with Electron. The desktop app provides a seamless experience with features not available in the browser version.</p>
+
+<h3>Features</h3>
+<div class="tool-grid">
+  <div class="tool-card">
+    <div class="tool-card-hdr"><span class="tool-icon">📂</span><span class="tool-name">File → Open</span></div>
+    <p>Use the native file dialog (Ctrl+O / Cmd+O) to open .brd and .pdf files directly from your file system.</p>
+  </div>
+  <div class="tool-card">
+    <div class="tool-card-hdr"><span class="tool-icon">🔗</span><span class="tool-name">File Associations</span></div>
+    <p>Double-click any .brd file to open it directly in BoardScope. Set as default app for boardview files.</p>
+  </div>
+  <div class="tool-card">
+    <div class="tool-card-hdr"><span class="tool-icon">🖥</span><span class="tool-name">Native Window</span></div>
+    <p>Full menu bar, zoom controls, fullscreen mode, and standard desktop app behaviour.</p>
+  </div>
+  <div class="tool-card">
+    <div class="tool-card-hdr"><span class="tool-icon">🔌</span><span class="tool-name">No Server Needed</span></div>
+    <p>The built-in server starts automatically. OBD data, AI analysis, and all features work out of the box.</p>
+  </div>
+</div>
+
+<h3>Menu Bar</h3>
+<p><strong>File → Open Board File...</strong> — Opens a native file picker for .brd and .pdf files.<br>
+<strong>View → Toggle DevTools</strong> — Opens the browser console for debugging.<br>
+<strong>Help → About BoardScope</strong> — Shows version information.</p>
+
+<div class="callout tip">
+  <div class="callout-label">💡 TIP</div>
+  <p>Launch with <code>--devtools</code> flag to automatically open DevTools on startup: <code>BoardScope --devtools</code></p>
+</div>
+</div>
+
+<!-- ══ 04 iPad / PWA ══ -->
+<div class="section" id="pwa">
+<h2>04 — iPad / PWA</h2>
+<p>BoardScope works as a Progressive Web App on iPad and other mobile devices. Install it to your home screen for a full-screen, app-like experience.</p>
+
+<h3>Installing on iPad</h3>
+<ol class="steps">
+  <li>
+    <div class="step-num">1</div>
+    <div class="step-body">
+      <strong>Host the app on HTTPS</strong>
+      <p>PWA requires HTTPS. Host BoardScope on any HTTPS server, or use the desktop app's built-in server on your local network.</p>
+    </div>
+  </li>
+  <li>
+    <div class="step-num">2</div>
+    <div class="step-body">
+      <strong>Open in Safari</strong>
+      <p>Navigate to the BoardScope URL in Safari on your iPad.</p>
+    </div>
+  </li>
+  <li>
+    <div class="step-num">3</div>
+    <div class="step-body">
+      <strong>Add to Home Screen</strong>
+      <p>Tap the <strong>Share</strong> button (box with arrow), then scroll down and tap <strong>"Add to Home Screen"</strong>. Confirm the name and tap <strong>Add</strong>.</p>
+    </div>
+  </li>
+  <li>
+    <div class="step-num">4</div>
+    <div class="step-body">
+      <strong>Launch from Home Screen</strong>
+      <p>The BoardScope icon now appears on your home screen. Tap it to launch in full-screen mode with no Safari chrome.</p>
+    </div>
+  </li>
+</ol>
+
+<h3>PWA Features</h3>
+<ul style="margin:8px 0 8px 20px;color:var(--text2);font-size:14px;line-height:2">
+  <li><strong>Offline caching</strong> — The app shell is cached for faster loading</li>
+  <li><strong>Full-screen mode</strong> — No browser UI, looks like a native app</li>
+  <li><strong>Home screen icon</strong> — Custom BoardScope icon</li>
+  <li><strong>Touch optimized</strong> — Pinch-to-zoom, swipe, and tap gestures</li>
+</ul>
+
+<div class="callout warn">
+  <div class="callout-label">⚠ NOTE</div>
+  <p>PWA requires iOS 11.3 or later. The PWA works on any HTTPS-hosted BoardScope instance. For local network use, you'll need a self-signed certificate or a reverse proxy with HTTPS.</p>
+</div>
+</div>
+
+<!-- ══ 05 FILE FORMATS ══ -->
+<div class="section" id="fileformats">
+<h2>05 — File Formats</h2>
+<p>BoardScope auto-detects the format from file content — not just the extension. The format detected is shown in the status bar after loading.</p>
+
+<table class="fmt-table">
+  <thead>
+    <tr>
+      <th>FORMAT</th><th>EXTENSION</th><th>COMMON SOURCE</th><th>PIN DATA</th><th>OUTLINE</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>BVRAW_FORMAT_3</strong></td>
+      <td class="fmt-ext">.bvr</td>
+      <td>Most Apple/common boards</td>
+      <td class="fmt-yes">✓ Full</td>
+      <td class="fmt-yes">✓</td>
+    </tr>
+    <tr>
+      <td><strong>FlexBV</strong></td>
+      <td class="fmt-ext">.brd</td>
+      <td>Repair community, most common</td>
+      <td class="fmt-yes">✓ Full</td>
+      <td class="fmt-yes">✓</td>
+    </tr>
+    <tr>
+      <td><strong>BoardViewer (BRD2)</strong></td>
+      <td class="fmt-ext">.brd, .brd2</td>
+      <td>Dell, Lenovo, HP boards</td>
+      <td class="fmt-yes">✓ Full</td>
+      <td class="fmt-yes">✓</td>
+    </tr>
+    <tr>
+      <td><strong>CAD / Agilent CSV</strong></td>
+      <td class="fmt-ext">.cad, .csv</td>
+      <td>Factory fixture boards</td>
+      <td class="fmt-no">– Partial</td>
+      <td class="fmt-no">–</td>
+    </tr>
+    <tr>
+      <td><strong>Classic [PARTS]</strong></td>
+      <td class="fmt-ext">.brd, .txt</td>
+      <td>Older tools, generic</td>
+      <td class="fmt-yes">✓ Basic</td>
+      <td class="fmt-yes">✓</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>Where to find boardview files</h3>
+<p>Boardview files (.bvr, .brd) are separate from schematics. Common sources:</p>
+<ul style="margin:12px 0 12px 20px;color:var(--text2);font-size:14px;line-height:2">
+  <li><strong>OpenBoardData.org</strong> — large community database, especially Apple boards</li>
+  <li><strong>Louis Rossmann's board repair resources</strong></li>
+  <li><strong>iFixit</strong> — some boards have associated files</li>
+  <li><strong>Laptop.wiki</strong> — community wiki with board resources</li>
+  <li><strong>Board repair Facebook groups / Discord servers</strong></li>
+</ul>
+
+<div class="callout warn">
+  <div class="callout-label">⚠ NOTE</div>
+  <p>Schematics (PDF files) are separate from boardview files. Boardview files contain component positions and net connections. Schematics show circuit diagrams. Both are needed for a full repair workflow.</p>
+</div>
+</div>
+
+<!-- ══ 06 INTERFACE ══ -->
+<div class="section" id="interface">
+<h2>06 — Interface Overview</h2>
+
+<h3>Layout</h3>
+<p>BoardScope uses a split-pane layout. The <strong>left pane</strong> shows the schematic PDF. The <strong>right pane</strong> shows the boardview. A draggable divider separates them. Three layout modes are available in the top-right header buttons: <strong>PDF</strong> (PDF only), <strong>DUAL</strong> (both), <strong>BRD</strong> (boardview only).</p>
+
+<h3>Header bar (PDF pane)</h3>
+<p>Contains file load buttons, layout switcher, page navigation, zoom controls, rotation, continuous scroll toggle, and schematic search (Ctrl+F).</p>
+
+<h3>Header bar (BRD pane)</h3>
+<p>Contains file load buttons, TOP/BOT side toggles, and rotate/flip controls.</p>
+
+<h3>Toolbar (BRD pane)</h3>
+<p>The main toolbar contains the search box and four dropdown menus:</p>
+<div class="tool-grid">
+  <div class="tool-card">
+    <div class="tool-card-hdr"><span class="tool-icon">⚙</span><span class="tool-name">VIEW ▾</span></div>
+    <p>Ghost mode, hide mechanical, Pin 1 markers, butterfly mode, Voltage Map, Diode Map, Photo Overlay</p>
+  </div>
+  <div class="tool-card">
+    <div class="tool-card-hdr"><span class="tool-icon">⚲</span><span class="tool-name">FIND ▾</span></div>
+    <p>Test Points, Multi Search, Continuity Checker, Short Finder, Compare Mode, Schematic Library</p>
+  </div>
+  <div class="tool-card">
+    <div class="tool-card-hdr"><span class="tool-icon">⚠</span><span class="tool-name">REPAIR ▾</span></div>
+    <p>Fault Tree, Probe Mode, Component Notes, Net Aliases, OBD Data, Repair Log, AI Analysis</p>
+  </div>
+  <div class="tool-card">
+    <div class="tool-card-hdr"><span class="tool-icon">⊟</span><span class="tool-name">BOARD ▾</span></div>
+    <p>Power Tree, 2-Up PDF view, Screenshot</p>
+  </div>
+</div>
+
+<h3>Status bar</h3>
+<p>The status bar (bottom of header) shows real-time feedback: component counts, OBD loading progress, active net, search results, and error messages.</p>
+</div>
+
+<!-- ══ 07 BOARD VIEW ══ -->
+<div class="section" id="boardview">
+<h2>07 — Board View</h2>
+
+<h3>Navigation</h3>
+<p><strong>Pan:</strong> Click and drag, or single-finger swipe on touch screens.<br>
+<strong>Zoom:</strong> Scroll wheel, or pinch on touch screens. Zoom is centered on the cursor position.<br>
+<strong>Fit:</strong> Press <kbd>f</kbd> to fit the entire board in view.</p>
+
+<h3>TOP / BOTTOM sides</h3>
+<p>Toggle the <strong>TOP</strong> and <strong>BOT</strong> buttons to show/hide each side. In dual mode both sides overlay. Use <strong>Butterfly Mode</strong> (VIEW ▾ → Butterfly) to see both sides side by side, mirrored as if folding the board.</p>
+
+<h3>Rotation and flip</h3>
+<p>Use the rotate and flip buttons in the header. These apply to the entire board orientation. Useful when your physical board is oriented differently from the schematic.</p>
+
+<h3>Component colours</h3>
+<p>By default, components are colour-coded by type when the colour-code setting is enabled:</p>
+<div class="color-legend">
+  <div class="color-row"><div class="color-swatch" style="background:#0d1825;border-color:#1a70c0"></div>Capacitors (C*) — blue tint</div>
+  <div class="color-row"><div class="color-swatch" style="background:#082010;border-color:#208050"></div>Resistors (R*) — green tint</div>
+  <div class="color-row"><div class="color-swatch" style="background:#1a1400;border-color:#907010"></div>ICs & Crystals (U*, Y*) — amber tint</div>
+  <div class="color-row"><div class="color-swatch" style="background:#130820;border-color:#7040c0"></div>Inductors, ferrites (L*, F*) — purple tint</div>
+  <div class="color-row"><div class="color-swatch" style="background:#1a0800;border-color:#b04010"></div>Diodes, transistors (D*, Z*, Q*) — orange tint</div>
+</div>
+
+<h3>Pin information</h3>
+<p>Hover over any pad to see a popup with:</p>
+<ul style="margin:8px 0 8px 20px;color:var(--text2);font-size:14px;line-height:2">
+  <li>Component reference and side</li>
+  <li>Pin number, name, and net</li>
+  <li>Mount type (SMD, through-hole)</li>
+  <li>OBD voltage, diode, resistance readings (if loaded)</li>
+  <li>Component value/package from OBD</li>
+</ul>
+
+<h3>Component sidebar</h3>
+<p>Click any component to open the sidebar showing full component info, all pin nets with OBD badges, mycelium chain (connected bridges), and a quick-add note button.</p>
+
+<h3>Search</h3>
+<p>The search box supports powerful filters:</p>
+<pre><code>U1970         — exact ref match
+ref:U19       — refs starting with U19
+net:PP3V3     — components on net PP3V3
+side:T        — top-side only
+pin:1         — has a pin numbered 1
+net:PP3 side:B — combine filters</code></pre>
+</div>
+
+<!-- ══ 08 SCHEMATIC PDF ══ -->
+<div class="section" id="schematic">
+<h2>08 — Schematic PDF</h2>
+
+<h3>Navigation modes</h3>
+<p>BoardScope has two PDF viewing modes:</p>
+<p><strong>Single-page mode</strong> (default) — one page at a time. Fast, low memory. Use keyboard shortcuts for navigation.</p>
+<p><strong>Continuous scroll mode</strong> — all pages stacked vertically, lazy-rendered as you scroll. Press <kbd>c</kbd> or the <strong>≡</strong> button to toggle. Ideal for following signals across multiple pages.</p>
+
+<h3>2-Up PDF view</h3>
+<p>BOARD ▾ → 2-UP PDF shows two pages side by side. Perfect when a signal crosses sheets and you need to see both at once. Click either page to jump to it in the main viewer.</p>
+
+<h3>Text search</h3>
+<p>Press <kbd>Ctrl+F</kbd> to open the PDF search bar. Type a net name, component reference, or any text. Results are highlighted across all pages. Press <kbd>Enter</kbd> to cycle through matches.</p>
+
+<h3>Bookmarks</h3>
+<p>Press <kbd>Ctrl+B</kbd> to bookmark the current page. Bookmarks appear in the star (★) dropdown. The page indicator star turns gold on bookmarked pages. Bookmarks persist per PDF file in localStorage.</p>
+
+<h3>Zoom and fit modes</h3>
+<p>Press <kbd>z</kbd> to cycle through three fit modes: fit page, fit width, and actual size. Use <kbd>+</kbd>/<kbd>-</kbd> for manual zoom. These all work in continuous scroll mode too.</p>
+</div>
+
+<!-- ══ 09 MULTI-BOARD TABS ══ -->
+<div class="section" id="board-tabs">
+<h2>09 — Multi-Board Tabs</h2>
+<p>BoardScope supports loading multiple boardview files simultaneously. Each board gets its own tab in the boardview pane, allowing you to switch between boards without losing your place.</p>
+
+<h3>How it works</h3>
+<p>When you load a second .brd file, a new tab appears in the tab bar above the boardview. Each tab maintains its own zoom level, pan position, and highlighted nets independently.</p>
+
+<h3>Tab controls</h3>
+<ul style="margin:8px 0 8px 20px;color:var(--text2);font-size:14px;line-height:2">
+  <li><strong>Click a tab</strong> to switch to that board</li>
+  <li><strong>Click the × button</strong> on a tab to close it</li>
+  <li><strong>Load a new file</strong> with + BRD to create a new tab</li>
+</ul>
+
+<div class="callout tip">
+  <div class="callout-label">💡 TIP</div>
+  <p>Use multi-board tabs when comparing a faulty board to a known-good donor board, or when working with multi-board systems (logic board + I/O board).</p>
+</div>
+</div>
+
+<!-- ══ 10 CROSS REFERENCE ══ -->
+<div class="section" id="crossref">
+<h2>10 — Cross-Reference</h2>
+<p>The cross-reference system links components on the board to their appearance in the schematic — and back again.</p>
+
+<h3>Board → Schematic</h3>
+<p><strong>Double-click</strong> any component on the board. BoardScope searches the PDF index for that reference, jumps to the correct page, and highlights the component name with an orange pulsing box. If the PDF pane is collapsed, it automatically switches to dual-pane mode.</p>
+
+<h3>Schematic → Board</h3>
+<p><strong>Click</strong> any component reference in the schematic PDF. BoardScope finds it on the board, zooms to it, and highlights it in green.</p>
+
+<h3>Index building</h3>
+<p>When a PDF is loaded, BoardScope indexes all component references across all pages in the background. The status bar shows <em>INDEXING PAGE X / Y</em> during this process. The <strong>idx badge</strong> in the header turns green when complete. Searching before the index is done uses a slower live-scan fallback.</p>
+
+<div class="callout tip">
+  <div class="callout-label">💡 TIP</div>
+  <p>The index is built once per PDF load and cached in memory. For large PDFs (100+ pages), give it 10–20 seconds to complete before relying on the cross-reference.</p>
+</div>
+</div>
+
+<!-- ══ 11 NET HIGHLIGHTING ══ -->
+<div class="section" id="nets">
+<h2>11 — Net Highlighting</h2>
+
+<h3>Activating a net</h3>
+<p><strong>Right-click</strong> any pad on the board to highlight its net. All pads connected to that net glow amber, and dashed constellation lines connect them to a central centroid point. The net panel appears showing the net name, pin count, and OBD measurements.</p>
+
+<h3>Net panel</h3>
+<p>The floating net panel shows:</p>
+<ul style="margin:8px 0 8px 20px;color:var(--text2);font-size:14px;line-height:2">
+  <li>Net name (with alias if defined)</li>
+  <li>Total pin and component count</li>
+  <li>OBD voltage, diode, and resistance readings</li>
+  <li>FIND IN SCHEMATIC — searches the PDF for this net name</li>
+  <li>RECORD MEASUREMENT — opens the measurement form</li>
+</ul>
+
+<h3>Sticky labels</h3>
+<p>When a net is highlighted, floating labels show the component reference above each constellation pad. Toggle with the <strong>LABELS</strong> button in the net panel.</p>
+
+<h3>Mycelium trace</h3>
+<p>Click a component (single click) to see the <strong>mycelium</strong> — a trace of all passive bridge components (resistors, ferrites, inductors) that connect to this component's nets. Displayed as purple lines. Useful for tracing power rails through filter networks.</p>
+
+<h3>Multi-search (shared nets)</h3>
+<p>FIND ▾ → MULTI SEARCH opens a panel where you can add multiple components. The panel instantly shows all nets <strong>shared by all selected components</strong> — extremely useful for finding signal paths between two ICs.</p>
+<p>With the panel open, <strong>Shift+click</strong> components on the board to add them to the selection.</p>
+</div>
+
+<!-- ══ 12 OBD ══ -->
+<div class="section" id="obd">
+<h2>12 — OpenBoardData</h2>
+<p>OpenBoardData (OBD) is a community database of known-good electrical measurements for common boards — primarily Apple laptops and iPhones. BoardScope integrates OBD to show expected voltages and diode readings alongside your measurements.</p>
+
+<h3>Auto-fetching</h3>
+<p>When you load a BRD file with a recognizable board ID (e.g. <code>820-02016</code> in the filename), BoardScope automatically fetches OBD data in the background via the local proxy server.</p>
+
+<h3>Manual fetch</h3>
+<p>Open REPAIR ▾ → OBD DATA. The panel shows the current OBD status. Use the import button to load a local <code>.obdata</code> file.</p>
+
+<h3>Reading OBD badges</h3>
+<p>OBD data appears as colour-coded badges in pin popups, the net panel, and the component sidebar:</p>
+<div class="color-legend">
+  <div class="color-row"><div class="color-swatch" style="background:#1a3a10;border-color:#2a5a20"></div><strong style="color:#6fc">V</strong> — Voltage reading (e.g. 3.3V)</div>
+  <div class="color-row"><div class="color-swatch" style="background:#1a1040;border-color:#3a2060"></div><strong style="color:#a080ff">D</strong> — Diode mode reading (e.g. 0.469)</div>
+  <div class="color-row"><div class="color-swatch" style="background:#102010;border-color:#204020"></div><strong style="color:#80d080">R</strong> — Resistance reading</div>
+</div>
+
+<h3>Local measurements</h3>
+<p>Record your own measurements using REPAIR ▾ → PROBE MODE or the net panel's RECORD button. Local measurements override OBD values and are saved to localStorage per board. Export as <code>.obdata</code> to share with other techs.</p>
+</div>
+
+<!-- ══ 13 AI SETUP ══ -->
+<div class="section" id="ai-setup">
+<h2>13 — AI Setup</h2>
+<p>BoardScope includes AI-powered analysis that can read your boardview and schematic data to help diagnose faults. AI features require an API key from one of several supported providers.</p>
+
+<h3>Quick setup — Google Gemini (FREE)</h3>
+<ol class="steps">
+  <li>
+    <div class="step-num">1</div>
+    <div class="step-body">
+      <strong>Get a free API key</strong>
+      <p>Go to <a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com/apikey</a> and create a free API key.</p>
+    </div>
+  </li>
+  <li>
+    <div class="step-num">2</div>
+    <div class="step-body">
+      <strong>Configure BoardScope</strong>
+      <p>Run: <code>AI_PROVIDER=google AI_API_KEY=YOUR_KEY node server.js</code><br>Or create a <code>.api_key</code> file (see below).</p>
+    </div>
+  </li>
+</ol>
+
+<h3>Configuration via .api_key file</h3>
+<p>Create a file called <code>.api_key</code> next to <code>server.js</code> with this content:</p>
+<pre><code>provider=google
+key=YOUR_GOOGLE_API_KEY
+model=gemini-2.0-flash</code></pre>
+
+<div class="callout tip">
+  <div class="callout-label">💡 TIP</div>
+  <p>Google Gemini offers a generous free tier. For production use with Claude or GPT-4, see the AI Providers section below.</p>
+</div>
+</div>
+
+<!-- ══ 14 AI ANALYSIS ══ -->
+<div class="section" id="ai-analyze">
+<h2>14 — AI Analysis</h2>
+<p>Once configured, AI features become available in the REPAIR menu. BoardScope sends your board data (component list, net connections, OBD readings) to the AI model along with a diagnostic prompt.</p>
+
+<h3>How to use AI analysis</h3>
+<ol class="steps">
+  <li>
+    <div class="step-num">1</div>
+    <div class="step-body">
+      <strong>Load your board and schematic</strong>
+      <p>Make sure the BRD file and PDF are loaded. OBD data should be fetched.</p>
+    </div>
+  </li>
+  <li>
+    <div class="step-num">2</div>
+    <div class="step-body">
+      <strong>Open AI Analysis</strong>
+      <p>REPAIR ▾ → AI ANALYSIS. A panel opens with a text input for your question.</p>
+    </div>
+  </li>
+  <li>
+    <div class="step-num">3</div>
+    <div class="step-body">
+      <strong>Ask a question</strong>
+      <p>Type your diagnostic question, e.g. "Why is PPBUS not present?" or "What could cause a short on PP3V3?"</p>
+    </div>
+  </li>
+  <li>
+    <div class="step-num">4</div>
+    <div class="step-body">
+      <strong>Review the response</strong>
+      <p>The AI analyzes your board data and returns a detailed diagnostic with component references, net names, and suggested next steps.</p>
+    </div>
+  </li>
+</ol>
+
+<div class="callout warn">
+  <div class="callout-label">⚠ NOTE</div>
+  <p>AI analysis sends board data to the configured AI provider. Board data includes component references, net names, and OBD readings — no personal data is sent. Responses are AI-generated suggestions, not guaranteed diagnoses. Always verify with your own measurements.</p>
+</div>
+</div>
+
+<!-- ══ 15 AI PROVIDERS ══ -->
+<div class="section" id="ai-providers">
+<h2>15 — AI Providers</h2>
+<p>BoardScope supports multiple AI providers. Choose the one that fits your needs and budget.</p>
+
+<div class="tool-grid">
+  <div class="tool-card">
+    <div class="tool-card-hdr"><span class="tool-icon">🔵</span><span class="tool-name">Google Gemini</span></div>
+    <p><strong>FREE</strong> — Best for getting started. Good diagnostic capability. Set <code>provider=google</code>.</p>
+  </div>
+  <div class="tool-card">
+    <div class="tool-card-hdr"><span class="tool-icon">🟣</span><span class="tool-name">Anthropic Claude</span></div>
+    <p><strong>Paid</strong> — Excellent reasoning. Set <code>provider=anthropic</code> or use OpenRouter.</p>
+  </div>
+  <div class="tool-card">
+    <div class="tool-card-hdr"><span class="tool-icon">🟢</span><span class="tool-name">OpenRouter</span></div>
+    <p><strong>Paid</strong> — Access Claude, GPT-4, Gemini, Llama through one key. Set <code>provider=openrouter</code>.</p>
+  </div>
+  <div class="tool-card">
+    <div class="tool-card-hdr"><span class="tool-icon">⚪</span><span class="tool-name">Ollama (local)</span></div>
+    <p><strong>FREE</strong> — Run AI locally with no data leaving your machine. Set <code>provider=openai_compat</code>.</p>
+  </div>
+</div>
+
+<h3>OpenRouter setup</h3>
+<pre><code>provider=openrouter
+key=sk-or-v1-YOUR_KEY
+model=anthropic/claude-sonnet-4</code></pre>
+
+<h3>Ollama (local, offline)</h3>
+<pre><code>provider=openai_compat
+key=ollama
+base_url=http://localhost:11434/v1
+model=llama3</code></pre>
+
+<div class="callout info">
+  <div class="callout-label">ℹ INFO</div>
+  <p>For Ollama, first install Ollama from <a href="https://ollama.ai" target="_blank">ollama.ai</a> and pull a model: <code>ollama pull llama3</code>. Then start Ollama and configure BoardScope as shown above.</p>
+</div>
+</div>
+
+<!-- ══ 16 VOLT MAP ══ -->
+<div class="section" id="voltmap">
+<h2>16 — Voltage Map</h2>
+<p>VIEW ▾ → VOLT MAP colour-codes every component on the board by the highest voltage on its nets. Requires OBD data to be loaded.</p>
+
+<div class="color-legend">
+  <div class="color-row"><div class="color-swatch" style="background:#3d0000;border-color:#cc2200"></div>Red — >12V</div>
+  <div class="color-row"><div class="color-swatch" style="background:#3d1500;border-color:#dd5500"></div>Orange — 9–12V</div>
+  <div class="color-row"><div class="color-swatch" style="background:#3d2800;border-color:#ee9900"></div>Amber — 4.5–9V</div>
+  <div class="color-row"><div class="color-swatch" style="background:#0d2d00;border-color:#44cc00"></div>Green — 3–4.5V (most 3.3V rails)</div>
+  <div class="color-row"><div class="color-swatch" style="background:#00251a;border-color:#00cc88"></div>Teal — 1.5–3V (1.8V, 2.5V rails)</div>
+  <div class="color-row"><div class="color-swatch" style="background:#001a30;border-color:#0088ff"></div>Blue — 0.5–1.5V (core rails)</div>
+  <div class="color-row"><div class="color-swatch" style="background:#151520;border-color:#5050aa"></div>Purple — <0.5V</div>
+  <div class="color-row"><div class="color-swatch" style="background:#0d0d0d;border-color:#303040"></div>Near-black — GND</div>
+  <div class="color-row"><div class="color-swatch" style="background:#111318;border-color:#2a2d35"></div>Dark grey — No OBD data</div>
+</div>
+
+<p>The legend panel (bottom-left) shows each voltage bucket with a component count. <strong>Click any legend row</strong> to select all components in that bucket as search matches on the board.</p>
+
+<p>Individual pins are also colour-coded by their own net's voltage, so multi-rail ICs show which pins carry which voltage at a glance.</p>
+</div>
+
+<!-- ══ 17 DIODE MAP ══ -->
+<div class="section" id="diodemap">
+<h2>17 — Diode Mode Map</h2>
+<p>VIEW ▾ → DIODE MAP colour-codes every component by the lowest diode reading on its pins. This is the single most useful view for board repair — it instantly visualises the health of every net.</p>
+
+<div class="color-legend">
+  <div class="color-row"><div class="color-swatch" style="background:#3a0000;border-color:#ff2200"></div>Red — SHORT (<0.05) — possible dead short to ground</div>
+  <div class="color-row"><div class="color-swatch" style="background:#2a1000;border-color:#ff8800"></div>Orange — LOW (0.05–0.15) — suspect, investigate</div>
+  <div class="color-row"><div class="color-swatch" style="background:#0a2010;border-color:#44cc44"></div>Green — NORMAL (0.15–0.5) — expected range</div>
+  <div class="color-row"><div class="color-swatch" style="background:#001a30;border-color:#44aaff"></div>Blue — HIGH (0.5–0.8) — common for power rails</div>
+  <div class="color-row"><div class="color-swatch" style="background:#151520;border-color:#7070aa"></div>Purple — OPEN (>0.8 or OL) — open circuit</div>
+  <div class="color-row"><div class="color-swatch" style="background:#111318;border-color:#2a2d35"></div>Grey — No OBD diode data</div>
+</div>
+
+<div class="callout tip">
+  <div class="callout-label">💡 TIP</div>
+  <p>Use the Diode Map as your first view when diagnosing a board. Red components immediately flag potential shorts. Then use the Short Circuit Finder to identify the exact net.</p>
+</div>
+</div>
+
+<!-- ══ 18 SHORT FINDER ══ -->
+<div class="section" id="shorts">
+<h2>18 — Short Circuit Finder</h2>
+<p>FIND ▾ → SHORTS scans all OBD diode data and flags nets with readings below a configurable threshold — likely shorted to ground.</p>
+
+<h3>How to use it</h3>
+<ol class="steps">
+  <li>
+    <div class="step-num">1</div>
+    <div class="step-body">
+      <strong>Set threshold</strong>
+      <p>Default is 0.150. Anything below this is flagged. Adjust lower (0.050) to find only hard shorts, or higher (0.250) to be more aggressive.</p>
+    </div>
+  </li>
+  <li>
+    <div class="step-num">2</div>
+    <div class="step-body">
+      <strong>Click SCAN</strong>
+      <p>Results appear immediately, sorted worst-first. Three severity levels: DEAD SHORT (<0.05), LIKELY SHORT (<0.10), SUSPECT (<threshold).</p>
+    </div>
+  </li>
+  <li>
+    <div class="step-num">3</div>
+    <div class="step-body">
+      <strong>Click a flagged net</strong>
+      <p>Activates the net constellation on the board so you can see all components on that net. Use freeze spray or thermal camera to find the faulty component.</p>
+    </div>
+  </li>
+</ol>
+
+<div class="callout warn">
+  <div class="callout-label">⚠ NOTE</div>
+  <p>Short finder requires OBD data. It uses the known-good diode readings from OBD as the baseline — it is not doing live measurements. For live probing, use Probe Mode.</p>
+</div>
+</div>
+
+<!-- ══ 19 CONTINUITY ══ -->
+<div class="section" id="continuity">
+<h2>19 — Continuity Checker</h2>
+<p>FIND ▾ → CONTINUITY answers the most common repair question: <em>"Are these two points connected?"</em></p>
+
+<h3>Three result states</h3>
+<div class="tool-grid">
+  <div class="tool-card" style="border-color:#1a5030">
+    <div class="tool-card-hdr"><span class="tool-icon">✓</span><span class="tool-name" style="color:#44cc66">DIRECTLY CONNECTED</span></div>
+    <p>Both points are on the same net. Shows the net name.</p>
+  </div>
+  <div class="tool-card" style="border-color:#1a3060">
+    <div class="tool-card-hdr"><span class="tool-icon">↔</span><span class="tool-name" style="color:#66aaff">VIA BRIDGES</span></div>
+    <p>Connected through resistors/ferrites/inductors. Shows the full path.</p>
+  </div>
+</div>
+<div class="tool-card" style="border-color:#601010;margin-top:12px">
+  <div class="tool-card-hdr"><span class="tool-icon">✗</span><span class="tool-name" style="color:#ff5533">NOT CONNECTED</span></div>
+  <p>No path found between the two points, direct or through bridges.</p>
+</div>
+
+<h3>Probe Mode</h3>
+<p>Click <strong>▶ PROBE MODE</strong>, then click two pads directly on the board. The cursor changes to a crosshair. This is the fastest way to check continuity while looking at the physical board.</p>
+
+<h3>Type inputs</h3>
+<p>Type a component reference (e.g. <code>U1970</code>) or a net name (e.g. <code>PP3V3_S0</code>) in the A and B fields and press CHECK.</p>
+</div>
+
+<!-- ══ 20 TEST POINTS ══ -->
+<div class="section" id="testpoints">
+<h2>20 — Test Point Navigator</h2>
+<p>FIND ▾ → TEST POINTS opens a panel listing all <code>TP*</code> pads on the board, sorted by number.</p>
+
+<p>Each entry shows the TP number, net name, side (TOP/BOT), and OBD voltage/diode badges. Click any row to zoom to that pad on the board and jump to the schematic if indexed.</p>
+
+<p>Use the filter box to search by TP number or net name — type <code>PP3V3</code> to find all test points on the 3.3V rail.</p>
+
+<div class="callout tip">
+  <div class="callout-label">💡 TIP</div>
+  <p>Combine Test Points with the Voltage Map: enable VOLT MAP, then open TEST POINTS. You can immediately see which rails are present and which test points to probe.</p>
+</div>
+</div>
+
+<!-- ══ 21 PROBE MODE ══ -->
+<div class="section" id="probemode">
+<h2>21 — Probe Mode</h2>
+<p>REPAIR ▾ → PROBE MODE turns the board into an active measurement recording interface. Use it during a repair session to log your readings and instantly compare to known-good OBD values.</p>
+
+<ol class="steps">
+  <li>
+    <div class="step-num">1</div>
+    <div class="step-body">
+      <strong>Enable Probe Mode</strong>
+      <p>Click PROBE MODE. A bar appears at the bottom of the board pane. The cursor changes to a crosshair.</p>
+    </div>
+  </li>
+  <li>
+    <div class="step-num">2</div>
+    <div class="step-body">
+      <strong>Click a pad</strong>
+      <p>The net name appears in the bar, and OBD reference values are shown. Any existing local measurements are pre-filled.</p>
+    </div>
+  </li>
+  <li>
+    <div class="step-num">3</div>
+    <div class="step-body">
+      <strong>Enter your readings</strong>
+      <p>Type your live voltage, diode, or resistance reading. A ✓ or ✗ appears immediately comparing to OBD reference values (±10% tolerance for voltage, ±0.05 for diode).</p>
+    </div>
+  </li>
+  <li>
+    <div class="step-num">4</div>
+    <div class="step-body">
+      <strong>Save</strong>
+      <p>Press SAVE or Enter. The reading is stored locally and merged into OBD data. The Voltage/Diode Maps update automatically to reflect your measurements.</p>
+    </div>
+  </li>
+</ol>
+</div>
+
+<!-- ══ 22 FAULT TREE ══ -->
+<div class="section" id="faulttree">
+<h2>22 — Fault Tree</h2>
+<p>REPAIR ▾ → FAULT TREE provides guided diagnostic checklists for common symptoms. Click a symptom to expand its step-by-step checklist.</p>
+
+<h3>Available symptoms</h3>
+<div class="tool-grid">
+  <div class="tool-card"><div class="tool-card-hdr"><span class="tool-icon">💀</span><span class="tool-name">No power / dead board</span></div><p>PPBUS, standby rails, power sequencing</p></div>
+  <div class="tool-card"><div class="tool-card-hdr"><span class="tool-icon">🔌</span><span class="tool-name">No charging</span></div><p>VBUS, ACOK, charger IC, SMBus</p></div>
+  <div class="tool-card"><div class="tool-card-hdr"><span class="tool-icon">💡</span><span class="tool-name">No backlight</span></div><p>Boost output, PWM, BKL_EN, coil</p></div>
+  <div class="tool-card"><div class="tool-card-hdr"><span class="tool-icon">🖥</span><span class="tool-name">No display</span></div><p>GPU core, eDP connector, panel supply</p></div>
+  <div class="tool-card"><div class="tool-card-hdr"><span class="tool-icon">🔊</span><span class="tool-name">No audio</span></div><p>AVDD, I2S, speaker amp, headphone jack</p></div>
+  <div class="tool-card"><div class="tool-card-hdr"><span class="tool-icon">🔗</span><span class="tool-name">No USB</span></div><p>VBUS, retimer power, DP/DM, SS lanes</p></div>
+  <div class="tool-card"><div class="tool-card-hdr"><span class="tool-icon">🌡</span><span class="tool-name">Overheating / fan</span></div><p>Thermal sensors, NTC, fan PWM</p></div>
+  <div class="tool-card"><div class="tool-card-hdr"><span class="tool-icon">💥</span><span class="tool-name">Kernel panics</span></div><p>Core voltage ripple, RAM, SSD power</p></div>
+</div>
+
+<p>Each step includes a hint explaining what to look for. <strong>Net names are clickable</strong> — tap any blue net name to instantly activate it on the board. Use checkboxes to track progress. Reset the checklist with the ↺ button.</p>
+</div>
+
+<!-- ══ 23 LICENSE ══ -->
+<div class="section" id="license">
+<h2>23 — Pro License</h2>
+<p>BoardScope offers a free tier with core features and a Pro tier that unlocks advanced functionality. Pro features include AI analysis, multi-board tabs, and priority support.</p>
+
+<h3>Free features</h3>
+<ul style="margin:8px 0 8px 20px;color:var(--text2);font-size:14px;line-height:2">
+  <li>Boardview loading and navigation</li>
+  <li>Schematic PDF viewing</li>
+  <li>Cross-reference (board ↔ schematic)</li>
+  <li>Net highlighting and constellation</li>
+  <li>OpenBoardData integration</li>
+  <li>Voltage Map and Diode Map</li>
+  <li>Continuity Checker</li>
+  <li>Photo Overlay</li>
+</ul>
+
+<h3>Pro features</h3>
+<ul style="margin:8px 0 8px 20px;color:var(--text2);font-size:14px;line-height:2">
+  <li>AI-powered analysis (Claude, GPT-4, Gemini)</li>
+  <li>Multi-board tabs</li>
+  <li>Short Circuit Finder</li>
+  <li>Fault Tree diagnostics</li>
+  <li>Repair Log and Component Notes</li>
+  <li>Priority support</li>
+</ul>
+
+<h3>License types</h3>
+<div class="tool-grid">
+  <div class="tool-card">
+    <div class="tool-card-hdr"><span class="tool-icon">♾️</span><span class="tool-name">Lifetime</span></div>
+    <p>One-time purchase. Permanent access to all Pro features. No expiration.</p>
+  </div>
+  <div class="tool-card">
+    <div class="tool-card-hdr"><span class="tool-icon">📅</span><span class="tool-name">Yearly</span></div>
+    <p>Annual subscription. Includes updates and support for the subscription period.</p>
+  </div>
+</div>
+</div>
+
+<!-- ══ 24 ACTIVATE LICENSE ══ -->
+<div class="section" id="license-activate">
+<h2>24 — Activate License</h2>
+
+<h3>Entering your license key</h3>
+<ol class="steps">
+  <li>
+    <div class="step-num">1</div>
+    <div class="step-body">
+      <strong>Open the license panel</strong>
+      <p>Click the license icon in the header or go to REPAIR ▾ → LICENSE.</p>
+    </div>
+  </li>
+  <li>
+    <div class="step-num">2</div>
+    <div class="step-body">
+      <strong>Enter your key</strong>
+      <p>Type or paste your license key (format: <code>BS-XXXX-XXXX-XXXX-XXXX</code>).</p>
+    </div>
+  </li>
+  <li>
+    <div class="step-num">3</div>
+    <div class="step-body">
+      <strong>Click Activate</strong>
+      <p>The key is validated against the license server. Pro features unlock immediately upon successful validation.</p>
+    </div>
+  </li>
+</ol>
+
+<div class="callout info">
+  <div class="callout-label">ℹ INFO</div>
+  <p>License keys are validated server-side. Your key is never stored locally in plain text. Activation persists in localStorage — clearing browser data will require re-activation.</p>
+</div>
+</div>
+
+<!-- ══ 24 SHORTCUTS ══ -->
+<div class="section" id="shortcuts">
+<h2>24 — Keyboard Shortcuts</h2>
+<p>Press <kbd>?</kbd> at any time to open the shortcut reference inside the app.</p>
+
+<h3>PDF Navigation</h3>
+<table class="shortcut-table">
+  <thead><tr><th>KEY</th><th>ACTION</th></tr></thead>
+  <tbody>
+    <tr><td><kbd>n</kbd> / <kbd>p</kbd></td><td>Next / Previous page</td></tr>
+    <tr><td><kbd>j</kbd> / <kbd>k</kbd></td><td>Scroll down / up</td></tr>
+    <tr><td><kbd>Home</kbd> / <kbd>End</kbd></td><td>First / Last page</td></tr>
+    <tr><td><kbd>g</kbd></td><td>Go to page number</td></tr>
+    <tr><td><kbd>c</kbd></td><td>Toggle continuous scroll mode</td></tr>
+    <tr><td><kbd>z</kbd></td><td>Cycle fit modes (page / width / actual)</td></tr>
+    <tr><td><kbd>+</kbd> / <kbd>-</kbd></td><td>Zoom in / out</td></tr>
+    <tr><td><kbd>[</kbd> / <kbd>]</kbd></td><td>Rotate PDF left / right</td></tr>
+    <tr><td><kbd>Space</kbd></td><td>Page down (Shift = page up)</td></tr>
+    <tr><td><kbd>Ctrl+F</kbd></td><td>Open PDF text search</td></tr>
+    <tr><td><kbd>Ctrl+B</kbd></td><td>Bookmark current page</td></tr>
+    <tr><td><kbd>i</kbd></td><td>Toggle page info overlay</td></tr>
+  </tbody>
+</table>
+
+<h3>Board View</h3>
+<table class="shortcut-table">
+  <thead><tr><th>KEY</th><th>ACTION</th></tr></thead>
+  <tbody>
+    <tr><td><kbd>f</kbd></td><td>Fit board to view</td></tr>
+    <tr><td><kbd>,</kbd> / <kbd>.</kbd></td><td>Rotate board left / right</td></tr>
+    <tr><td><kbd>x</kbd> / <kbd>y</kbd></td><td>Flip board horizontally / vertically</td></tr>
+    <tr><td><kbd>Esc</kbd></td><td>Clear all highlights</td></tr>
+    <tr><td><kbd>Double-click</kbd></td><td>Jump to component in schematic</td></tr>
+    <tr><td><kbd>Right-click</kbd></td><td>Highlight net on pad</td></tr>
+    <tr><td><kbd>Shift+click</kbd></td><td>Add annotation (or add to multisearch)</td></tr>
+  </tbody>
+</table>
+
+<h3>Desktop App</h3>
+<table class="shortcut-table">
+  <thead><tr><th>KEY</th><th>ACTION</th></tr></thead>
+  <tbody>
+    <tr><td><kbd>Ctrl+O</kbd> / <kbd>Cmd+O</kbd></td><td>Open file dialog</td></tr>
+    <tr><td><kbd>Ctrl+Shift+S</kbd></td><td>Save screenshot</td></tr>
+    <tr><td><kbd>F11</kbd></td><td>Toggle fullscreen</td></tr>
+  </tbody>
+</table>
+
+<h3>Global</h3>
+<table class="shortcut-table">
+  <thead><tr><th>KEY</th><th>ACTION</th></tr></thead>
+  <tbody>
+    <tr><td><kbd>?</kbd></td><td>Open keyboard shortcut help</td></tr>
+    <tr><td><kbd>Esc</kbd></td><td>Close open panels / modals</td></tr>
+  </tbody>
+</table>
+</div>
+
+<!-- ══ 25 TIPS ══ -->
+<div class="section" id="tips">
+<h2>25 — Tips & Tricks</h2>
+
+<h3>The standard repair workflow</h3>
+<p>For a new board, this sequence gets you maximum information fastest:</p>
+<ol style="margin:8px 0 8px 20px;color:var(--text2);font-size:14px;line-height:2.2">
+  <li>Load BRD file → OBD auto-fetches</li>
+  <li>Load schematic PDF → index builds in background</li>
+  <li>Enable <strong>Diode Map</strong> — red/orange components immediately flag problem areas</li>
+  <li>Run <strong>Short Finder</strong> at threshold 0.100 — confirms dead shorts</li>
+  <li>Right-click a flagged net → constellation shows all connected components</li>
+  <li>Double-click a component → jump to schematic to understand the circuit</li>
+  <li>Use <strong>Fault Tree</strong> to guide your systematic approach</li>
+  <li>Use <strong>AI Analysis</strong> for complex diagnostics</li>
+</ol>
+
+<h3>Finding shorts efficiently</h3>
+<p>Enable Diode Map → look for red components → open Short Finder → click the flagged net → use freeze spray on the constellation components while monitoring resistance → the faulty component warms up first.</p>
+
+<h3>Working with cryptic net names</h3>
+<p>If your boardview uses <code>N00042</code> style names, create aliases before starting your session. Even a few key aliases (<code>N00042 → PP3V3_S0</code>) make the Fault Tree net links and Power Tree readable.</p>
+
+<h3>Comparing to a donor board</h3>
+<p>Load your faulty board as the main BRD. Use FIND ▾ → COMPARE to load the donor. Filter by NET DIFF — components where net assignments differ often indicate wrong parts, lifted pins, or rework errors.</p>
+
+<h3>Multi-search for signal tracing</h3>
+<p>When a signal enters one IC and should come out of another, use Multi-Search. Add both ICs and look at the shared nets — these are the signal paths between them.</p>
+
+<h3>Power Tree for unfamiliar boards</h3>
+<p>On a board you've never seen before, open the Power Tree before probing. It gives you the complete picture of which rails exist, their voltages, and how they connect through bridges. Start from the highest voltage (PPBUS) and work down.</p>
+
+<h3>Photo overlay alignment trick</h3>
+<p>For best alignment, use two components in diagonally opposite corners of the board as your A and B reference points. The further apart they are, the more accurate the stretch.</p>
+
+<h3>AI-assisted diagnosis</h3>
+<p>When stuck, use AI Analysis. Describe your symptom ("no PPBUS, short on PP3V3") and the AI will analyze your board data to suggest likely culprits. Always verify AI suggestions with your own measurements.</p>
+</div>
+
+<!-- ══ 26 TROUBLESHOOT ══ -->
+<div class="section" id="troubleshoot">
+<h2>26 — Troubleshooting</h2>
+
+<h3>"OBD: CORS ERROR"</h3>
+<p>You're opening <code>boardview.html</code> directly in the browser without the server. Run <code>node server.js</code> and open <code>http://localhost:8080</code> instead. OBD data fetch requires the proxy to bypass browser CORS restrictions. The desktop app does not have this issue.</p>
+
+<h3>"NO PARTS FOUND"</h3>
+<p>The file format wasn't recognized. Check that you're loading a boardview file (.bvr, .brd, .brd2) — not a schematic PDF or gerber file. Try renaming the extension to <code>.brd</code> and reloading. Check the browser console (F12) for parser details.</p>
+
+<h3>PDF cross-reference not finding components</h3>
+<p>Wait for indexing to complete (status bar shows INDEXING → then a count of refs found). If it never finds the component, the PDF may use a different ref format — try searching the PDF manually (Ctrl+F) with the ref to see if it appears.</p>
+
+<h3>Board loads but no OBD data</h3>
+<p>OBD only has data for boards in its database (primarily Apple boards with 820-XXXXX model numbers). If your board isn't in OBD, you can add local measurements manually using Probe Mode and export them as <code>.obdata</code> files to share with others.</p>
+
+<h3>App is slow on a large PDF</h3>
+<p>Large PDFs (200+ pages) take time to index. Use continuous scroll mode for navigation while indexing is running — it lazy-renders pages on demand. The cross-reference still works via live-scan fallback before the index completes.</p>
+
+<h3>Toolbar dropdowns not working</h3>
+<p>Click the dropdown button (e.g. "⚙ VIEW ▾"). If it doesn't open, try refreshing the page. On touch screens, a single tap should open the dropdown. Click anywhere outside to close it.</p>
+
+<h3>macOS says "app is damaged"</h3>
+<p>Run: <code>xattr -cr /Applications/BoardScope.app</code> in Terminal. This removes the quarantine attribute.</p>
+
+<h3>AI analysis not working</h3>
+<p>Check that your API key is configured correctly. Run <code>node server.js</code> and watch the console output — it shows which AI provider is active. If no key is found, the AI panel will show a setup guide.</p>
+
+<div class="callout info">
+  <div class="callout-label">ℹ SUPPORT</div>
+  <p>All data (notes, measurements, aliases, bookmarks, search history) is stored in your browser's localStorage. Clearing browser data will erase this. Export your local measurements and repair logs regularly.</p>
+</div>
+</div>
+
+</main>
+
+<script>
+// Active nav item highlight on scroll
+const sections = document.querySelectorAll('.section[id]');
+const navItems = document.querySelectorAll('.nav-item');
+
+function updateNav() {
+  let current = '';
+  sections.forEach(sec => {
+    const top = sec.getBoundingClientRect().top;
+    if (top <= 80) current = sec.id;
+  });
+  navItems.forEach(item => {
+    item.classList.toggle('active', item.getAttribute('href') === '#' + current);
+  });
+}
+window.addEventListener('scroll', updateNav, { passive: true });
+updateNav();
+</script>
+</body>
+</html>

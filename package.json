@@ -9,9 +9,9 @@
   "scripts": {
     "start": "node server.js",
     "electron:dev": "electron .",
-    "obfuscate": "node --max-old-space-size=6144 ./node_modules/javascript-obfuscator/bin/javascript-obfuscator electron-main.js --output dist-obfuscated/electron-main.js --config obfuscate-large.config.json && node --max-old-space-size=6144 ./node_modules/javascript-obfuscator/bin/javascript-obfuscator preload.js --output dist-obfuscated/preload.js --config obfuscate-large.config.json && node -e \"require('fs').copyFileSync('server.js', 'dist-obfuscated/server.js')\" && node -e \"require('fs').copyFileSync('sw.js', 'dist-obfuscated/sw.js')\"",
+    "obfuscate": "node -e \"const fs=require('fs'),path=require('path'); const backup=['electron-main.js','preload.js','server.js','boardview.html','oscilloscope.js','macro-recorder.js','test-suite.js','component-library.js','collaboration.js','fault-tree.js','multimeter.js']; backup.forEach(f=>{if(fs.existsSync(f))fs.copyFileSync(f,path.join('src-unobfuscated',f))})\" && node --max-old-space-size=6144 ./node_modules/javascript-obfuscator/bin/javascript-obfuscator electron-main.js --output dist-obfuscated/electron-main.js --config obfuscate-large.config.json && node --max-old-space-size=6144 ./node_modules/javascript-obfuscator/bin/javascript-obfuscator preload.js --output dist-obfuscated/preload.js --config obfuscate-large.config.json && node --max-old-space-size=6144 ./node_modules/javascript-obfuscator/bin/javascript-obfuscator server.js --output dist-obfuscated/server.js --config obfuscate.config.json && node -e \"require('fs').copyFileSync('sw.js', 'dist-obfuscated/sw.js')\"",
     "electron:build": "electron-builder",
-    "electron:build:secure": "npm run obfuscate && node -e \"require('fs').copyFileSync('dist-obfuscated/electron-main.js', 'electron-main.js'); require('fs').copyFileSync('dist-obfuscated/preload.js', 'preload.js'); require('fs').copyFileSync('dist-obfuscated/server.js', 'server.js'); require('fs').copyFileSync('dist-obfuscated/sw.js', 'sw.js');\" && electron-builder",
+    "electron:build:secure": "npm run obfuscate && node -e \"const fs=require('fs'); const files=['electron-main.js','preload.js','server.js']; files.forEach(f=>{fs.copyFileSync(f,f+'.bak');fs.copyFileSync('dist-obfuscated/'+f,f)}); try{require('child_process').execSync('npx electron-builder '+process.argv.slice(2).join(' '),{stdio:'inherit'})}finally{files.forEach(f=>{if(fs.existsSync(f+'.bak')){fs.renameSync(f+'.bak',f)}})}\"",
     "build:win": "electron-builder --win",
     "build:mac": "electron-builder --mac",
     "build:linux": "electron-builder --linux",
@@ -40,16 +40,12 @@
       ".polar_config",
       "assets/**/*",
       "data/**/*",
-      "docs/**/*",
-      "scripts/**/*",
       "node_modules/**/*",
       "!.api_key",
       "!api key",
       "!boardview-figma.html",
       "!boardview-macos.html",
-      "!**/*.brd",
-      "!BUILDING.md",
-      "!POLAR_SETUP.md"
+      "!**/*.brd"
     ],
     "extraResources": [
       {
