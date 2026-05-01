@@ -5,7 +5,6 @@
  */
 
 const { app, BrowserWindow, ipcMain, dialog, Menu } = require('electron');
-const { spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 const http = require('http');
@@ -181,39 +180,34 @@ function buildMenu() {
 }
 
 // ── IPC HANDLERS ───────────────────────────────────────────────────
-function registerIPCHandlers() {
-  ipcMain.handle('dialog:openFile', async (event, options) => {
-    const result = await dialog.showOpenDialog(mainWindow, options);
-    return result;
-  });
+ipcMain.handle('dialog:openFile', async (event, options) => {
+  const result = await dialog.showOpenDialog(mainWindow, options);
+  return result;
+});
 
-  ipcMain.handle('dialog:saveFile', async (event, options) => {
-    const result = await dialog.showSaveDialog(mainWindow, options);
-    return result;
-  });
+ipcMain.handle('dialog:saveFile', async (event, options) => {
+  const result = await dialog.showSaveDialog(mainWindow, options);
+  return result;
+});
 
-  ipcMain.handle('fs:readFile', async (event, filePath) => {
-    return fs.readFileSync(filePath, 'utf8');
-  });
+ipcMain.handle('fs:readFile', async (event, filePath) => {
+  return fs.readFileSync(filePath, 'utf8');
+});
 
-  ipcMain.handle('fs:stat', async (event, filePath) => {
-    return fs.statSync(filePath);
-  });
+ipcMain.handle('fs:stat', async (event, filePath) => {
+  return fs.statSync(filePath);
+});
 
-  ipcMain.handle('app:getPath', async (event, name) => {
-    return app.getPath(name);
-  });
+ipcMain.handle('app:getPath', async (event, name) => {
+  return app.getPath(name);
+});
 
-  ipcMain.handle('app:getVersion', async () => {
-    return app.getVersion();
-  });
-}
+ipcMain.handle('app:getVersion', async () => {
+  return app.getVersion();
+});
 
 // ── APP LIFECYCLE ──────────────────────────────────────────────────
 app.whenReady().then(() => {
-  // Register IPC handlers
-  registerIPCHandlers();
-
   // Start the server process before creating window
   serverProcess = spawn('node', [path.join(__dirname, 'server.js')], {
     cwd: __dirname,
