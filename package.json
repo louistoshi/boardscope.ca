@@ -19,7 +19,8 @@
     "build:secure:win": "npm run obfuscate && bash scripts/build-secure.sh --win --publish never",
     "build:secure:linux": "npm run obfuscate && bash scripts/build-secure.sh --linux --publish never",
     "build:secure:all": "npm run obfuscate && bash scripts/build-secure.sh --win --mac --linux --publish never",
-    "build:mas": "electron-builder --mac mas --publish never"
+    "build:mas": "electron-builder --mac mas --publish never",
+    "website:sync": "cp boardview.html multimeter.js macro-recorder.js component-library.js test-suite.js collaboration.js oscilloscope.js fault-tree.js sw.js manifest.json website/ && cp -R assets data website/"
   },
   "build": {
     "appId": "com.boardscope.app",
@@ -113,7 +114,9 @@
       ]
     },
     "mas": {
-      "target": ["pkg"],
+      "target": [
+        "pkg"
+      ],
       "type": "distribution",
       "category": "public.app-category.developer-tools",
       "entitlements": "build/entitlements.mas.plist",
@@ -176,5 +179,8 @@
     "electron-builder": "^24.9.1",
     "javascript-obfuscator": "^5.4.1",
     "svg2png": "^4.1.1"
+  },
+  "dependencies": {
+    "express": "^5.2.1"
   }
 }
