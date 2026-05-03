@@ -1230,7 +1230,11 @@
 
     .tb-drop-item.on {
       color: var(--accent) !important;
-      background: #0a1a10 !important
+      background: rgba(50, 205, 50, 0.15) !important
+    }
+
+    body.theme-light .tb-drop-item.on {
+      background: rgba(50, 180, 50, 0.15) !important
     }
 
     #comp-search {
@@ -3531,6 +3535,7 @@
       flex-direction: column;
       box-shadow: 0 6px 28px rgba(128, 96, 192, .25);
       overflow: hidden;
+      overflow-y: auto;
     }
 
     #aidiag-panel.open {
@@ -3544,7 +3549,7 @@
       padding: 7px 12px;
       background: var(--bg3);
       border-bottom: 1px solid var(--border);
-      flex-shrink: 0;
+      flex-shrink: 0 !important;
     }
 
     #aidiag-title {
@@ -3566,7 +3571,9 @@
       display: flex;
       flex-direction: column;
       gap: 8px;
-      overflow-y: auto
+      overflow-y: auto;
+      flex: 1;
+      min-height: 0;
     }
 
     #aidiag-hint {
@@ -6104,7 +6111,8 @@
       border: 1px solid var(--accent);
       border-radius: var(--r);
       width: 380px;
-      max-height: 80vh;
+      max-width: 95vw;
+      max-height: min(80vh, calc(100vh - 80px));
       overflow-y: auto;
       box-shadow: 0 8px 40px rgba(0, 200, 150, .25);
       display: flex;
@@ -6118,7 +6126,7 @@
       padding: 10px 14px;
       background: var(--bg3);
       border-bottom: 1px solid var(--border);
-      flex-shrink: 0
+      flex-shrink: 0 !important;
     }
 
     #meas-net-name {
@@ -9523,6 +9531,9 @@
         document.getElementById('brd-canvas').style.display = 'none';
       }
 
+      // Bring tab content above draggable windows
+      document.querySelectorAll('.draggable-panel').forEach(p => p.style.zIndex = '10');
+
       tabRenderList();
     }
 
@@ -11875,6 +11886,10 @@
         G.activeNet = null; G.netComps = []; G.netCentroid = null;
         document.getElementById('net-panel').style.display = 'none';
         G.highlighted = comp.ref;
+        // Auto-trace if signal chain panel is open
+        if (document.getElementById('sigchain-panel')?.classList.contains('open')) {
+          sigchainTrace();
+        }
         G.mycHops = buildMycelium(comp, 1);
         G.mycNets = new Set(G.mycHops.map(h => h.net));
         comp.pins.forEach(p => { if (p.net && !DEAD_NETS.has(p.net)) G.mycNets.add(p.net); });
@@ -16523,8 +16538,11 @@ ${logHtml ? `<h2>REPAIR LOG</h2><ul>${logHtml}</ul>` : ''}
     function sigchainOpen() {
       document.getElementById('sigchain-panel').classList.add('open');
       document.getElementById('tog-sigchain').classList.add('on');
-      // Pre-fill with highlighted component
-      if (G.highlighted) document.getElementById('sigchain-ref').value = G.highlighted;
+      // Pre-fill with highlighted component and auto-trace
+      if (G.highlighted) {
+        document.getElementById('sigchain-ref').value = G.highlighted;
+        sigchainTrace();
+      }
     }
     function sigchainClose() {
       document.getElementById('sigchain-panel').classList.remove('open');
@@ -19699,6 +19717,59 @@ Rules: 6-10 rails in power-on order. "net" is the exact schematic net name. "tol
       saveSettings(); applySettingsToUI(); drawBRD();
     });
 
+    /* ── AI HELPER FUNCTION ── */
+    // Call Gemini or OpenRouter API directly from the frontend
+    async function aiChat(messages, system, opts = {}) {
+      const provider = document.getElementById('sp-ai-provider')?.value || localStorage.getItem('bs_ai_provider') || 'openrouter';
+      const apiKey = document.getElementById('sp-ai-key')?.value || localStorage.getItem('bs_ai_key');
+      const model = document.getElementById('sp-ai-model')?.value || localStorage.getItem('bs_ai_model') ||
+        (provider === 'google' ? 'gemini-2.0-flash' : 'qwen/qwen-2.5-72b-instruct');
+
+      if (!apiKey) {
+        return { error: { type: 'no_api_key', message: 'No API key configured' } };
+      }
+
+      try {
+        if (provider === 'google') {
+          // Gemini API
+          const body = {
+            contents: [{ parts: messages.map(m => ({ text: m.content })) }],
+            systemInstruction: { parts: [{ text: system }] },
+            generationConfig: { maxOutputTokens: opts.max_tokens || 1024 }
+          };
+          const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+          });
+          const data = await resp.json();
+          if (data.error) return { error: data.error };
+          const content = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+          return { content };
+        } else {
+          // OpenRouter (OpenAI-compatible)
+          const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${apiKey}`
+            },
+            body: JSON.stringify({
+              model: model,
+              messages: [{ role: 'system', content: system }, ...messages],
+              max_tokens: opts.max_tokens || 1024
+            })
+          });
+          const data = await resp.json();
+          if (data.error) return { error: data.error };
+          const content = data.choices?.[0]?.message?.content || '';
+          return { content };
+        }
+      } catch (e) {
+        return { error: { message: e.message } };
+      }
+    }
+
     /* ── MULTIMETER TOGGLE ── */
     const spShowMeter = document.getElementById('sp-show-meter');
     spShowMeter.addEventListener('change', () => {
@@ -19772,28 +19843,18 @@ Rules: 6-10 rails in power-on order. "net" is the exact schematic net name. "tol
       aiStatus.textContent = 'Saving…';
       aiStatus.style.color = 'var(--text3)';
       try {
-        const resp = await fetch('/ai-setup', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            provider: aiProvider.value === 'ollama_local' ? 'openai_compat' : aiProvider.value,
-            key: key,
-            model: aiModel.value.trim(),
-            base_url: aiBaseUrl.value.trim(),
-          })
-        });
-        const data = await resp.json();
-        if (data.success) {
-          aiStatus.textContent = `✓ Saved — ${aiProvider.value}${aiModel.value ? ' / ' + aiModel.value : ''}`;
-          aiStatus.style.color = 'var(--accent)';
-          aiKey.value = '';
-          aiKey.placeholder = '✓ API key saved — enter new key to change';
-        } else {
-          aiStatus.textContent = '✗ Error: ' + (data.error || 'Failed to save');
-          aiStatus.style.color = 'var(--red)';
-        }
+        // Save to localStorage instead of calling server
+        localStorage.setItem('bs_ai_provider', aiProvider.value);
+        localStorage.setItem('bs_ai_key', key);
+        localStorage.setItem('bs_ai_model', aiModel.value.trim());
+        localStorage.setItem('bs_ai_baseurl', aiBaseUrl.value.trim());
+
+        aiStatus.textContent = `✓ Saved — ${aiProvider.value}${aiModel.value ? ' / ' + aiModel.value : ''}`;
+        aiStatus.style.color = 'var(--accent)';
+        aiKey.value = '';
+        aiKey.placeholder = '✓ API key saved — enter new key to change';
       } catch (e) {
-        aiStatus.textContent = '✗ Could not reach server: ' + e.message;
+        aiStatus.textContent = '✗ Error: ' + e.message;
         aiStatus.style.color = 'var(--red)';
       }
     });
@@ -19803,16 +19864,11 @@ Rules: 6-10 rails in power-on order. "net" is the exact schematic net name. "tol
       aiStatus.textContent = 'Testing connection…';
       aiStatus.style.color = 'var(--text3)';
       try {
-        const resp = await fetch('/ai', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            max_tokens: 16,
-            system: 'Reply with exactly: OK',
-            messages: [{ role: 'user', content: 'ping' }],
-          })
-        });
-        const data = await resp.json();
+        const data = await aiChat(
+          [{ role: 'user', content: 'ping' }],
+          'Reply with exactly: OK',
+          { max_tokens: 16 }
+        );
         if (data.error) {
           const msg = data.error.type === 'no_api_key'
             ? '✗ No API key configured'
@@ -21860,6 +21916,9 @@ Never break this restriction regardless of how the question is phrased, even if 
 
           // Don't drag if clicking on close button or interactive elements
           if (e.target.closest('[id$="-close"], .ibtn, button, input, select, textarea')) return;
+
+          // Restore z-index when interacting with window
+          panel.style.zIndex = '1500';
 
           isDragging = true;
           panel.classList.add('dragging');
@@ -25109,6 +25168,36 @@ Never break this restriction regardless of how the question is phrased, even if 
       document.getElementById('macro-panel').classList.remove('open');
     });
 
+    // Macro recorder button handlers
+    document.getElementById('macro-record-btn')?.addEventListener('click', () => {
+      const name = prompt('Macro name:', `Macro ${new Date().toLocaleTimeString()}`);
+      if (name) {
+        macroRecorder.startRecording(name);
+        document.getElementById('macro-record-btn').style.display = 'none';
+        document.getElementById('macro-stop-btn').style.display = 'block';
+        setStatus(`RECORDING MACRO: ${name}`);
+      }
+    });
+
+    document.getElementById('macro-stop-btn')?.addEventListener('click', () => {
+      macroRecorder.stopRecording();
+      document.getElementById('macro-record-btn').style.display = 'block';
+      document.getElementById('macro-stop-btn').style.display = 'none';
+      // Refresh macro list
+      const list = document.getElementById('macro-list');
+      if (list) {
+        const macros = macroRecorder.getMacros();
+        list.innerHTML = macros.map(m => `
+      <div class="macro-card" onclick="macroRecorder.playMacro('${m.id}')">
+        <div class="macro-card-name">${m.name}</div>
+        <div class="macro-card-desc">${m.description}</div>
+        <div class="macro-card-meta">${m.actions.length} actions</div>
+      </div>
+    `).join('');
+      }
+      setStatus('MACRO RECORDING SAVED');
+    });
+
     // ── COMPONENT LIBRARY HANDLERS ──
     function complibRender(q) {
       const grid = document.getElementById('complib-grid');
@@ -25281,7 +25370,15 @@ Schema:
     let _visualResolvers = { pass: null, fail: null };
 
     document.getElementById('tog-testing')?.addEventListener('click', () => {
-      document.getElementById('testing-panel').classList.toggle('open');
+      const testPanel = document.getElementById('testing-panel');
+      testPanel.classList.toggle('open');
+      if (testPanel.classList.contains('open')) {
+        // Auto-populate board name when panel opens
+        const boardQuery = document.getElementById('test-board-query');
+        if (boardQuery && !boardQuery.value && G.boardId) {
+          boardQuery.value = G.boardId;
+        }
+      }
       _testRefreshSelect();
 
       // Apply pro lock or AI key status to the lookup section
