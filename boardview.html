@@ -7644,6 +7644,267 @@
       font-size: 14px;
       font-weight: 700;
     }
+
+    /* ── WORKFLOW SIDEBAR ── */
+    #workflow-sidebar {
+      position: fixed;
+      left: 0;
+      top: 50px;
+      width: 280px;
+      height: calc(100vh - 50px);
+      background: var(--bg2);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      z-index: 100;
+      box-shadow: 2px 0 8px rgba(0, 0, 0, 0.3);
+      overflow-y: auto;
+    }
+
+    #workflow-sidebar.collapsed {
+      width: 50px;
+    }
+
+    #workflow-sidebar.collapsed .wf-phase-content,
+    #workflow-sidebar.collapsed .wf-phase-title,
+    #workflow-sidebar.collapsed .wf-icon {
+      display: none;
+    }
+
+    #workflow-sidebar.collapsed .wf-phase-icon {
+      display: flex !important;
+    }
+
+    .wf-header {
+      padding: 12px 10px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+
+    .wf-header-title {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      color: var(--accent);
+      text-transform: uppercase;
+    }
+
+    .wf-toggle-btn {
+      background: none;
+      border: none;
+      color: var(--text3);
+      cursor: pointer;
+      font-size: 12px;
+      padding: 4px;
+    }
+
+    .wf-toggle-btn:hover {
+      color: var(--text2);
+    }
+
+    .wf-progress-bar {
+      height: 3px;
+      background: var(--bg3);
+      border-bottom: 1px solid var(--border);
+      position: relative;
+    }
+
+    .wf-progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #4080ff, #00ffcc);
+      transition: width 0.3s ease;
+    }
+
+    .wf-phases {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 8px 0;
+      gap: 0;
+    }
+
+    .wf-phase {
+      cursor: pointer;
+      transition: all 0.15s;
+      border-left: 3px solid transparent;
+      padding: 0;
+    }
+
+    .wf-phase:hover {
+      background: rgba(64, 128, 255, 0.1);
+    }
+
+    .wf-phase.active {
+      background: rgba(64, 128, 255, 0.15);
+      border-left-color: #4080ff;
+    }
+
+    .wf-phase.completed {
+      opacity: 0.7;
+    }
+
+    .wf-phase-header {
+      padding: 10px 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      position: relative;
+    }
+
+    .wf-phase-icon {
+      font-size: 16px;
+      flex-shrink: 0;
+      min-width: 20px;
+      text-align: center;
+    }
+
+    .wf-phase-icon-badge {
+      position: absolute;
+      right: 10px;
+      font-size: 14px;
+    }
+
+    .wf-phase.completed .wf-phase-icon::after {
+      content: ' ✓';
+      color: #44cc66;
+      font-weight: 700;
+    }
+
+    .wf-phase-title {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text);
+      flex: 1;
+    }
+
+    .wf-phase.completed .wf-phase-title {
+      color: #44cc66;
+    }
+
+    .wf-phase.active .wf-phase-title {
+      color: #4080ff;
+      font-weight: 700;
+    }
+
+    .wf-phase-content {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.2s ease;
+    }
+
+    .wf-phase.open .wf-phase-content {
+      max-height: 500px;
+    }
+
+    .wf-step {
+      padding: 8px 12px 8px 40px;
+      font-size: 9px;
+      color: var(--text3);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .wf-step:hover {
+      background: rgba(64, 128, 255, 0.08);
+      color: var(--text2);
+    }
+
+    .wf-step.done {
+      color: #44cc66;
+    }
+
+    .wf-step.done::before {
+      content: '✓';
+      font-weight: 700;
+      color: #44cc66;
+      margin-left: -22px;
+    }
+
+    .wf-step.pending::before {
+      content: '○';
+      color: var(--text3);
+      margin-left: -22px;
+    }
+
+    .wf-step.current::before {
+      content: '◉';
+      color: #4080ff;
+      margin-left: -22px;
+    }
+
+    .wf-footer {
+      padding: 10px 12px;
+      border-top: 1px solid var(--border);
+      font-size: 9px;
+      color: var(--text3);
+      flex-shrink: 0;
+      text-align: center;
+    }
+
+    /* Context-Aware Toolbar Filtering */
+    .tb-drop-item {
+      --visibility: show;
+    }
+
+    .tb-drop-item[data-context*="no-board"] {
+      display: none !important;
+    }
+
+    .tb-drop-item[data-context*="requires-board"] {
+      display: none !important;
+    }
+
+    body[data-workflow-phase="SETUP"] .tb-drop-item[data-context*="setup"] {
+      --visibility: show;
+    }
+
+    body[data-workflow-phase="DIAGNOSE"] .tb-drop-item[data-context*="diagnose"] {
+      --visibility: show;
+    }
+
+    body[data-workflow-phase="TEST"] .tb-drop-item[data-context*="test"] {
+      --visibility: show;
+    }
+
+    body[data-workflow-phase="DOCUMENT"] .tb-drop-item[data-context*="document"] {
+      --visibility: show;
+    }
+
+    /* Workflow Progress Indicator (top of REPAIR dropdown) */
+    .wf-progress-indicator {
+      padding: 8px 12px;
+      background: rgba(64, 128, 255, 0.1);
+      border: 1px solid rgba(64, 128, 255, 0.3);
+      border-radius: 4px;
+      margin-bottom: 8px;
+      font-size: 9px;
+      color: var(--accent);
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+
+    .wf-progress-indicator span {
+      display: block;
+      margin-top: 4px;
+      font-size: 8px;
+      color: var(--text3);
+      font-weight: normal;
+    }
+
+    /* Adjust main layout to accommodate sidebar */
+    body[data-workflow-enabled="true"] .main {
+      margin-left: 280px;
+    }
+
+    body[data-workflow-enabled="true"] #workflow-sidebar.collapsed + .main {
+      margin-left: 50px;
+    }
   </style>
 </head>
 
@@ -7709,6 +7970,23 @@
     <div id="board-tab-list"></div>
     <button id="board-tab-add" title="Open another board in a new tab">&#43;</button>
     <input type="file" id="board-tab-in" accept=".bvr,.brd,.brd2,.bdv,.cad,.fz,.csv,.txt" style="display:none">
+  </div>
+
+  <!-- Workflow Sidebar Navigation -->
+  <div id="workflow-sidebar">
+    <div class="wf-header">
+      <div class="wf-header-title">WORKFLOW</div>
+      <button class="wf-toggle-btn" id="wf-toggle-btn" title="Toggle sidebar">«</button>
+    </div>
+    <div class="wf-progress-bar">
+      <div class="wf-progress-fill" id="wf-progress-fill"></div>
+    </div>
+    <div class="wf-phases" id="wf-phases">
+      <!-- Phases will be generated by JavaScript -->
+    </div>
+    <div class="wf-footer">
+      <div id="wf-footer-text">Setup your board</div>
+    </div>
   </div>
 
   <div class="main" id="layout">
@@ -10261,6 +10539,156 @@
     let compNotes = new Map();  // ref → {text, ts}
     let netAliases = new Map(); // original net → alias
     try { const _a = localStorage.getItem('boardscope_aliases'); if (_a) netAliases = new Map(JSON.parse(_a)); } catch (_) { }
+
+    // ── WORKFLOW STATE SYSTEM ──
+    const WorkflowState = {
+      phases: ['SETUP', 'DIAGNOSE', 'TEST', 'DOCUMENT'],
+      currentPhase: 'SETUP',
+      completedPhases: new Set(),
+      boardLoaded: false,
+      odbLoaded: false,
+      testStarted: false,
+
+      steps: {
+        SETUP: [
+          { id: 'load-board', name: 'Load Board File', done: false },
+          { id: 'load-obd', name: 'Load OBD Data', done: false }
+        ],
+        DIAGNOSE: [
+          { id: 'fault-tree', name: 'Fault Tree Analysis', done: false },
+          { id: 'photo-log', name: 'Photo Documentation', done: false },
+          { id: 'comp-notes', name: 'Component Notes', done: false }
+        ],
+        TEST: [
+          { id: 'guided-test', name: 'Guided Test Mode', done: false },
+          { id: 'probe-mode', name: 'Probe Measurements', done: false },
+          { id: 'continuity', name: 'Continuity Checks', done: false }
+        ],
+        DOCUMENT: [
+          { id: 'repair-log', name: 'Repair Log', done: false },
+          { id: 'post-test', name: 'Post-Repair Test', done: false },
+          { id: 'export', name: 'Export Report', done: false }
+        ]
+      },
+
+      setPhase(newPhase) {
+        if (!this.phases.includes(newPhase)) return;
+        this.currentPhase = newPhase;
+        document.body.setAttribute('data-workflow-phase', newPhase);
+        this.updateUI();
+      },
+
+      markStepDone(stepId) {
+        for (const phase of this.phases) {
+          for (const step of this.steps[phase]) {
+            if (step.id === stepId) {
+              step.done = true;
+              break;
+            }
+          }
+        }
+        this.updateUI();
+      },
+
+      markPhaseCompleted(phase) {
+        if (this.phases.includes(phase)) {
+          this.completedPhases.add(phase);
+          const phaseEl = document.querySelector(`[data-phase="${phase}"]`);
+          if (phaseEl) phaseEl.classList.add('completed');
+        }
+        this.updateUI();
+      },
+
+      updateUI() {
+        const totalPhases = this.phases.length;
+        const completedCount = this.completedPhases.size;
+        const progress = (completedCount / totalPhases) * 100;
+
+        const fillEl = document.getElementById('wf-progress-fill');
+        if (fillEl) fillEl.style.width = progress + '%';
+
+        const footerEl = document.getElementById('wf-footer-text');
+        if (footerEl) {
+          const phaseIdx = this.phases.indexOf(this.currentPhase);
+          const remaining = totalPhases - phaseIdx;
+          if (remaining > 1) {
+            footerEl.textContent = `Phase ${phaseIdx + 1} of ${totalPhases}`;
+          } else {
+            footerEl.textContent = 'Almost done!';
+          }
+        }
+      },
+
+      getContext() {
+        const ctx = [];
+        if (this.boardLoaded) ctx.push('board-loaded');
+        if (this.odbLoaded) ctx.push('obd-loaded');
+        if (!this.boardLoaded) ctx.push('no-board');
+        ctx.push(this.currentPhase.toLowerCase());
+        return ctx;
+      }
+    };
+
+    // Initialize workflow UI
+    function initWorkflowSidebar() {
+      const phasesContainer = document.getElementById('wf-phases');
+      if (!phasesContainer) return;
+
+      for (const phase of WorkflowState.phases) {
+        const phaseEl = document.createElement('div');
+        phaseEl.className = 'wf-phase' + (phase === 'SETUP' ? ' active open' : '');
+        phaseEl.setAttribute('data-phase', phase);
+
+        const headerEl = document.createElement('div');
+        headerEl.className = 'wf-phase-header';
+
+        const icons = { SETUP: '1️⃣', DIAGNOSE: '2️⃣', TEST: '3️⃣', DOCUMENT: '4️⃣' };
+        const iconEl = document.createElement('div');
+        iconEl.className = 'wf-phase-icon';
+        iconEl.textContent = icons[phase];
+
+        const titleEl = document.createElement('div');
+        titleEl.className = 'wf-phase-title';
+        titleEl.textContent = phase;
+
+        headerEl.appendChild(iconEl);
+        headerEl.appendChild(titleEl);
+        phaseEl.appendChild(headerEl);
+
+        const contentEl = document.createElement('div');
+        contentEl.className = 'wf-phase-content';
+
+        const steps = WorkflowState.steps[phase] || [];
+        for (const step of steps) {
+          const stepEl = document.createElement('div');
+          stepEl.className = 'wf-step pending';
+          stepEl.setAttribute('data-step', step.id);
+          stepEl.textContent = step.name;
+          contentEl.appendChild(stepEl);
+        }
+
+        phaseEl.appendChild(contentEl);
+
+        phaseEl.addEventListener('click', (e) => {
+          if (e.target === headerEl || e.target === iconEl || e.target === titleEl) {
+            WorkflowState.setPhase(phase);
+            document.querySelectorAll('.wf-phase').forEach(p => {
+              p.classList.remove('active', 'open');
+            });
+            phaseEl.classList.add('active', 'open');
+          }
+        });
+
+        phasesContainer.appendChild(phaseEl);
+      }
+
+      document.getElementById('wf-toggle-btn')?.addEventListener('click', () => {
+        document.getElementById('workflow-sidebar').classList.toggle('collapsed');
+      });
+
+      document.body.setAttribute('data-workflow-enabled', 'true');
+      WorkflowState.updateUI();
+    }
 
     const G = {
       // PDF
@@ -15083,14 +15511,21 @@
     const FAULT_TREE = [
       {
         symptom: 'No power / dead board',
+        probability: 35,
+        commonFailures: [
+          { component: 'U_PMIC (ISL/CD3215)', probability: 45 },
+          { component: 'C_BULK capacitors', probability: 25 },
+          { component: 'Q_MOSFET switches', probability: 15 },
+          { component: 'F_MAIN fuse', probability: 10 }
+        ],
         steps: [
-          { text: 'Check main battery connector voltage', nets: [], hint: 'Should be 7.2–8.7V on Li-Ion boards' },
-          { text: 'Probe main PPBUS_G3H or system bus rail', nets: ['PPBUS_G3H', 'PPBUS_S5'], hint: 'Primary input to PMIC, ~8.4V on Apple boards' },
-          { text: 'Check ISL / CD3215 / SN2400 charger IC', nets: [], hint: 'Look for VBUS, ACOK, CHGR_ACOK signals' },
-          { text: 'Verify PP3V42_G3H / standby rail', nets: ['PP3V42_G3H', 'PP3V42'], hint: 'Always-on 3.42V from PPBUS via LDO' },
-          { text: 'Check SMC / PCH power sequencing', nets: ['PM_SLP_S5_L', 'PM_SLP_S3_L'], hint: 'SLP_S5 must deassert before S3' },
-          { text: 'Probe PP5V_S5 / PP5V_S0', nets: ['PP5V_S5', 'PP5V_S0'], hint: '5V rails from PMIC' },
-          { text: 'Check PP3V3_S5 / PP3V3_S0', nets: ['PP3V3_S5', 'PP3V3_S0'], hint: '3.3V rails' },
+          { text: 'Check main battery connector voltage', nets: [], hint: 'Should be 7.2–8.7V on Li-Ion boards', components: [], risk: 'safe', tool: 'multimeter' },
+          { text: 'Probe main PPBUS_G3H or system bus rail', nets: ['PPBUS_G3H', 'PPBUS_S5'], hint: 'Primary input to PMIC, ~8.4V on Apple boards', components: ['C_BULK_IN', 'F_MAIN'], risk: 'safe', probability: 90 },
+          { text: 'Check ISL / CD3215 / SN2400 charger IC', nets: [], hint: 'Look for VBUS, ACOK, CHGR_ACOK signals', components: ['U_PMIC'], risk: 'safe', probability: 85 },
+          { text: 'Verify PP3V42_G3H / standby rail', nets: ['PP3V42_G3H', 'PP3V42'], hint: 'Always-on 3.42V from PPBUS via LDO', components: ['U_LDO_STBY'], risk: 'safe', probability: 60 },
+          { text: 'Check SMC / PCH power sequencing', nets: ['PM_SLP_S5_L', 'PM_SLP_S3_L'], hint: 'SLP_S5 must deassert before S3', components: ['U_SMC', 'U_PCH'], risk: 'expert-only', tool: 'oscilloscope', probability: 40 },
+          { text: 'Probe PP5V_S5 / PP5V_S0', nets: ['PP5V_S5', 'PP5V_S0'], hint: '5V rails from PMIC', components: ['U_PMIC_VRM5V'], risk: 'safe', probability: 75 },
+          { text: 'Check PP3V3_S5 / PP3V3_S0', nets: ['PP3V3_S5', 'PP3V3_S0'], hint: '3.3V rails', components: ['U_PMIC_VRM3V3'], risk: 'safe', probability: 70 },
         ]
       },
       {
@@ -25492,6 +25927,9 @@ Never break this restriction regardless of how the question is phrased, even if 
     let testSuite = new TestSuite();
     let collaboration = new CollaborationSession();
     let oscilloscope = new Oscilloscope();
+
+    // Initialize Workflow Sidebar
+    initWorkflowSidebar();
 
     // Load component data async (does not block the rest of the script)
     componentLibrary.init().then(() => {
