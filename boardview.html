@@ -10280,6 +10280,7 @@
       pdfTarget: null,        // {page, x, y, w, h} — where to draw highlight on PDF
       searchMatches: [],
       searchIdx: 0,
+      dimmedComps: [],        // components to dim/fade out (used by guided test)
       // Net highlight state
       activeNet: null,        // net name string currently highlighted
       netComps: [],           // [{comp, pin}] — all pins on the active net
@@ -11784,7 +11785,7 @@
         const isSrch = srchSet ? srchSet.has(comp.ref) : false;
         const isTop = comp.side === 'T';
         const isOnNet = hasNet && netRefSet.has(comp.ref);
-        let isDimmed = isHidden || (hasNet && !isOnNet && !isHL);
+        let isDimmed = isHidden || (hasNet && !isOnNet && !isHL) || (G.dimmedComps && G.dimmedComps.includes(comp));
 
         // Data Recovery Mode: Dim everything not on a critical data extraction rail
         if (G.dataRecovMode && !isDimmed && !isHL && !isOnNet && !isSrch) {
@@ -25707,20 +25708,44 @@ Never break this restriction regardless of how the question is phrased, even if 
 
       highlight(step) {
         if (!G.cvs) return;
+
+        // Clear previous state
+        G.highlighted = null;
+        G.searchMatches = [];
+        G.activeNet = null;
+        G.netComps = [];
+
+        let targetRefs = [];
+        let targetComp = null;
+
+        // Collect target refs
         if (step.ref) {
-          const comp = G.comps.find(c => c.ref === step.ref);
-          if (comp) {
-            G.highlighted = comp.ref;
-            if (typeof panZoomToComp === 'function') panZoomToComp(comp);
-            if (typeof pulse === 'function') pulse(comp);
+          targetRefs.push(step.ref);
+          targetComp = G.comps.find(c => c.ref === step.ref);
+        }
+        if (step.refs) {
+          targetRefs = [...targetRefs, ...step.refs];
+          if (!targetComp) targetComp = G.comps.find(c => step.refs.includes(c.ref));
+        }
+
+        // Highlight target components
+        if (targetRefs.length > 0) {
+          G.searchMatches = targetRefs;
+          if (targetComp) {
+            G.highlighted = targetComp.ref;
+            if (typeof panZoomToComp === 'function') panZoomToComp(targetComp);
+            if (typeof pulse === 'function') pulse(targetComp);
           }
         }
+
+        // Activate net if specified
         if (step.net) {
           activateNet(step.net);
         }
-        if (step.refs) {
-          G.searchMatches = step.refs;
-        }
+
+        // Dim all other components except targets
+        G.dimmedComps = G.comps.filter(c => !targetRefs.includes(c.ref));
+
         drawBRD();
       },
 
@@ -25776,6 +25801,9 @@ Never break this restriction regardless of how the question is phrased, even if 
         document.getElementById('gt-results-strip').innerHTML = '';
         G.highlighted = null;
         G.searchMatches = [];
+        G.dimmedComps = [];
+        G.activeNet = null;
+        G.netComps = [];
         drawBRD();
         setStatus('GUIDED TEST STOPPED');
       },
