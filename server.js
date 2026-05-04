@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 const express = require('express');
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8080;
 
 app.use(express.json());
 
@@ -29,7 +29,6 @@ app.post('/license-validate', (req, res) => {
     }
 
     // If it looks like a valid Polar key, accept it
-    // In production, you'd validate against Polar's API here
     res.json({
       valid: true,
       plan: 'yearly',
@@ -40,6 +39,10 @@ app.post('/license-validate', (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`BoardScope License Server listening on port ${PORT}`);
+});
+
+server.on('error', (err) => {
+  console.error('Server error:', err);
 });
