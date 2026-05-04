@@ -8174,15 +8174,15 @@
             <div class="tb-drop-label" data-i18n="lbl_guided" style="grid-column:1">DIAGNOSE</div>
             <div class="tb-drop-label" style="grid-column:2">NOTES &amp; REFS</div>
 
-            <button class="tog tb-drop-item" id="tog-mmode" title="Measurement Mode">&#9881; PROBE MODE</button>
+            <button class="tog tb-drop-item" id="tog-mmode" data-context="test" title="Measurement Mode">&#9881; PROBE MODE</button>
             <button class="tog tb-drop-item" id="tog-compnotes" title="Component Notes">&#128203; COMP NOTES</button>
 
             <button class="tog tb-drop-item" id="tog-powerseq"
               title="Power Sequencing Checklist — step-by-step voltage rail verification with live multimeter">&#9889; POWER SEQ</button>
             <button class="tog tb-drop-item" id="tog-netaliases" title="Net Aliases">&#9998; NET ALIASES</button>
 
-            <button class="tog tb-drop-item" id="tog-fault" title="Fault Tree">&#9888; FAULT TREE</button>
-            <button class="tog tb-drop-item" id="tog-photo-log" title="Before/after photo log for this repair">&#128247; PHOTO LOG</button>
+            <button class="tog tb-drop-item" id="tog-fault" data-context="diagnose" title="Fault Tree">&#9888; FAULT TREE</button>
+            <button class="tog tb-drop-item" id="tog-photo-log" data-context="diagnose" title="Before/after photo log for this repair">&#128247; PHOTO LOG</button>
 
             <button class="tog tb-drop-item" id="tog-aidiag"
               title="AI Diagnosis — describe your symptom, get guided analysis">&#129302; AI DIAGNOSIS</button>
@@ -8216,10 +8216,10 @@
 
             <button class="tog tb-drop-item" id="tog-reball"
               title="Reballing Tracker — log BGA chip reballing workflow">&#9737; REBALLING</button>
-            <button class="tog tb-drop-item" id="tog-obd" title="OpenBoardData">&#9998; OBD DATA</button>
+            <button class="tog tb-drop-item" id="tog-obd" data-context="setup" title="OpenBoardData">&#9998; OBD DATA</button>
 
             <button class="tog tb-drop-item" id="tog-microsolder" title="Micro-soldering checklist">&#128295; MICRO-SOLDER</button>
-            <button class="tog tb-drop-item" id="tog-log" title="Repair Log">&#128221; REPAIR LOG</button>
+            <button class="tog tb-drop-item" id="tog-log" data-context="document" title="Repair Log">&#128221; REPAIR LOG</button>
 
             <!-- Full-width bottom row -->
             <div class="tb-drop-label" style="grid-column:1">AUTOMATION</div>
@@ -8227,7 +8227,7 @@
 
             <button class="tog tb-drop-item" id="tog-macros"
               title="Macro Recorder - record and replay measurement sequences">&#127916; MACROS</button>
-            <button class="tog tb-drop-item" id="tog-guided-test"
+            <button class="tog tb-drop-item" id="tog-guided-test" data-context="test"
               title="Guided Test Mode - step-by-step repair testing wizard">⚡ GUIDED TEST</button>
 
             <button class="tb-drop-item" id="export-report-btn"
@@ -11457,6 +11457,15 @@
       setStatus(comps.length + ' PARTS  T:' + t + '  B:' + b);
       const boardMatch = fileName.match(/(\d{3}-\d{4,6})/);
       if (boardMatch) G.boardId = boardMatch[1];
+
+      // Update workflow state
+      WorkflowState.boardLoaded = true;
+      WorkflowState.markStepDone('load-board');
+      if (WorkflowState.completedPhases.has('SETUP') === false && WorkflowState.odbLoaded) {
+        WorkflowState.markPhaseCompleted('SETUP');
+        WorkflowState.setPhase('DIAGNOSE');
+      }
+
       loadLocalMeas();
       loadLog();
       cnLoad();
@@ -14579,6 +14588,14 @@
       // Assign parsed OBD data to the global state object G
       // G is the main application state container used throughout the app
       G.obd = { netData, compData, sequences };
+
+      // Update workflow state when OBD is loaded
+      WorkflowState.odbLoaded = true;
+      WorkflowState.markStepDone('load-obd');
+      if (WorkflowState.completedPhases.has('SETUP') === false && WorkflowState.boardLoaded) {
+        WorkflowState.markPhaseCompleted('SETUP');
+        WorkflowState.setPhase('DIAGNOSE');
+      }
     }
 
     function renderOBDPanel() {
@@ -15530,71 +15547,120 @@
       },
       {
         symptom: 'No charging',
+        probability: 28,
+        commonFailures: [
+          { component: 'U_CHG (ISL9239/CD3215)', probability: 45 },
+          { component: 'Q_CHARGE_FET', probability: 28 },
+          { component: 'C_BULK_CHG', probability: 15 },
+          { component: 'F_CHARGE fuse', probability: 10 }
+        ],
         steps: [
-          { text: 'Verify VBUS / VBUS_FS presence on USB-C port', nets: ['VBUS', 'VBUS_FS'], hint: '5–20V from charger adapter' },
-          { text: 'Check ACOK / CHGR_ACOK signal', nets: ['ACOK', 'CHGR_ACOK', 'PP_ACOK'], hint: 'Should go high when charger connected' },
-          { text: 'Probe charge FET gate (GATE_CHG, CHGR_FET)', nets: ['GATE_CHG', 'CHGR_FET'], hint: 'FET must be open for charge current to flow' },
-          { text: 'Check PPBUS voltage with charger connected', nets: ['PPBUS_G3H'], hint: 'Should be slightly above battery voltage' },
-          { text: 'Inspect charger IC (ISL9239/CD3215/BQ) outputs', nets: [], hint: 'Check for shorted coil or missing gate drive' },
-          { text: 'Verify SMBus / I2C lines to charger', nets: ['SMB_CLK', 'SMB_DAT'], hint: 'Charger IC communicates with SMC via SMBus' },
+          { text: 'Verify VBUS / VBUS_FS presence on USB-C port', nets: ['VBUS', 'VBUS_FS'], hint: '5–20V from charger adapter', components: ['USB_PORT'], risk: 'safe', tool: 'multimeter', probability: 95 },
+          { text: 'Check ACOK / CHGR_ACOK signal', nets: ['ACOK', 'CHGR_ACOK', 'PP_ACOK'], hint: 'Should go high when charger connected', components: ['U_CHG'], risk: 'safe', probability: 90 },
+          { text: 'Probe charge FET gate (GATE_CHG, CHGR_FET)', nets: ['GATE_CHG', 'CHGR_FET'], hint: 'FET must be open for charge current to flow', components: ['Q_CHARGE_FET'], risk: 'risky', probability: 85 },
+          { text: 'Check PPBUS voltage with charger connected', nets: ['PPBUS_G3H'], hint: 'Should be slightly above battery voltage', components: ['U_CHG', 'C_BULK_CHG'], risk: 'safe', probability: 80 },
+          { text: 'Inspect charger IC (ISL9239/CD3215/BQ) outputs', nets: [], hint: 'Check for shorted coil or missing gate drive', components: ['U_CHG', 'L_CHG'], risk: 'expert-only', tool: 'oscilloscope', probability: 75 },
+          { text: 'Verify SMBus / I2C lines to charger', nets: ['SMB_CLK', 'SMB_DAT'], hint: 'Charger IC communicates with SMC via SMBus', components: ['U_CHG', 'U_SMC'], risk: 'safe', probability: 60 },
         ]
       },
       {
         symptom: 'No backlight',
+        probability: 18,
+        commonFailures: [
+          { component: 'U_BKL_BOOST (LM3534)', probability: 50 },
+          { component: 'L_BKL coil', probability: 25 },
+          { component: 'Q_BKL MOSFET', probability: 15 },
+          { component: 'C_BKL capacitors', probability: 10 }
+        ],
         steps: [
-          { text: 'Check PPVOUT_SW_BL (backlight boost output)', nets: ['PPVOUT_SW_BL', 'LCD_BKL_PWR'], hint: 'Should be 20–40V boosted from PPBUS' },
-          { text: 'Verify BKL_PWM signal from GPU', nets: ['BKL_PWM', 'LCD_BKL_PWM'], hint: 'PWM duty cycle controls brightness' },
-          { text: 'Probe BKL_EN enable line', nets: ['BKL_EN', 'LCD_BKL_EN'], hint: 'Must be high for boost to run' },
-          { text: 'Check boost IC (LM3534/etc) coil continuity', nets: [], hint: 'Shorted coil = zero output voltage' },
-          { text: 'Inspect LCD connector pins for bent/dirty contacts', nets: [], hint: 'Especially BKL+ and BKL- pins' },
+          { text: 'Check PPVOUT_SW_BL (backlight boost output)', nets: ['PPVOUT_SW_BL', 'LCD_BKL_PWR'], hint: 'Should be 20–40V boosted from PPBUS', components: ['U_BKL_BOOST', 'L_BKL'], risk: 'risky', tool: 'multimeter', probability: 92 },
+          { text: 'Verify BKL_PWM signal from GPU', nets: ['BKL_PWM', 'LCD_BKL_PWM'], hint: 'PWM duty cycle controls brightness', components: ['U_GPU'], risk: 'safe', tool: 'oscilloscope', probability: 85 },
+          { text: 'Probe BKL_EN enable line', nets: ['BKL_EN', 'LCD_BKL_EN'], hint: 'Must be high for boost to run', components: ['U_BKL_BOOST'], risk: 'safe', probability: 80 },
+          { text: 'Check boost IC (LM3534/etc) coil continuity', nets: [], hint: 'Shorted coil = zero output voltage', components: ['L_BKL'], risk: 'expert-only', probability: 75 },
+          { text: 'Inspect LCD connector pins for bent/dirty contacts', nets: [], hint: 'Especially BKL+ and BKL- pins', components: ['LCD_CONN'], risk: 'safe', probability: 45 },
         ]
       },
       {
         symptom: 'No display / black screen',
+        probability: 22,
+        commonFailures: [
+          { component: 'U_GPU VRM', probability: 40 },
+          { component: 'LCD_CONN', probability: 30 },
+          { component: 'U_GPU', probability: 18 },
+          { component: 'U_LVDS_BRIDGE', probability: 12 }
+        ],
         steps: [
-          { text: 'Verify PPVCORE_GPU / GPU core voltage', nets: ['PPVCORE_GPU', 'GPU_CORE'], hint: 'Missing GPU core = black screen with power' },
-          { text: 'Check eDP / LVDS connector for damage', nets: [], hint: 'Cold joint or debris on LCD flex connector' },
-          { text: 'Probe PP3V3_MLDO / panel supply', nets: ['PP3V3_MLDO', 'LCD_VCC'], hint: '3.3V panel supply from GPU power block' },
-          { text: 'Verify VDDIO_LCD / display logic supply', nets: ['VDDIO_LCD'], hint: '1.8V or 1.2V I/O supply for panel controller' },
-          { text: 'Check for GPU activity — probe CLK lines', nets: [], hint: 'Any clock activity suggests GPU is alive' },
+          { text: 'Verify PPVCORE_GPU / GPU core voltage', nets: ['PPVCORE_GPU', 'GPU_CORE'], hint: 'Missing GPU core = black screen with power', components: ['U_GPU_VRM'], risk: 'safe', probability: 88 },
+          { text: 'Check eDP / LVDS connector for damage', nets: [], hint: 'Cold joint or debris on LCD flex connector', components: ['LCD_CONN'], risk: 'risky', probability: 82 },
+          { text: 'Probe PP3V3_MLDO / panel supply', nets: ['PP3V3_MLDO', 'LCD_VCC'], hint: '3.3V panel supply from GPU power block', components: ['U_LDO_LCD'], risk: 'safe', probability: 75 },
+          { text: 'Verify VDDIO_LCD / display logic supply', nets: ['VDDIO_LCD'], hint: '1.8V or 1.2V I/O supply for panel controller', components: ['U_LDO_VDDIO'], risk: 'safe', probability: 70 },
+          { text: 'Check for GPU activity — probe CLK lines', nets: [], hint: 'Any clock activity suggests GPU is alive', components: ['U_GPU'], risk: 'expert-only', tool: 'oscilloscope', probability: 65 },
         ]
       },
       {
         symptom: 'No audio',
+        probability: 12,
+        commonFailures: [
+          { component: 'U_AUDIO_CODEC', probability: 45 },
+          { component: 'U_SPK_AMP', probability: 35 },
+          { component: 'AUDIO_JACK', probability: 15 },
+          { component: 'L_AUDIO', probability: 5 }
+        ],
         steps: [
-          { text: 'Check AVDD / PVDD supply to audio codec', nets: ['AVDD', 'PVDD', 'PP3V3_AUDIO'], hint: 'Audio codec analog supply' },
-          { text: 'Probe I2S / MCLK lines between SoC and codec', nets: ['I2S_CLK', 'MCLK', 'AUD_MCLK'], hint: 'No clock = no audio output' },
-          { text: 'Verify speaker amplifier supply (PVDD_SPK)', nets: ['PVDD_SPK'], hint: 'Usually 5–12V boosted supply for amp' },
-          { text: 'Check headphone jack / codec switch signals', nets: ['HPDET', 'HP_DET'], hint: 'Detection pin selects speaker vs HP output' },
+          { text: 'Check AVDD / PVDD supply to audio codec', nets: ['AVDD', 'PVDD', 'PP3V3_AUDIO'], hint: 'Audio codec analog supply', components: ['U_AUDIO_CODEC', 'U_LDO_AUDIO'], risk: 'safe', probability: 85 },
+          { text: 'Probe I2S / MCLK lines between SoC and codec', nets: ['I2S_CLK', 'MCLK', 'AUD_MCLK'], hint: 'No clock = no audio output', components: ['U_SoC', 'U_AUDIO_CODEC'], risk: 'expert-only', tool: 'oscilloscope', probability: 80 },
+          { text: 'Verify speaker amplifier supply (PVDD_SPK)', nets: ['PVDD_SPK'], hint: 'Usually 5–12V boosted supply for amp', components: ['U_SPK_AMP'], risk: 'safe', probability: 75 },
+          { text: 'Check headphone jack / codec switch signals', nets: ['HPDET', 'HP_DET'], hint: 'Detection pin selects speaker vs HP output', components: ['AUDIO_JACK', 'U_AUDIO_CODEC'], risk: 'safe', probability: 60 },
         ]
       },
       {
         symptom: 'No USB / USB port dead',
+        probability: 15,
+        commonFailures: [
+          { component: 'F_USB fuse', probability: 40 },
+          { component: 'U_USB_HUB', probability: 35 },
+          { component: 'ESD_DIODES', probability: 18 },
+          { component: 'R_USB_TERM', probability: 7 }
+        ],
         steps: [
-          { text: 'Verify VBUS on USB port — check filter fuse', nets: ['VBUS', 'PP5V_USB'], hint: 'USB fuse often blows from ESD or short' },
-          { text: 'Check USB hub / retimer IC power supply', nets: [], hint: 'Retimer needs 1.0V, 1.8V, 3.3V rails' },
-          { text: 'Probe USB2 DP/DM differential pair', nets: ['USB2_DP', 'USB2_DM'], hint: 'Should show ~400mV termination voltage at idle' },
-          { text: 'Verify USB3 SuperSpeed lane signals', nets: ['USB3_TX', 'USB3_RX'], hint: 'Check for 50Ω continuity to IC' },
-          { text: 'Check SMC USB power enable signal', nets: ['PP5V_USB_EN', 'USBPWR_EN'], hint: 'SMC controls USB VBUS FET' },
+          { text: 'Verify VBUS on USB port — check filter fuse', nets: ['VBUS', 'PP5V_USB'], hint: 'USB fuse often blows from ESD or short', components: ['F_USB', 'USB_PORT'], risk: 'safe', probability: 90 },
+          { text: 'Check USB hub / retimer IC power supply', nets: [], hint: 'Retimer needs 1.0V, 1.8V, 3.3V rails', components: ['U_USB_HUB', 'U_REDRIVER'], risk: 'safe', probability: 85 },
+          { text: 'Probe USB2 DP/DM differential pair', nets: ['USB2_DP', 'USB2_DM'], hint: 'Should show ~400mV termination voltage at idle', components: ['USB_PORT', 'R_USB_TERM'], risk: 'expert-only', tool: 'oscilloscope', probability: 80 },
+          { text: 'Verify USB3 SuperSpeed lane signals', nets: ['USB3_TX', 'USB3_RX'], hint: 'Check for 50Ω continuity to IC', components: ['U_REDRIVER'], risk: 'expert-only', probability: 75 },
+          { text: 'Check SMC USB power enable signal', nets: ['PP5V_USB_EN', 'USBPWR_EN'], hint: 'SMC controls USB VBUS FET', components: ['U_SMC', 'Q_USB_FET'], risk: 'safe', probability: 70 },
         ]
       },
       {
         symptom: 'Overheating / fan always on',
+        probability: 14,
+        commonFailures: [
+          { component: 'THERMAL_DIODE', probability: 45 },
+          { component: 'NTC_THERMISTOR', probability: 30 },
+          { component: 'U_FAN_CTRL', probability: 15 },
+          { component: 'Shorted Power Rail', probability: 10 }
+        ],
         steps: [
-          { text: 'Check SMC temperature sensor readings', nets: [], hint: 'Read SMC keys via Apple diag or iStatMenus' },
-          { text: 'Probe CPU/GPU thermal diode pins', nets: [], hint: 'Open circuit on thermal diode = max fan speed' },
-          { text: 'Verify NTC thermistors on board', nets: [], hint: 'Should measure 5–50kΩ at room temp' },
-          { text: 'Check fan connector and fan PWM signal', nets: ['FAN_PWM', 'FAN_TACH'], hint: 'PWM duty directly controls fan speed' },
-          { text: 'Inspect for shorted power rail causing excess heat', nets: [], hint: 'Use thermal camera or freeze spray' },
+          { text: 'Check SMC temperature sensor readings', nets: [], hint: 'Read SMC keys via Apple diag or iStatMenus', components: ['U_SMC', 'THERMAL_SENSOR'], risk: 'safe', probability: 85 },
+          { text: 'Probe CPU/GPU thermal diode pins', nets: [], hint: 'Open circuit on thermal diode = max fan speed', components: ['THERMAL_DIODE'], risk: 'safe', probability: 88 },
+          { text: 'Verify NTC thermistors on board', nets: [], hint: 'Should measure 5–50kΩ at room temp', components: ['NTC_THERMISTOR'], risk: 'safe', probability: 80 },
+          { text: 'Check fan connector and fan PWM signal', nets: ['FAN_PWM', 'FAN_TACH'], hint: 'PWM duty directly controls fan speed', components: ['U_FAN_CTRL', 'Q_FAN'], risk: 'expert-only', tool: 'oscilloscope', probability: 75 },
+          { text: 'Inspect for shorted power rail causing excess heat', nets: [], hint: 'Use thermal camera or freeze spray', components: ['U_VRM'], risk: 'risky', probability: 60 },
         ]
       },
       {
         symptom: 'Kernel panic / random crashes',
+        probability: 9,
+        commonFailures: [
+          { component: 'U_VRM (CPU/GPU)', probability: 50 },
+          { component: 'Cold Solder Joint', probability: 30 },
+          { component: 'RAM VRM', probability: 12 },
+          { component: 'C_BULK capacitors', probability: 8 }
+        ],
         steps: [
-          { text: 'Check CPU/GPU core voltage ripple (scope)', nets: ['PPVCORE_CPU', 'PPVCORE_GPU'], hint: 'Ripple >50mVpp under load suggests VRM fault' },
-          { text: 'Verify RAM supply voltages', nets: ['PP1V35_S0', 'VDDQ'], hint: 'Unstable RAM voltage causes random panics' },
-          { text: 'Check SSD / NVMe power rail', nets: ['PP3V3_SSD', 'PPVCC_SSD'], hint: 'Unstable SSD power causes I/O panics' },
-          { text: 'Inspect cold joints on CPU/GPU with thermal camera', nets: [], hint: 'Intermittent connection = random crash pattern' },
+          { text: 'Check CPU/GPU core voltage ripple (scope)', nets: ['PPVCORE_CPU', 'PPVCORE_GPU'], hint: 'Ripple >50mVpp under load suggests VRM fault', components: ['U_VRM_CPU', 'U_VRM_GPU'], risk: 'expert-only', tool: 'oscilloscope', probability: 92 },
+          { text: 'Verify RAM supply voltages', nets: ['PP1V35_S0', 'VDDQ'], hint: 'Unstable RAM voltage causes random panics', components: ['U_RAM_VRM'], risk: 'safe', tool: 'multimeter', probability: 85 },
+          { text: 'Check SSD / NVMe power rail', nets: ['PP3V3_SSD', 'PPVCC_SSD'], hint: 'Unstable SSD power causes I/O panics', components: ['U_SSD_VRM'], risk: 'safe', probability: 75 },
+          { text: 'Inspect cold joints on CPU/GPU with thermal camera', nets: [], hint: 'Intermittent connection = random crash pattern', components: ['U_CPU', 'U_GPU', 'U_RAM'], risk: 'risky', probability: 80 },
         ]
       },
     ];
