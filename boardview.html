@@ -6862,6 +6862,291 @@
       transition: width 0.3s ease;
     }
 
+    /* ── GUIDED TEST PANEL ── */
+    #guided-test-panel {
+      position: absolute;
+      top: 50px;
+      right: 20px;
+      z-index: 42;
+      background: var(--bg2);
+      border: 2px solid #4080ff;
+      border-radius: var(--r);
+      width: 360px;
+      max-height: 85vh;
+      display: none;
+      flex-direction: column;
+      box-shadow: 0 8px 32px rgba(64, 128, 255, .3);
+      overflow: hidden;
+    }
+
+    #guided-test-panel.open {
+      display: flex;
+    }
+
+    #gt-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      background: var(--bg3);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+      user-select: none;
+      cursor: move;
+    }
+
+    #gt-title {
+      font-size: 11px;
+      font-weight: 700;
+      color: #4080ff;
+      letter-spacing: 1px;
+      flex: 1;
+    }
+
+    #gt-close {
+      color: var(--text3);
+      cursor: pointer;
+      font-size: 12px;
+    }
+
+    #gt-close:hover {
+      color: var(--text);
+    }
+
+    #gt-controls {
+      display: flex;
+      gap: 8px;
+      padding: 10px 12px;
+      background: var(--bg3);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    #gt-sequence-select {
+      flex: 1;
+      background: var(--bg2);
+      border: 1px solid var(--border2);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 9px;
+      padding: 4px 8px;
+      border-radius: 3px;
+      outline: none;
+    }
+
+    #gt-sequence-select:focus {
+      border-color: #4080ff;
+    }
+
+    .gt-btn {
+      background: var(--bg2);
+      border: 1px solid var(--border2);
+      color: var(--text2);
+      font-family: var(--mono);
+      font-size: 9px;
+      padding: 4px 12px;
+      border-radius: 3px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .gt-btn:hover:not(:disabled) {
+      background: var(--bg3);
+      color: var(--text);
+      border-color: #4080ff;
+    }
+
+    .gt-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    #gt-body {
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      overflow-y: auto;
+      flex: 1;
+      min-height: 0;
+    }
+
+    .gt-step-num {
+      font-size: 9px;
+      color: var(--text3);
+      letter-spacing: 1px;
+      margin-bottom: 4px;
+    }
+
+    .gt-step-name {
+      font-size: 11px;
+      font-weight: 700;
+      color: #4080ff;
+      margin-bottom: 8px;
+    }
+
+    .gt-instruction {
+      font-size: 10px;
+      color: var(--text2);
+      line-height: 1.6;
+      margin-bottom: 10px;
+    }
+
+    .gt-expected {
+      font-size: 9px;
+      color: var(--text3);
+      background: var(--bg3);
+      padding: 6px 8px;
+      border-left: 2px solid #4080ff;
+      margin-bottom: 10px;
+    }
+
+    .gt-input-row {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    #gt-input {
+      flex: 1;
+      background: var(--bg3);
+      border: 1px solid var(--border2);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 10px;
+      padding: 4px 8px;
+      border-radius: 3px;
+      outline: none;
+    }
+
+    #gt-input:focus {
+      border-color: #4080ff;
+    }
+
+    #gt-unit {
+      font-size: 9px;
+      color: var(--text3);
+      min-width: 20px;
+    }
+
+    .gt-action-buttons {
+      display: flex;
+      gap: 6px;
+      justify-content: center;
+    }
+
+    .gt-action-btn {
+      flex: 1;
+      padding: 6px 10px;
+      font-size: 9px;
+      font-weight: 700;
+      border: 1px solid;
+      border-radius: 3px;
+      cursor: pointer;
+      transition: all 0.15s;
+      text-align: center;
+      min-height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .gt-pass {
+      background: rgba(68, 170, 34, 0.2);
+      border-color: #44aa22;
+      color: #44aa22;
+    }
+
+    .gt-pass:hover {
+      background: rgba(68, 170, 34, 0.35);
+    }
+
+    .gt-fail {
+      background: rgba(220, 20, 60, 0.2);
+      border-color: #dc143c;
+      color: #dc143c;
+    }
+
+    .gt-fail:hover {
+      background: rgba(220, 20, 60, 0.35);
+    }
+
+    .gt-skip {
+      background: rgba(100, 100, 100, 0.2);
+      border-color: #666;
+      color: #999;
+    }
+
+    .gt-skip:hover {
+      background: rgba(100, 100, 100, 0.35);
+    }
+
+    #gt-progress-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding: 10px 12px;
+      background: var(--bg3);
+      border-top: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    #gt-step-info {
+      display: flex;
+      justify-content: space-between;
+      font-size: 9px;
+      color: var(--text3);
+    }
+
+    .gt-progress {
+      width: 100%;
+      height: 6px;
+      background: var(--bg2);
+      border-radius: 2px;
+      overflow: hidden;
+      border: 1px solid var(--border2);
+    }
+
+    .gt-progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #4080ff, #6ba3ff);
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+
+    #gt-results-strip {
+      display: flex;
+      gap: 4px;
+      padding: 0 12px 8px;
+      flex-wrap: wrap;
+    }
+
+    .gt-result-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .gt-result-dot.pass {
+      background: #44aa22;
+    }
+
+    .gt-result-dot.fail {
+      background: #dc143c;
+    }
+
+    .gt-result-dot.skip {
+      background: #888;
+    }
+
+    .gt-result-dot:hover {
+      transform: scale(1.3);
+      box-shadow: 0 0 8px currentColor;
+    }
+
     /* ── COMPONENT LIBRARY PANEL ── */
     #complib-panel {
       position: absolute;
@@ -7663,6 +7948,9 @@
 
             <button class="tog tb-drop-item" id="tog-macros"
               title="Macro Recorder - record and replay measurement sequences">&#127916; MACROS</button>
+            <button class="tog tb-drop-item" id="tog-guided-test"
+              title="Guided Test Mode - step-by-step repair testing wizard">⚡ GUIDED TEST</button>
+
             <button class="tb-drop-item" id="export-report-btn"
               title="Export a full HTML/PDF repair report"
               style="color:var(--accent)">&#128196; EXPORT REPORT</button>
@@ -8070,6 +8358,65 @@
                   MACRO LIBRARY
                 </div>
                 <div id="macro-list"></div>
+              </div>
+            </div>
+
+            <!-- Guided Test Mode Panel -->
+            <div id="guided-test-panel">
+              <div id="gt-hdr">
+                <span id="gt-title">⚡ GUIDED TEST</span>
+                <span id="gt-close">✕</span>
+              </div>
+              <div id="gt-body">
+                <!-- Sequence selector and controls -->
+                <div id="gt-controls">
+                  <select id="gt-sequence-select">
+                    <option value="">— Select Test Sequence —</option>
+                    <option value="power">Power Rails Check (12 steps)</option>
+                    <option value="usb">USB Port Test (8 steps)</option>
+                    <option value="charging">Charging Circuit (8 steps)</option>
+                    <option value="backlight">Backlight / Display (7 steps)</option>
+                    <option value="diode">Quick Diode Check (10 steps)</option>
+                  </select>
+                  <button id="gt-start-btn">▶ START</button>
+                  <button id="gt-stop-btn" style="display:none">⏹ STOP</button>
+                </div>
+
+                <!-- Progress indicator -->
+                <div id="gt-progress-wrap" style="display:none">
+                  <div id="gt-progress-info">
+                    <span id="gt-step-num">Step 1 of 12</span>
+                    <div id="gt-progress-bar">
+                      <div id="gt-progress-fill"></div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Step content -->
+                <div id="gt-step-content" style="display:none">
+                  <div id="gt-step-name"></div>
+                  <div id="gt-step-instruction"></div>
+                  <div id="gt-step-location"></div>
+
+                  <!-- Measurement input (shown for voltage/diode/resistance) -->
+                  <div id="gt-measurement-wrap" style="display:none">
+                    <div id="gt-expected-range"></div>
+                    <div id="gt-input-row">
+                      <input id="gt-measurement-input" type="text" placeholder="Enter reading…" autocomplete="off">
+                      <span id="gt-unit"></span>
+                    </div>
+                  </div>
+
+                  <!-- Action buttons -->
+                  <div id="gt-action-buttons">
+                    <button id="gt-pass-btn" class="gt-result-btn pass-btn">✓ PASS</button>
+                    <button id="gt-fail-btn" class="gt-result-btn fail-btn">✗ FAIL</button>
+                    <button id="gt-skip-btn" class="gt-result-btn skip-btn" style="display:none">→ SKIP</button>
+                  </div>
+                </div>
+
+                <!-- Results strip -->
+                <div id="gt-results-strip"></div>
               </div>
             </div>
 
@@ -25196,6 +25543,343 @@ Never break this restriction regardless of how the question is phrased, even if 
     `).join('');
       }
       setStatus('MACRO RECORDING SAVED');
+    });
+
+    // ── GUIDED TEST MODE ──
+    // Simple modal system
+    function showModal(content, title) {
+      let modal = document.getElementById('gt-result-modal');
+      if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'gt-result-modal';
+        modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:10000;font-family:var(--mono)';
+        document.body.appendChild(modal);
+        modal.addEventListener('click', e => {
+          if (e.target === modal) window.showModalClose();
+        });
+      }
+      modal.innerHTML = content;
+      modal.style.display = 'flex';
+    }
+    window.showModalClose = function() {
+      const modal = document.getElementById('gt-result-modal');
+      if (modal) modal.style.display = 'none';
+    };
+
+    const GuidedTest = {
+      sequences: {
+        power: {
+          name: 'Power Rails Check',
+          steps: [
+            { id: 'pr-01', name: 'Main Power Input', instruction: 'Probe the main input capacitor (highlighted). Check for input voltage from adapter.', net: 'PP_BATT_VCC', ref: 'C1', type: 'voltage', expected: '20', min: 18, max: 21, unit: 'V', hint: 'Should match adapter output voltage' },
+            { id: 'pr-02', name: 'Fuse Check', instruction: 'Check continuity across the main fuse (highlighted in green).', ref: 'F1', type: 'continuity', expected: 'Pass', hint: 'Should show ~0Ω' },
+            { id: 'pr-03', name: 'MOSFET Switch', instruction: 'Measure voltage at the MOSFET gate (highlighted). Should be high or low depending on device state.', ref: 'Q1', type: 'voltage', expected: '3.3', min: 0, max: 3.3, unit: 'V', hint: 'Gate voltage control signal' },
+            { id: 'pr-04', name: '5V Rail Output', instruction: 'Probe the 5V supply rail (highlighted). Measure at filter capacitor.', net: 'PP_5V', type: 'voltage', expected: '5', min: 4.8, max: 5.2, unit: 'V', hint: 'Core power rail' },
+            { id: 'pr-05', name: '5V Load Current', instruction: 'Check 5V rail current by measuring voltage drop across inline resistor.', net: 'PP_5V', type: 'voltage', expected: '0', min: -0.1, max: 0.2, unit: 'V', hint: 'Should be minimal if no shorts' },
+            { id: 'pr-06', name: '3.3V Rail Output', instruction: 'Probe the 3.3V supply (highlighted). Should be steady.', net: 'PP_3V3', type: 'voltage', expected: '3.3', min: 3.1, max: 3.5, unit: 'V', hint: 'SoC and peripheral power' },
+            { id: 'pr-07', name: '1.8V Core Rail', instruction: 'Measure the 1.8V core supply (highlighted). Critical for processor.', net: 'PP_1V8_CORE', type: 'voltage', expected: '1.8', min: 1.7, max: 1.9, unit: 'V', hint: 'Processor core supply' },
+            { id: 'pr-08', name: '1.0V Analog Rail', instruction: 'Check the 1.0V analog supply (highlighted).', net: 'PP_1V0_ANALOG', type: 'voltage', expected: '1.0', min: 0.95, max: 1.05, unit: 'V', hint: 'ADC and analog circuitry' },
+            { id: 'pr-09', name: 'Backup Battery', instruction: 'Check backup battery voltage or supercap (highlighted).', net: 'VBACKUP', type: 'voltage', expected: '2.5', min: 2.0, max: 3.0, unit: 'V', hint: 'RTC or backup power' },
+            { id: 'pr-10', name: 'Ground Continuity A', instruction: 'Probe GND at two different points (highlighted). Should show ~0Ω.', nets: ['GND', 'GND'], type: 'continuity', expected: 'Pass', hint: 'Ground plane continuity check' },
+            { id: 'pr-11', name: 'Ground Continuity B', instruction: 'Check GND continuity at another location.', type: 'continuity', expected: 'Pass', hint: 'Ensure no GND plane fractures', required: false },
+            { id: 'pr-12', name: 'Rail Ripple Check', instruction: 'Switch multimeter to AC mode and measure ripple on any rail. Should be <50mV.', type: 'visual', expected: 'Pass', hint: 'Indicates capacitor health' }
+          ]
+        },
+        usb: {
+          name: 'USB Port Test',
+          steps: [
+            { id: 'usb-01', name: 'VBUS Presence', instruction: 'Probe VBUS pin (pin 1, highlighted). Should be 5V when connected.', net: 'VBUS', type: 'voltage', expected: '5', min: 4.5, max: 5.5, unit: 'V', hint: 'USB power supply' },
+            { id: 'usb-02', name: 'D+ Differential', instruction: 'Measure D+ line (highlighted). Check for signal integrity.', net: 'USB_DP', type: 'voltage', expected: '3.3', min: 0, max: 3.3, unit: 'V', hint: 'Data line positive' },
+            { id: 'usb-03', name: 'D- Differential', instruction: 'Measure D- line (highlighted).', net: 'USB_DN', type: 'voltage', expected: '3.3', min: 0, max: 3.3, unit: 'V', hint: 'Data line negative' },
+            { id: 'usb-04', name: 'ESD Protection IC', instruction: 'Check ESD diode continuity (highlighted). Should show diode forward voltage in one direction.', ref: 'U_ESD', type: 'diode', expected: '0.6', min: 0.4, max: 0.8, unit: 'V', hint: 'Diode mode test' },
+            { id: 'usb-05', name: 'ID Pin', instruction: 'Check ID pin voltage (highlighted). Floating or pulled down.', net: 'USB_ID', type: 'voltage', expected: '0', min: 0, max: 1.0, unit: 'V', hint: 'Device type detection' },
+            { id: 'usb-06', name: 'VCONN Supply', instruction: 'If USB-C, check VCONN (USB Power Delivery). Should be 0V or 5V.', net: 'VCONN', type: 'voltage', expected: '0', min: 0, max: 5.5, unit: 'V', hint: 'USB-C power delivery', required: false },
+            { id: 'usb-07', name: 'Data Line Continuity', instruction: 'Check D+ and D- continuity to SoC (highlighted).', refs: ['USB_DP', 'USB_DN'], type: 'continuity', expected: 'Pass', hint: 'Should show <1Ω' },
+            { id: 'usb-08', name: 'USB Termination', instruction: 'Verify termination resistors (highlighted). Should be ~100Ω each.', refs: ['R_DP_TERM', 'R_DN_TERM'], type: 'visual', expected: 'Pass', hint: 'Signal quality assurance' }
+          ]
+        },
+        charging: {
+          name: 'Charging Circuit',
+          steps: [
+            { id: 'chg-01', name: 'Adapter Input', instruction: 'Probe adapter input (highlighted). Should match adapter rating.', net: 'VADIN', type: 'voltage', expected: '20', min: 18, max: 21, unit: 'V', hint: 'Power adapter voltage' },
+            { id: 'chg-02', name: 'Charge IC Enable', instruction: 'Check charge IC enable pin (highlighted). Should be high when charging.', ref: 'U_CHG', type: 'voltage', expected: '3.3', min: 2.5, max: 3.3, unit: 'V', hint: 'Enable/disable control' },
+            { id: 'chg-03', name: 'Battery Voltage', instruction: 'Measure battery voltage (highlighted). Full charge is usually 4.2V.', net: 'VBAT', type: 'voltage', expected: '4.2', min: 3.0, max: 4.2, unit: 'V', hint: 'Battery cell voltage' },
+            { id: 'chg-04', name: 'Charge Current Path', instruction: 'Measure voltage across charge current sense resistor (highlighted).', ref: 'R_CHG_SENSE', type: 'voltage', expected: '0.1', min: 0, max: 0.5, unit: 'V', hint: 'Current flow indicator' },
+            { id: 'chg-05', name: 'Thermal Sensor', instruction: 'Check thermistor voltage (highlighted). Should vary with temperature.', net: 'THERM_SENSE', type: 'voltage', expected: '1.5', min: 0.5, max: 2.5, unit: 'V', hint: 'Temperature protection' },
+            { id: 'chg-06', name: 'Charge Status Pin', instruction: 'Measure charge status pin (highlighted). High = charging, Low = complete.', ref: 'CHG_STAT', type: 'voltage', expected: '3.3', min: 0, max: 3.3, unit: 'V', hint: 'LED or indicator line' },
+            { id: 'chg-07', name: 'Battery Presence', instruction: 'Check battery presence resistor (highlighted). Should pull to GND.', net: 'BATT_PRESENT', type: 'continuity', expected: 'Pass', hint: 'Battery detection circuit', required: false },
+            { id: 'chg-08', name: 'Charge IC Temp', instruction: 'Visually inspect charge IC (highlighted) for heat or damage.', ref: 'U_CHG', type: 'visual', expected: 'Pass', hint: 'No burning smell or discoloration' }
+          ]
+        },
+        backlight: {
+          name: 'Backlight / Display',
+          steps: [
+            { id: 'bkl-01', name: 'Backlight Driver Input', instruction: 'Measure backlight driver input (highlighted). Should be 3.3V or 5V.', net: 'PP_BKL_VIN', type: 'voltage', expected: '3.3', min: 3.0, max: 3.6, unit: 'V', hint: 'Driver supply voltage' },
+            { id: 'bkl-02', name: 'Backlight Driver Output', instruction: 'Check LED driver output (highlighted). Should be PWM or DC high.', net: 'BKL_PWM', type: 'voltage', expected: '3.3', min: 0, max: 3.3, unit: 'V', hint: 'LED current control' },
+            { id: 'bkl-03', name: 'LED String Voltage', instruction: 'Measure voltage across LED string (highlighted). Depends on LED count.', net: 'LED_ANODE', type: 'voltage', expected: '20', min: 15, max: 25, unit: 'V', hint: 'LED array supply' },
+            { id: 'bkl-04', name: 'Panel VCC', instruction: 'Check display panel VCC (highlighted). Usually 3.3V.', net: 'LCD_VCC', type: 'voltage', expected: '3.3', min: 3.1, max: 3.5, unit: 'V', hint: 'Display power' },
+            { id: 'bkl-05', name: 'LVDS/eDP Clock', instruction: 'Check data line continuity to panel connector (highlighted).', refs: ['LVDS_CK_P', 'LVDS_CK_N'], type: 'continuity', expected: 'Pass', hint: 'Differential pairs' },
+            { id: 'bkl-06', name: 'Panel Connector', instruction: 'Visually inspect panel connector (highlighted) for corrosion or damage.', type: 'visual', expected: 'Pass', hint: 'Check pins and contacts' },
+            { id: 'bkl-07', name: 'Backlight Brightness', instruction: 'Connect a USB adapter and test backlight at full brightness.', type: 'visual', expected: 'Pass', hint: 'Uniform brightness, no dead zones' }
+          ]
+        },
+        diode: {
+          name: 'Quick Diode Check',
+          steps: [
+            { id: 'diode-01', name: 'Main CPU Diode', instruction: 'Switch to diode mode, probe CPU pins (highlighted). Should read 0.4-0.7V in one direction.', ref: 'U_CPU', type: 'diode', expected: '0.6', min: 0.4, max: 0.8, unit: 'V', hint: 'Junction forward voltage' },
+            { id: 'diode-02', name: 'Power Delivery MOSFET', instruction: 'Test MOSFET drain-source junction (highlighted).', ref: 'Q_POWER', type: 'diode', expected: '0.5', min: 0.3, max: 0.7, unit: 'V', hint: 'MOSFET body diode' },
+            { id: 'diode-03', name: 'Memory IC Diode', instruction: 'Test memory chip (highlighted). Check one pin to GND.', ref: 'U_MEM', type: 'diode', expected: '0.6', min: 0.4, max: 0.8, unit: 'V', hint: 'ESD protection diode' },
+            { id: 'diode-04', name: 'PMIC Diode', instruction: 'Test PMIC (highlighted). Should show typical diode characteristics.', ref: 'U_PMIC', type: 'diode', expected: '0.6', min: 0.4, max: 0.8, unit: 'V', hint: 'Power management IC' },
+            { id: 'diode-05', name: 'Charging IC Diode', instruction: 'Test charge controller (highlighted).', ref: 'U_CHG', type: 'diode', expected: '0.6', min: 0.4, max: 0.8, unit: 'V', hint: 'Charge management' },
+            { id: 'diode-06', name: 'Peripheral IC #1', instruction: 'Test first peripheral IC (highlighted).', ref: 'U_PERIPH1', type: 'diode', expected: '0.6', min: 0.4, max: 0.8, unit: 'V', hint: 'Audio or interface chip', required: false },
+            { id: 'diode-07', name: 'Peripheral IC #2', instruction: 'Test second peripheral IC (highlighted).', ref: 'U_PERIPH2', type: 'diode', expected: '0.6', min: 0.4, max: 0.8, unit: 'V', hint: 'Sensor or controller', required: false },
+            { id: 'diode-08', name: 'Schottky Diode Check', instruction: 'Check any Schottky diodes (highlighted). Should read 0.2-0.4V.', ref: 'D_SCH', type: 'diode', expected: '0.3', min: 0.2, max: 0.4, unit: 'V', hint: 'Schottky forward voltage', required: false },
+            { id: 'diode-09', name: 'Rectifier Bridge', instruction: 'Test rectifier diodes (highlighted) if present.', ref: 'D_RECT', type: 'diode', expected: '0.6', min: 0.5, max: 0.7, unit: 'V', hint: 'Power rectification', required: false },
+            { id: 'diode-10', name: 'Board Health Summary', instruction: 'All critical chips passed diode check. Compare to known-good reference unit if available.', type: 'visual', expected: 'Pass', hint: 'No missing or shorted chips' }
+          ]
+        }
+      },
+
+      current: null,
+      stepIndex: 0,
+      results: [],
+
+      start(seqId) {
+        if (!seqId || !this.sequences[seqId]) {
+          setStatus('Please select a test sequence');
+          return;
+        }
+        this.current = this.sequences[seqId];
+        this.stepIndex = 0;
+        this.results = [];
+        document.getElementById('gt-sequence-select').disabled = true;
+        document.getElementById('gt-start-btn').style.display = 'none';
+        document.getElementById('gt-stop-btn').style.display = 'block';
+        document.getElementById('gt-progress-wrap').style.display = '';
+        document.getElementById('gt-step-content').style.display = '';
+        this.showStep();
+        setStatus(`GUIDED TEST STARTED: ${this.current.name}`);
+      },
+
+      showStep() {
+        if (!this.current || this.stepIndex >= this.current.steps.length) {
+          this.finish();
+          return;
+        }
+        const step = this.current.steps[this.stepIndex];
+        const totalSteps = this.current.steps.length;
+
+        document.getElementById('gt-step-num').textContent = `Step ${this.stepIndex + 1} of ${totalSteps}`;
+        const percent = Math.round((this.stepIndex / totalSteps) * 100);
+        document.getElementById('gt-progress-fill').style.width = percent + '%';
+
+        document.getElementById('gt-step-name').textContent = '◉ ' + step.name;
+        document.getElementById('gt-step-instruction').textContent = step.instruction;
+
+        let locationText = '';
+        if (step.ref) locationText += `Component: ${step.ref}`;
+        if (step.net) locationText += (locationText ? ' | ' : '') + `Net: ${step.net}`;
+        if (locationText) {
+          document.getElementById('gt-step-location').textContent = '📍 ' + locationText;
+          document.getElementById('gt-step-location').style.display = '';
+        } else {
+          document.getElementById('gt-step-location').style.display = 'none';
+        }
+
+        const isMeasurement = ['voltage', 'diode', 'resistance'].includes(step.type);
+        const measWrap = document.getElementById('gt-measurement-wrap');
+        if (isMeasurement) {
+          measWrap.style.display = '';
+          document.getElementById('gt-expected-range').textContent = `Expected: ${step.expected} ${step.unit} (${step.min}–${step.max})`;
+          document.getElementById('gt-unit').textContent = step.unit;
+          document.getElementById('gt-measurement-input').value = '';
+          document.getElementById('gt-measurement-input').placeholder = `Enter ${step.type} reading…`;
+          document.getElementById('gt-measurement-input').focus();
+        } else {
+          measWrap.style.display = 'none';
+        }
+
+        document.getElementById('gt-skip-btn').style.display = (step.required === false) ? '' : 'none';
+
+        this.highlight(step);
+      },
+
+      highlight(step) {
+        if (!G.cvs) return;
+        if (step.ref) {
+          const comp = G.comps.find(c => c.ref === step.ref);
+          if (comp) {
+            G.highlighted = comp.ref;
+            if (typeof panZoomToComp === 'function') panZoomToComp(comp);
+            if (typeof pulse === 'function') pulse(comp);
+          }
+        }
+        if (step.net) {
+          activateNet(step.net);
+        }
+        if (step.refs) {
+          G.searchMatches = step.refs;
+        }
+        drawBRD();
+      },
+
+      record(pass, value) {
+        if (!this.current || this.stepIndex >= this.current.steps.length) return;
+        const step = this.current.steps[this.stepIndex];
+        const isMeasurement = ['voltage', 'diode', 'resistance'].includes(step.type);
+
+        let passFlag = pass;
+        if (isMeasurement && value !== null) {
+          const numVal = parseFloat(value);
+          if (!isNaN(numVal)) {
+            passFlag = numVal >= step.min && numVal <= step.max;
+          }
+        }
+
+        this.results.push({
+          step: step.id,
+          name: step.name,
+          pass: passFlag,
+          value: value,
+          unit: step.unit || ''
+        });
+
+        this.updateResultsStrip();
+        this.stepIndex++;
+        setTimeout(() => this.showStep(), 300);
+      },
+
+      skip() {
+        if (!this.current || this.stepIndex >= this.current.steps.length) return;
+        const step = this.current.steps[this.stepIndex];
+        this.results.push({
+          step: step.id,
+          name: step.name,
+          pass: null,
+          value: null,
+          skipped: true
+        });
+        this.updateResultsStrip();
+        this.stepIndex++;
+        setTimeout(() => this.showStep(), 300);
+      },
+
+      stop() {
+        this.current = null;
+        this.stepIndex = 0;
+        document.getElementById('gt-sequence-select').disabled = false;
+        document.getElementById('gt-start-btn').style.display = '';
+        document.getElementById('gt-stop-btn').style.display = 'none';
+        document.getElementById('gt-progress-wrap').style.display = 'none';
+        document.getElementById('gt-step-content').style.display = 'none';
+        document.getElementById('gt-results-strip').innerHTML = '';
+        G.highlighted = null;
+        G.searchMatches = [];
+        drawBRD();
+        setStatus('GUIDED TEST STOPPED');
+      },
+
+      updateResultsStrip() {
+        const strip = document.getElementById('gt-results-strip');
+        const recent = this.results.slice(-5);
+        strip.innerHTML = recent.map(r => {
+          let color = '#666';
+          if (r.skipped) color = '#999';
+          else if (r.pass) color = '#44cc66';
+          else if (!r.pass) color = '#ff5533';
+          return `<span style="display:inline-block;width:12px;height:12px;background:${color};border-radius:50%;margin:2px" title="${r.name}"></span>`;
+        }).join('');
+      },
+
+      finish() {
+        this.stop();
+        const pass = this.results.filter(r => r.pass === true).length;
+        const fail = this.results.filter(r => r.pass === false).length;
+        const skip = this.results.filter(r => r.skipped).length;
+        const total = this.results.length;
+
+        const html = `
+          <div style="background:var(--bg2);border:2px solid var(--accent);border-radius:8px;padding:20px;max-width:700px;margin:20px auto;font-family:var(--mono)">
+            <div style="font-size:18px;font-weight:700;color:var(--accent);margin-bottom:16px">⚡ TEST COMPLETE</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;margin-bottom:20px">
+              <div style="background:var(--bg3);padding:12px;border-radius:4px;text-align:center">
+                <div style="font-size:24px;font-weight:700;color:var(--text)">${total}</div>
+                <div style="font-size:10px;color:var(--text3);margin-top:4px">TOTAL</div>
+              </div>
+              <div style="background:var(--bg3);padding:12px;border-radius:4px;text-align:center">
+                <div style="font-size:24px;font-weight:700;color:#44cc66">${pass}</div>
+                <div style="font-size:10px;color:var(--text3);margin-top:4px">PASSED</div>
+              </div>
+              <div style="background:var(--bg3);padding:12px;border-radius:4px;text-align:center">
+                <div style="font-size:24px;font-weight:700;color:#ff5533">${fail}</div>
+                <div style="font-size:10px;color:var(--text3);margin-top:4px">FAILED</div>
+              </div>
+              <div style="background:var(--bg3);padding:12px;border-radius:4px;text-align:center">
+                <div style="font-size:24px;font-weight:700;color:#999">${skip}</div>
+                <div style="font-size:10px;color:var(--text3);margin-top:4px">SKIPPED</div>
+              </div>
+            </div>
+            <div style="border-top:1px solid var(--border);padding-top:16px;margin-bottom:16px">
+              <div style="font-size:11px;font-weight:700;color:var(--text3);letter-spacing:1px;margin-bottom:8px">DETAILED RESULTS</div>
+              ${this.results.map(r => `
+                <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);font-size:10px">
+                  <span style="width:16px;height:16px;border-radius:50%;background:${r.skipped ? '#999' : r.pass ? '#44cc66' : '#ff5533'};flex-shrink:0"></span>
+                  <span style="flex:1;color:var(--text)">${r.name}</span>
+                  ${r.value !== null ? `<span style="color:var(--text2)">${r.value} ${r.unit}</span>` : ''}
+                  ${r.skipped ? '<span style="color:var(--text3)">skipped</span>' : ''}
+                </div>
+              `).join('')}
+            </div>
+            <button onclick="showModalClose()" style="background:var(--accent);color:var(--bg);border:none;padding:10px 20px;border-radius:4px;cursor:pointer;font-size:11px;font-weight:700;width:100%">CLOSE REPORT</button>
+          </div>
+        `;
+
+        showModal(html, 'Guided Test Report');
+        setStatus(`GUIDED TEST COMPLETE: ${pass}/${total} passed`);
+      }
+    };
+
+    // Guided Test toolbar button
+    document.getElementById('tog-guided-test')?.addEventListener('click', () => {
+      document.getElementById('guided-test-panel').classList.toggle('open');
+      document.getElementById('gt-sequence-select').focus();
+    });
+
+    // Guided Test event handlers
+    document.getElementById('gt-close')?.addEventListener('click', () => {
+      if (GuidedTest.current) GuidedTest.stop();
+      document.getElementById('guided-test-panel').classList.remove('open');
+    });
+
+    document.getElementById('gt-start-btn')?.addEventListener('click', () => {
+      const seqId = document.getElementById('gt-sequence-select').value;
+      GuidedTest.start(seqId);
+    });
+
+    document.getElementById('gt-stop-btn')?.addEventListener('click', () => {
+      GuidedTest.stop();
+    });
+
+    document.getElementById('gt-pass-btn')?.addEventListener('click', () => {
+      const isMeasurement = GuidedTest.current?.steps[GuidedTest.stepIndex]?.type.match(/voltage|diode|resistance/);
+      const value = isMeasurement ? document.getElementById('gt-measurement-input').value : null;
+      GuidedTest.record(true, value);
+    });
+
+    document.getElementById('gt-fail-btn')?.addEventListener('click', () => {
+      const isMeasurement = GuidedTest.current?.steps[GuidedTest.stepIndex]?.type.match(/voltage|diode|resistance/);
+      const value = isMeasurement ? document.getElementById('gt-measurement-input').value : null;
+      GuidedTest.record(false, value);
+    });
+
+    document.getElementById('gt-skip-btn')?.addEventListener('click', () => {
+      GuidedTest.skip();
+    });
+
+    document.getElementById('gt-measurement-input')?.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        document.getElementById('gt-pass-btn').click();
+      }
     });
 
     // ── COMPONENT LIBRARY HANDLERS ──
