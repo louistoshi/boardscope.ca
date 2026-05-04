@@ -210,7 +210,7 @@ ipcMain.handle('app:getVersion', async () => {
 // ── APP LIFECYCLE ──────────────────────────────────────────────────
 app.whenReady().then(() => {
   // Start the server process before creating window
-  serverProcess = spawn('node', [path.join(__dirname, 'server.js')], {
+  serverProcess = spawn(process.execPath, [path.join(__dirname, 'server.js')], {
     cwd: __dirname,
     stdio: 'ignore'
   });
