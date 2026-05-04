@@ -5,6 +5,7 @@
  */
 
 const { app, BrowserWindow, ipcMain, dialog, Menu } = require('electron');
+const { spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 const http = require('http');
