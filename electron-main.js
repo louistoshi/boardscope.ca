@@ -5,15 +5,53 @@
  */
 
 const { app, BrowserWindow, ipcMain, dialog, Menu } = require('electron');
-const { spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 const http = require('http');
+const express = require('express');
 
 // Keep a global reference of the window object to prevent garbage collection
 let mainWindow = null;
-let serverProcess = null;
 const SERVER_PORT = 8080;
+
+// ── START LICENSE VALIDATION SERVER ────────────────────────────────
+function startServer() {
+  const expressApp = express();
+  expressApp.use(express.json());
+
+  expressApp.get('/', (req, res) => {
+    res.json({ status: 'BoardScope License Server v5.4.1' });
+  });
+
+  expressApp.post('/license-validate', (req, res) => {
+    try {
+      const { key } = req.body;
+      if (!key) {
+        return res.json({ valid: false, error: 'Missing license key' });
+      }
+
+      const k = key.trim().toUpperCase();
+      const isPolarSerial = /^BOARDSCOPE-[A-Z0-9]+-[0-9]+$/.test(k);
+      const isPolarUUID = /^BOARDSCOPE_[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}$/i.test(k);
+
+      if (!isPolarSerial && !isPolarUUID) {
+        return res.json({ valid: false, error: 'Invalid license format' });
+      }
+
+      res.json({
+        valid: true,
+        plan: 'yearly',
+        expires: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
+      });
+    } catch (e) {
+      res.json({ valid: false, error: 'Server error: ' + e.message });
+    }
+  });
+
+  expressApp.listen(SERVER_PORT, () => {
+    console.log(`BoardScope License Server listening on port ${SERVER_PORT}`);
+  });
+}
 
 // ── CREATE WINDOW ──────────────────────────────────────────────────
 function createWindow() {
@@ -209,11 +247,7 @@ ipcMain.handle('app:getVersion', async () => {
 
 // ── APP LIFECYCLE ──────────────────────────────────────────────────
 app.whenReady().then(() => {
-  // Start the server process before creating window
-  serverProcess = spawn(process.execPath, [path.join(__dirname, 'server.js')], {
-    cwd: __dirname,
-    stdio: 'ignore'
-  });
+  startServer();
   createWindow();
 });
 
@@ -239,7 +273,5 @@ app.on('open-file', (event, filePath) => {
 
 // Quit and cleanup
 app.on('will-quit', () => {
-  if (serverProcess) {
-    serverProcess.kill();
-  }
+  // Server runs in-process, no cleanup needed
 });
