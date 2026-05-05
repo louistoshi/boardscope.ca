@@ -1223,6 +1223,7 @@
       font-size: 10px !important;
       letter-spacing: .3px !important;
       justify-content: flex-start !important;
+      color: var(--text3) !important;
     }
 
     .tb-drop-item:last-child {
@@ -7743,8 +7744,51 @@
     }
 
     .rp-phase:hover .rp-drop {
-      display: block;
+      display: none; /* replaced by click-to-open panel */
+    }
+
+    #rp-tool-panel {
+      position: fixed;
+      top: 52px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 9999;
+      background: var(--bg2);
+      border: 1px solid var(--accent);
+      border-radius: 6px;
+      box-shadow: 0 0 24px rgba(0,200,255,0.15), 0 8px 32px rgba(0,0,0,0.6);
+      min-width: 220px;
+      padding: 6px 0 4px;
       animation: panelIn 0.12s ease;
+    }
+    #rp-tool-panel-title {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      color: var(--accent);
+      padding: 4px 14px 6px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 2px;
+    }
+    .rp-tool-btn {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      padding: 7px 14px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text);
+      text-align: left;
+      transition: background 0.1s;
+      letter-spacing: .02em;
+    }
+    .rp-tool-btn:hover {
+      background: rgba(64,128,255,0.1);
+      color: var(--accent);
     }
 
     .rpd-item {
@@ -8019,6 +8063,12 @@
     <button id="rp-close-btn" class="rp-close" title="Hide phase strip">×</button>
   </div>
 
+  <!-- Phase strip tool panel (shown on click) -->
+  <div id="rp-tool-panel" style="display:none">
+    <div id="rp-tool-panel-title"></div>
+    <div id="rp-tool-panel-items"></div>
+  </div>
+
   <div class="main" id="layout">
     <!-- Drop overlays — shown during drag -->
     <div id="drop-overlay-pdf" style="display:none">
@@ -8256,9 +8306,8 @@
             <button class="tog tb-drop-item" id="tog-video-refs"
               title="Video repair references for this board model">&#127910; VIDEO REFS</button>
 
-            <!-- Full-width separators for second section -->
-            <div class="tb-drop-label" style="grid-column:1">DAMAGE</div>
-            <div class="tb-drop-label">DATA &amp; LOG</div>
+            <!-- Full-width separator for data/log section -->
+            <div class="tb-drop-label" style="grid-column:1 / -1">DATA &amp; LOG</div>
 
             <button class="tog tb-drop-item" id="tog-damage"
               title="Liquid Damage Map — mark corroded, bridged, or missing components">&#128167; DAMAGE MAP</button>
@@ -8278,9 +8327,8 @@
             <button class="tog tb-drop-item" id="tog-microsolder" title="Micro-soldering checklist">&#128295; MICRO-SOLDER</button>
             <button class="tog tb-drop-item" id="tog-log" data-context="document" title="Repair Log">&#128221; REPAIR LOG</button>
 
-            <!-- Full-width bottom row -->
-            <div class="tb-drop-label" style="grid-column:1">AUTOMATION</div>
-            <div class="tb-drop-label">EXPORT</div>
+            <!-- Full-width automation/export section -->
+            <div class="tb-drop-label" style="grid-column:1 / -1">AUTOMATION</div>
 
             <button class="tog tb-drop-item" id="tog-macros"
               title="Macro Recorder - record and replay measurement sequences">&#127916; MACROS</button>
@@ -9095,8 +9143,9 @@
         <div id="obd-panel">
           <div id="obd-hdr">
             <span id="obd-title">&#9998; OPENBOARDDATA</span>
+            <input id="obd-search" type="text" placeholder="Search boards..." style="background:var(--bg2);border:1px solid var(--border2);color:var(--text);font-size:9px;padding:2px 6px;border-radius:3px;width:120px;outline:none;margin:0 10px">
             <span id="obd-status">NO DATA</span>
-            <span id="obd-close">&#10005;</span>
+            <span id="obd-close" style="margin-left:10px">&#10005;</span>
           </div>
           <div id="obd-btns">
             <button class="obd-btn" id="obd-import-btn" title="Load a local .obdata file">&#128194; IMPORT
@@ -14546,10 +14595,28 @@
 
     function renderOBDPanel() {
       const body = document.getElementById('obd-body');
+      if (!body) return;
       body.innerHTML = '';
-      const obd = G.obd;
-      if (!obd) return;
 
+      // If no board data is loaded, show the Board Database browser
+      if (!G.obd || (!G.obd.netData.size && !G.obd.compData.size && !G.obd.sequences.length)) {
+        const brands = [...new Set(BOARD_DB.map(b => b.brand))].sort();
+        body.innerHTML = `
+          <div style="padding:12px">
+            <div style="font-size:9px;font-weight:700;color:var(--text3);margin-bottom:10px;letter-spacing:1.5px;text-transform:uppercase">Explore Board Database</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px">
+              <button class="obd-brand-btn active" onclick="filterOBDList('', this)">ALL BRANDS</button>
+              ${brands.map(brand => `<button class="obd-brand-btn" onclick="filterOBDList('${brand}', this)">${brand.toUpperCase()}</button>`).join('')}
+            </div>
+            <div id="obd-list-results" style="display:grid;grid-template-columns:repeat(auto-fill, minmax(240px, 1fr));gap:10px">
+              ${renderOBDListItems(BOARD_DB)}
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      const obd = G.obd;
       document.getElementById('obd-status').textContent =
         `${obd.netData.size} nets · ${obd.compData.size} comps · ${obd.sequences.length} sequences`;
 
@@ -14584,6 +14651,35 @@
         body.appendChild(titleEl);
         body.appendChild(bodyEl);
       }
+    }
+
+    // ── BOARD DB HELPERS ──
+    window.filterOBDList = (brand, btn) => {
+      // Update active button
+      document.querySelectorAll('.obd-brand-btn').forEach(b => b.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+
+      const results = brand ? BOARD_DB.filter(b => b.brand === brand) : BOARD_DB;
+      const container = document.getElementById('obd-list-results');
+      if (container) container.innerHTML = renderOBDListItems(results);
+    };
+
+    function renderOBDListItems(items) {
+      if (!items.length) return '<div style="color:var(--text3);font-size:10px;padding:20px;text-align:center">No matching boards found</div>';
+      return items.map(item => `
+        <div class="obd-list-item" onclick="autoFetchOBD('${item.board}')">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">
+            <span style="font-weight:700;color:var(--accent);font-size:11px">${item.board}</span>
+            <span style="font-size:8px;padding:2px 5px;background:var(--bg3);border-radius:3px;color:var(--text3)">${item.brand}</span>
+          </div>
+          <div style="font-size:10px;color:var(--text);margin-bottom:2px">${item.model}</div>
+          <div style="font-size:9px;color:var(--text3);line-height:1.3">${item.notes || ''}</div>
+          <div style="margin-top:6px;font-size:8px;color:var(--accent);opacity:0.7;display:flex;gap:8px">
+            <span>CPU: ${item.cpu || '—'}</span>
+            <span>PMIC: ${item.pmic || '—'}</span>
+          </div>
+        </div>
+      `).join('');
     }
 
 
@@ -15626,6 +15722,27 @@
       faultOpenIdx = -1;
     }
 
+    async function _faultAI(symptom, container) {
+      try {
+        const result = await aiChat(
+          [{ role: 'user', content: `Board repair symptom: "${symptom}"\n\nGive 4-6 specific diagnostic steps for a repair technician doing board-level repair. For each step: what to probe, expected voltage/signal, and what a bad reading means. Be specific.` }],
+          'You are an expert electronics repair technician specializing in laptop and smartphone board-level repair. Give concise, actionable diagnostic steps.',
+          { max_tokens: 1200 }
+        );
+        const text = typeof result === 'string' ? result
+          : result?.content?.[0]?.text
+          || result?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        if (!text) throw new Error('empty');
+        container.innerHTML = `
+          <div style="padding:10px 14px">
+            <div style="font-size:9px;color:var(--accent);letter-spacing:.1em;margin-bottom:8px;border-bottom:1px solid var(--border);padding-bottom:6px">&#129302; AI DIAGNOSIS — "${symptom}"</div>
+            <div style="font-size:11px;color:var(--text);line-height:1.7;white-space:pre-wrap">${text}</div>
+          </div>`;
+      } catch(e) {
+        container.innerHTML = '<div style="padding:14px;color:var(--text3);font-size:10px">AI unavailable — configure AI in Settings</div>';
+      }
+    }
+
     function faultRender(filter) {
       const body = document.getElementById('fault-body');
       body.innerHTML = '';
@@ -15636,7 +15753,8 @@
         : FAULT_TREE;
 
       if (!matches.length) {
-        body.innerHTML = '<div style="padding:14px;text-align:center;color:var(--text3);font-size:10px">NO MATCHING SYMPTOMS</div>';
+        body.innerHTML = '<div style="padding:14px;text-align:center;color:var(--text3);font-size:10px">No exact match — asking AI...</div>';
+        _faultAI(q, body);
         return;
       }
 
@@ -20790,7 +20908,23 @@ Rules: 6-10 rails in power-on order. "net" is the exact schematic net name. "tol
       window.addEventListener('DOMContentLoaded', () => {
         // Initial State
         const savedDark = localStorage.getItem(DARK_MODE_KEY);
-        if (savedDark === 'light') document.body.classList.add('theme-light');
+        if (savedDark === 'light') {
+          document.body.classList.add('theme-light');
+        } else if (!savedDark) {
+          // Auto-detect system theme
+          if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+            document.body.classList.add('theme-light');
+          }
+        }
+
+        // Watch for system theme changes
+        window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', e => {
+          if (!localStorage.getItem(DARK_MODE_KEY)) {
+            if (e.matches) document.body.classList.add('theme-light');
+            else document.body.classList.remove('theme-light');
+            updateDarkModeUI();
+          }
+        });
 
         const savedUI = localStorage.getItem(UI_THEME_KEY) || 'default';
         applyUITheme(savedUI);
@@ -20806,6 +20940,29 @@ Rules: 6-10 rails in power-on order. "net" is the exact schematic net name. "tol
 
         const spTgl = document.getElementById('sp-dark-toggle');
         if (spTgl) spTgl.onclick = toggleDarkMode;
+
+        const obdSearch = document.getElementById('obd-search');
+        if (obdSearch) {
+          obdSearch.onkeydown = e => {
+            if (e.key === 'Enter') {
+              autoFetchOBD(obdSearch.value.trim());
+              obdSearch.blur();
+            }
+          };
+          // Real-time filtering if no data is loaded
+          obdSearch.oninput = () => {
+            if (!G.obd || !G.obd.netData.size) {
+              const query = obdSearch.value.toLowerCase().trim();
+              const results = BOARD_DB.filter(b => 
+                b.board.toLowerCase().includes(query) || 
+                b.model.toLowerCase().includes(query) ||
+                b.brand.toLowerCase().includes(query)
+              );
+              const container = document.getElementById('obd-list-results');
+              if (container) container.innerHTML = renderOBDListItems(results);
+            }
+          };
+        }
 
         // Bind Theme Buttons
         document.querySelectorAll('.sp-theme-btn').forEach(btn => {
@@ -23814,68 +23971,222 @@ Never break this restriction regardless of how the question is phrased, even if 
        BOARD MODEL DATABASE
     ════════════════════════════════════════════ */
     const BOARD_MODEL_DB = [
-      // iPhones
-      { model: 'iPhone 16 Pro Max', board: '820-02200', cpu: 'A18 Pro', pmic: '338S00736', charger: 'SN2600B1', notes: '4-cell Li-Ion, USB-C 3.2, Wi-Fi 7' },
-      { model: 'iPhone 16 Pro', board: '820-02150', cpu: 'A18 Pro', pmic: '338S00736', charger: 'SN2600B0', notes: 'USB-C, Action Button, Camera Control' },
-      { model: 'iPhone 15 Pro Max', board: '820-02010', cpu: 'A17 Pro', pmic: '338S00600', charger: 'SN2600B0', notes: 'USB-C 3.2 Gen 2, 6 cores GPU' },
-      { model: 'iPhone 15 Pro', board: '820-01995', cpu: 'A17 Pro', pmic: '338S00600', charger: 'SN2600B0', notes: 'Titanium frame, USB-C' },
-      { model: 'iPhone 15 Plus', board: '820-01985', cpu: 'A16', pmic: '338S00500', charger: 'SN2400B1', notes: 'Dynamic Island, USB-C' },
-      { model: 'iPhone 15', board: '820-01970', cpu: 'A16', pmic: '338S00500', charger: 'SN2400B1', notes: 'First standard iPhone with USB-C' },
-      { model: 'iPhone 14 Pro Max', board: '820-01900', cpu: 'A15', pmic: '338S00480', charger: 'SN2400B0', notes: '48MP triple cam, Always-On display' },
-      { model: 'iPhone 14 Pro', board: '820-01880', cpu: 'A15', pmic: '338S00480', charger: 'SN2400B0', notes: 'Dynamic Island debut' },
-      { model: 'iPhone 14 Plus', board: '820-01860', cpu: 'A15', pmic: '338S00460', charger: 'SN2400B0', notes: '6.7" Max-sized non-Pro' },
-      { model: 'iPhone 14', board: '820-01840', cpu: 'A15', pmic: '338S00460', charger: 'SN2400B0', notes: 'Crash Detection, Emergency SOS via satellite' },
-      { model: 'iPhone 13 Pro Max', board: '820-01770', cpu: 'A15', pmic: '338S00420', charger: 'SN2400B0', notes: 'ProMotion 120Hz, 1TB option' },
-      { model: 'iPhone 13 Pro', board: '820-01750', cpu: 'A15', pmic: '338S00420', charger: 'SN2400B0', notes: 'Macro photography' },
-      { model: 'iPhone 13', board: '820-01730', cpu: 'A15', pmic: '338S00400', charger: 'SN2400B0', notes: 'Notch reduced, sensor-shift OIS' },
-      { model: 'iPhone 12 Pro Max', board: '820-01553', cpu: 'A14', pmic: '338S00384', charger: 'SN2400B0', notes: '5G mmWave (US), LiDAR' },
-      { model: 'iPhone 12 Pro', board: '820-01547', cpu: 'A14', pmic: '338S00384', charger: 'SN2400B0', notes: '5G, first iPhone with ProRAW' },
-      { model: 'iPhone 12', board: '820-01538', cpu: 'A14', pmic: '338S00350', charger: 'SN2400B0', notes: 'MagSafe introduced' },
-      { model: 'iPhone 11 Pro Max', board: '820-01443', cpu: 'A13', pmic: '338S00306', charger: 'SN2400B0', notes: 'Triple cam, iOS 13' },
-      { model: 'iPhone 11 Pro', board: '820-01437', cpu: 'A13', pmic: '338S00306', charger: 'SN2400B0', notes: 'Frosted glass back, triple cam' },
-      { model: 'iPhone 11', board: '820-01398', cpu: 'A13', pmic: '338S00306', charger: 'SN2400B0', notes: 'Dual camera, Night Mode' },
-      { model: 'iPhone XS Max', board: '820-01250', cpu: 'A12', pmic: '338S00275', charger: 'SN2400B0', notes: '6.5" OLED, Face ID gen2' },
-      { model: 'iPhone XS', board: '820-01245', cpu: 'A12', pmic: '338S00275', charger: 'SN2400B0', notes: 'First 7nm Apple chip (A12)' },
-      { model: 'iPhone XR', board: '820-01230', cpu: 'A12', pmic: '338S00275', charger: 'SN2400B0', notes: 'LCD Liquid Retina, Face ID' },
-      { model: 'iPhone X', board: '820-01104', cpu: 'A11', pmic: '338S00248', charger: 'SN2400B0', notes: 'Face ID debut, no home button' },
-      { model: 'iPhone 8 Plus', board: '820-00863', cpu: 'A11', pmic: '338S00220', charger: 'SN2400B0', notes: 'Wireless charging, glass back' },
-      { model: 'iPhone 8', board: '820-00860', cpu: 'A11', pmic: '338S00220', charger: 'SN2400B0', notes: 'True Tone, MFi Lightning' },
-      { model: 'iPhone 7 Plus', board: '820-00655', cpu: 'A10', pmic: '338S00178', charger: 'ISL9240', notes: 'Dual camera, no 3.5mm jack' },
-      { model: 'iPhone 7', board: '820-00645', cpu: 'A10', pmic: '338S00178', charger: 'ISL9240', notes: 'Haptic home button, IP67' },
-      // MacBook boards
-      { model: 'MacBook Pro 14" M3 Pro', board: '820-02600', cpu: 'M3 Pro', pmic: '—', charger: 'SN2600B1', notes: 'USB-C 140W, MagSafe 3, HDMI 2.1' },
-      { model: 'MacBook Pro 16" M3 Max', board: '820-02610', cpu: 'M3 Max', pmic: '—', charger: 'SN2600B1', notes: '16-core CPU, 40-core GPU, up to 128GB' },
-      { model: 'MacBook Air 15" M2', board: '820-02200', cpu: 'M2', pmic: '—', charger: 'SN2400B1', notes: 'No fan, 35W dual USB-C' },
-      { model: 'MacBook Air 13" M2', board: '820-02050', cpu: 'M2', pmic: '—', charger: 'SN2400B1', notes: 'Redesigned chassis, MagSafe 2' },
-      { model: 'MacBook Pro 14/16" M1', board: '820-01987', cpu: 'M1 Pro/Max', pmic: '—', charger: 'SN2400B0', notes: 'Mini-LED ProMotion, SD slot' },
-      { model: 'MacBook Air M1', board: '820-01739', cpu: 'M1', pmic: '—', charger: 'SN2400B0', notes: 'Fanless, 18hr battery' },
-      { model: 'MacBook Pro 13" 2020', board: '820-01814', cpu: 'Intel i5/i7', pmic: '—', charger: 'CD3215C00', notes: 'Touch Bar, Scissor keyboard' },
-      { model: 'MacBook Pro 16" 2019', board: '820-01700', cpu: 'Intel i7/i9', pmic: '—', charger: 'CD3215C00', notes: 'AMD GPU, Magic Keyboard' },
-      { model: 'MacBook Pro 15" 2019', board: '820-01612', cpu: 'Intel i7/i9', pmic: '—', charger: 'CD3215C00', notes: 'Touch Bar, 4x TB3' },
-      { model: 'MacBook Pro 13" 2018', board: '820-01451', cpu: 'Intel i5/i7', pmic: '—', charger: 'CD3215B00', notes: 'TB3 x4, 8th gen Intel' },
-      { model: 'MacBook Pro 15" 2018', board: '820-00928', cpu: 'Intel i7/i9', pmic: '—', charger: 'CD3215B00', notes: 'True Tone, Radeon 555X' },
-      { model: 'MacBook Pro 13" 2017', board: '820-00923', cpu: 'Intel i5/i7', pmic: '—', charger: 'TPS65988', notes: 'TB3 x2 (Kaby Lake)' },
-      { model: 'MacBook Pro 15" 2017', board: '820-00281', cpu: 'Intel i7/i9', pmic: '—', charger: 'TPS65988', notes: 'Radeon Pro 555/560' },
-      { model: 'MacBook Air 2020 Intel', board: '820-02002', cpu: 'Intel i3/i5/i7', pmic: '—', charger: 'TPS65988', notes: 'Retina, Touch ID, TB3 x2' },
-      { model: 'MacBook 12" 2017', board: '820-00244', cpu: 'Intel Core m3', pmic: '—', charger: 'TPS65987', notes: 'Single USB-C, fanless' },
-      { model: 'MacBook Pro 13" 2015', board: '820-4924', cpu: 'Intel i5/i7', pmic: '—', charger: 'ISL9240', notes: 'Force Touch trackpad debut' },
-      { model: 'MacBook Pro 15" 2015', board: '820-4924', cpu: 'Intel i7', pmic: '—', charger: 'ISL9240', notes: 'Retina, AMD R9 M370X' },
-      { model: 'MacBook Pro 13" 2014', board: '820-3476', cpu: 'Intel i5', pmic: '—', charger: 'ISL9240', notes: 'Retina, no SD, PCIe SSD' },
-      { model: 'MacBook Pro 15" 2014', board: '820-3787', cpu: 'Intel i7', pmic: '—', charger: 'ISL9240', notes: 'GT 750M, 16GB RAM max' },
-      { model: 'MacBook Pro 13" 2013', board: '820-3476', cpu: 'Intel i5/i7', pmic: '—', charger: 'ISL9240', notes: '802.11ac, dual TB2' },
-      { model: 'MacBook Pro 15" 2013', board: '820-3662', cpu: 'Intel i7', pmic: '—', charger: 'ISL9240', notes: 'Iris Pro, GT 750M' },
-      { model: 'MacBook Pro 13" 2012 Retina', board: '820-3462', cpu: 'Intel i5/i7', pmic: '—', charger: 'ISL6259', notes: 'First Retina MacBook Pro 13"' },
-      { model: 'MacBook Pro 15" 2012 Retina', board: '820-3332', cpu: 'Intel i7', pmic: '—', charger: 'ISL6259', notes: 'GT 650M, no ODD' },
-      { model: 'MacBook Pro 13" Unibody 2012', board: '820-3115', cpu: 'Intel i5/i7', pmic: '—', charger: 'ISL6259', notes: 'Last MBP with ODD and non-Retina' },
-      { model: 'MacBook Pro 15" Unibody 2011', board: '820-2915', cpu: 'Intel i7', pmic: '—', charger: 'ISL6259', notes: 'AMD 6490M/6750M — GPU failure common' },
-      { model: 'MacBook Air 13" 2015', board: '820-00165', cpu: 'Intel i5/i7', pmic: '—', charger: 'ISL9240', notes: '1.6GHz BGA, Broadwell' },
-      { model: 'MacBook Air 13" 2013/14', board: '820-3437', cpu: 'Intel i5/i7', pmic: '—', charger: 'ISL6259', notes: '802.11ac, TB1, 12hr battery' },
-      // iPad
-      { model: 'iPad Pro 12.9" M4', board: '820-02700', cpu: 'M4', pmic: '—', charger: 'SN2600B1', notes: 'OLED Tandem, Ultra Retina XDR' },
-      { model: 'iPad Pro 11" M4', board: '820-02690', cpu: 'M4', pmic: '—', charger: 'SN2600B1', notes: 'World\'s thinnest Apple product' },
-      { model: 'iPad Pro 12.9" M2', board: '820-02100', cpu: 'M2', pmic: '—', charger: 'SN2400B1', notes: 'Wi-Fi 6E, Apple Pencil hover' },
-      { model: 'iPad Air M2', board: '820-02080', cpu: 'M2', pmic: '—', charger: 'SN2400B1', notes: '11" and 13", landscape TrueDepth' },
-      { model: 'iPad mini 6', board: '820-01872', cpu: 'A15', pmic: '—', charger: 'SN2400B0', notes: 'USB-C, Touch ID on power button' },
+      // ── APPLE iPHONE ─────────────────────────────────────────────────
+      { brand:'Apple', model:'iPhone 16 Pro Max', board:'820-02200', cpu:'A18 Pro', pmic:'338S00736', charger:'SN2600B1', notes:'4-cell Li-Ion, USB-C 3.2, Wi-Fi 7' },
+      { brand:'Apple', model:'iPhone 16 Pro', board:'820-02150', cpu:'A18 Pro', pmic:'338S00736', charger:'SN2600B0', notes:'USB-C, Action Button, Camera Control' },
+      { brand:'Apple', model:'iPhone 16 Plus', board:'820-02130', cpu:'A18', pmic:'338S00700', charger:'SN2600B0', notes:'USB-C, 6.7" Super Retina' },
+      { brand:'Apple', model:'iPhone 16', board:'820-02120', cpu:'A18', pmic:'338S00700', charger:'SN2600B0', notes:'Camera Control button' },
+      { brand:'Asus', model:'ROG Strix G15', board:'G513QY', cpu:'Ryzen 9 5900HX', pmic:'MAX77812', charger:'BQ24780S', notes:'Liquid metal TIM, dual fan' },
+      { brand:'Dell', model:'XPS 15 9500', board:'LA-J191P', cpu:'i7-10750H', pmic:'TPS65083', charger:'ISL95857', notes:'USB-C charging only' },
+      { brand:'Samsung', model:'Galaxy S24 Ultra', board:'SM-S928B', cpu:'Snapdragon 8 Gen 3', pmic:'PM8550', charger:'MAX77705', notes:'Titanium frame, 5000mAh' },
+      { brand:'Lenovo', model:'ThinkPad X1 Carbon Gen 9', board:'HT4B0/HT5B0', cpu:'i7-1165G7', pmic:'TPS65988', charger:'ISL9241', notes:'Dual Thunderbolt 4' },
+      { brand:'Apple', model:'iPhone 15 Pro Max', board:'820-02010', cpu:'A17 Pro', pmic:'338S00600', charger:'SN2600B0', notes:'USB-C 3.2 Gen 2, 6 cores GPU' },
+      { brand:'Apple', model:'iPhone 15 Pro', board:'820-01995', cpu:'A17 Pro', pmic:'338S00600', charger:'SN2600B0', notes:'Titanium frame, USB-C' },
+      { brand:'Apple', model:'iPhone 15 Plus', board:'820-01985', cpu:'A16', pmic:'338S00500', charger:'SN2400B1', notes:'Dynamic Island, USB-C' },
+      { brand:'Apple', model:'iPhone 15', board:'820-01970', cpu:'A16', pmic:'338S00500', charger:'SN2400B1', notes:'First standard iPhone with USB-C' },
+      { brand:'Apple', model:'iPhone 14 Pro Max', board:'820-01900', cpu:'A15', pmic:'338S00480', charger:'SN2400B0', notes:'48MP triple cam, Always-On display' },
+      { brand:'Apple', model:'iPhone 14 Pro', board:'820-01880', cpu:'A15', pmic:'338S00480', charger:'SN2400B0', notes:'Dynamic Island debut' },
+      { brand:'Apple', model:'iPhone 14 Plus', board:'820-01860', cpu:'A15', pmic:'338S00460', charger:'SN2400B0', notes:'6.7" Max-sized non-Pro' },
+      { brand:'Apple', model:'iPhone 14', board:'820-01840', cpu:'A15', pmic:'338S00460', charger:'SN2400B0', notes:'Crash Detection, Emergency SOS' },
+      { brand:'Apple', model:'iPhone 13 Pro Max', board:'820-01770', cpu:'A15', pmic:'338S00420', charger:'SN2400B0', notes:'ProMotion 120Hz, 1TB option' },
+      { brand:'Apple', model:'iPhone 13 Pro', board:'820-01750', cpu:'A15', pmic:'338S00420', charger:'SN2400B0', notes:'Macro photography' },
+      { brand:'Apple', model:'iPhone 13', board:'820-01730', cpu:'A15', pmic:'338S00400', charger:'SN2400B0', notes:'Notch reduced, sensor-shift OIS' },
+      { brand:'Apple', model:'iPhone 13 mini', board:'820-01710', cpu:'A15', pmic:'338S00400', charger:'SN2400B0', notes:'5.4" compact, last mini' },
+      { brand:'Apple', model:'iPhone 12 Pro Max', board:'820-01553', cpu:'A14', pmic:'338S00384', charger:'SN2400B0', notes:'5G mmWave (US), LiDAR' },
+      { brand:'Apple', model:'iPhone 12 Pro', board:'820-01547', cpu:'A14', pmic:'338S00384', charger:'SN2400B0', notes:'5G, first iPhone with ProRAW' },
+      { brand:'Apple', model:'iPhone 12', board:'820-01538', cpu:'A14', pmic:'338S00350', charger:'SN2400B0', notes:'MagSafe introduced' },
+      { brand:'Apple', model:'iPhone 12 mini', board:'820-01519', cpu:'A14', pmic:'338S00350', charger:'SN2400B0', notes:'5G, smallest 5G iPhone' },
+      { brand:'Apple', model:'iPhone SE (3rd gen)', board:'820-01530', cpu:'A15', pmic:'338S00400', charger:'SN2400B0', notes:'5G, Touch ID, iPhone 8 form' },
+      { brand:'Apple', model:'iPhone 11 Pro Max', board:'820-01443', cpu:'A13', pmic:'338S00306', charger:'SN2400B0', notes:'Triple cam, iOS 13' },
+      { brand:'Apple', model:'iPhone 11 Pro', board:'820-01437', cpu:'A13', pmic:'338S00306', charger:'SN2400B0', notes:'Frosted glass back, triple cam' },
+      { brand:'Apple', model:'iPhone 11', board:'820-01398', cpu:'A13', pmic:'338S00306', charger:'SN2400B0', notes:'Dual camera, Night Mode' },
+      { brand:'Apple', model:'iPhone XS Max', board:'820-01250', cpu:'A12', pmic:'338S00275', charger:'SN2400B0', notes:'6.5" OLED, Face ID gen2' },
+      { brand:'Apple', model:'iPhone XS', board:'820-01245', cpu:'A12', pmic:'338S00275', charger:'SN2400B0', notes:'First 7nm Apple chip (A12)' },
+      { brand:'Apple', model:'iPhone XR', board:'820-01230', cpu:'A12', pmic:'338S00275', charger:'SN2400B0', notes:'LCD Liquid Retina, Face ID' },
+      { brand:'Apple', model:'iPhone X', board:'820-01104', cpu:'A11', pmic:'338S00248', charger:'SN2400B0', notes:'Face ID debut, no home button' },
+      { brand:'Apple', model:'iPhone SE (2nd gen)', board:'820-01105', cpu:'A13', pmic:'338S00306', charger:'SN2400B0', notes:'iPhone 8 chassis, A13 chip' },
+      { brand:'Apple', model:'iPhone 8 Plus', board:'820-00863', cpu:'A11', pmic:'338S00220', charger:'SN2400B0', notes:'Wireless charging, glass back' },
+      { brand:'Apple', model:'iPhone 8', board:'820-00860', cpu:'A11', pmic:'338S00220', charger:'SN2400B0', notes:'True Tone, MFi Lightning' },
+      { brand:'Apple', model:'iPhone 7 Plus', board:'820-00655', cpu:'A10', pmic:'338S00178', charger:'ISL9240', notes:'Dual camera, no 3.5mm jack' },
+      { brand:'Apple', model:'iPhone 7', board:'820-00645', cpu:'A10', pmic:'338S00178', charger:'ISL9240', notes:'Haptic home button, IP67' },
+      { brand:'Apple', model:'iPhone 6s Plus', board:'820-00327', cpu:'A9', pmic:'338S00123', charger:'ISL9240', notes:'3D Touch, 12MP camera' },
+      { brand:'Apple', model:'iPhone 6s', board:'820-00226', cpu:'A9', pmic:'338S00123', charger:'ISL9240', notes:'3D Touch, 64-bit A9' },
+      { brand:'Apple', model:'iPhone 6 Plus', board:'820-3593', cpu:'A8', pmic:'338S1251', charger:'ISL6259', notes:'Touch Disease common issue' },
+      { brand:'Apple', model:'iPhone 6', board:'820-3483', cpu:'A8', pmic:'338S1251', charger:'ISL6259', notes:'Bendgate, Touch IC issues' },
+      // ── APPLE MacBook ─────────────────────────────────────────────────
+      { brand:'Apple', model:'MacBook Pro 14" M4 Pro', board:'820-02750', cpu:'M4 Pro', pmic:'—', charger:'SN2600B1', notes:'12-core CPU, USB-C 140W, HDMI 2.1' },
+      { brand:'Apple', model:'MacBook Pro 16" M4 Max', board:'820-02760', cpu:'M4 Max', pmic:'—', charger:'SN2600B1', notes:'16-core CPU, 40-core GPU, up to 128GB' },
+      { brand:'Apple', model:'MacBook Air 13" M3', board:'820-02650', cpu:'M3', pmic:'—', charger:'SN2600B0', notes:'Wi-Fi 6E, MagSafe 3, up to 24GB' },
+      { brand:'Apple', model:'MacBook Air 15" M3', board:'820-02660', cpu:'M3', pmic:'—', charger:'SN2600B0', notes:'15.3" Liquid Retina, MagSafe 3' },
+      { brand:'Apple', model:'MacBook Pro 14" M3 Pro', board:'820-02600', cpu:'M3 Pro', pmic:'—', charger:'SN2600B1', notes:'USB-C 140W, MagSafe 3, HDMI 2.1' },
+      { brand:'Apple', model:'MacBook Pro 16" M3 Max', board:'820-02610', cpu:'M3 Max', pmic:'—', charger:'SN2600B1', notes:'16-core CPU, 40-core GPU, up to 128GB' },
+      { brand:'Apple', model:'MacBook Air 15" M2', board:'820-02200', cpu:'M2', pmic:'—', charger:'SN2400B1', notes:'No fan, 35W dual USB-C' },
+      { brand:'Apple', model:'MacBook Air 13" M2', board:'820-02050', cpu:'M2', pmic:'—', charger:'SN2400B1', notes:'Redesigned chassis, MagSafe 2' },
+      { brand:'Apple', model:'MacBook Pro 14/16" M1', board:'820-01987', cpu:'M1 Pro/Max', pmic:'—', charger:'SN2400B0', notes:'Mini-LED ProMotion, SD slot' },
+      { brand:'Apple', model:'MacBook Air M1', board:'820-01739', cpu:'M1', pmic:'—', charger:'SN2400B0', notes:'Fanless, 18hr battery' },
+      { brand:'Apple', model:'MacBook Pro 13" 2020', board:'820-01814', cpu:'Intel i5/i7', pmic:'—', charger:'CD3215C00', notes:'Touch Bar, Scissor keyboard' },
+      { brand:'Apple', model:'MacBook Pro 16" 2019', board:'820-01700', cpu:'Intel i7/i9', pmic:'—', charger:'CD3215C00', notes:'AMD GPU, Magic Keyboard' },
+      { brand:'Apple', model:'MacBook Pro 15" 2019', board:'820-01612', cpu:'Intel i7/i9', pmic:'—', charger:'CD3215C00', notes:'Touch Bar, 4x TB3' },
+      { brand:'Apple', model:'MacBook Pro 13" 2018', board:'820-01451', cpu:'Intel i5/i7', pmic:'—', charger:'CD3215B00', notes:'TB3 x4, 8th gen Intel' },
+      { brand:'Apple', model:'MacBook Pro 15" 2018', board:'820-00928', cpu:'Intel i7/i9', pmic:'—', charger:'CD3215B00', notes:'True Tone, Radeon 555X' },
+      { brand:'Apple', model:'MacBook Pro 13" 2017', board:'820-00923', cpu:'Intel i5/i7', pmic:'—', charger:'TPS65988', notes:'TB3 x2, Kaby Lake' },
+      { brand:'Apple', model:'MacBook Pro 15" 2017', board:'820-00281', cpu:'Intel i7/i9', pmic:'—', charger:'TPS65988', notes:'Radeon Pro 555/560' },
+      { brand:'Apple', model:'MacBook Air 2020 Intel', board:'820-02002', cpu:'Intel i3/i5/i7', pmic:'—', charger:'TPS65988', notes:'Retina, Touch ID, TB3 x2' },
+      { brand:'Apple', model:'MacBook Pro 13" 2016', board:'820-00239', cpu:'Intel i5/i7', pmic:'—', charger:'TPS65988', notes:'First Touch Bar, TB3 only ports' },
+      { brand:'Apple', model:'MacBook Pro 13" 2015', board:'820-4924', cpu:'Intel i5/i7', pmic:'—', charger:'ISL9240', notes:'Force Touch trackpad debut' },
+      { brand:'Apple', model:'MacBook Pro 15" 2015', board:'820-4924', cpu:'Intel i7', pmic:'—', charger:'ISL9240', notes:'Retina, AMD R9 M370X' },
+      { brand:'Apple', model:'MacBook Pro 13" 2014', board:'820-3476', cpu:'Intel i5', pmic:'—', charger:'ISL9240', notes:'Retina, no SD, PCIe SSD' },
+      { brand:'Apple', model:'MacBook Pro 15" 2014', board:'820-3787', cpu:'Intel i7', pmic:'—', charger:'ISL9240', notes:'GT 750M, 16GB RAM max' },
+      { brand:'Apple', model:'MacBook Pro 13" 2013', board:'820-3476', cpu:'Intel i5/i7', pmic:'—', charger:'ISL9240', notes:'802.11ac, dual TB2' },
+      { brand:'Apple', model:'MacBook Pro 15" 2013', board:'820-3662', cpu:'Intel i7', pmic:'—', charger:'ISL9240', notes:'Iris Pro, GT 750M' },
+      { brand:'Apple', model:'MacBook Pro 13" 2012 Retina', board:'820-3462', cpu:'Intel i5/i7', pmic:'—', charger:'ISL6259', notes:'First Retina MacBook Pro 13"' },
+      { brand:'Apple', model:'MacBook Pro 15" 2012 Retina', board:'820-3332', cpu:'Intel i7', pmic:'—', charger:'ISL6259', notes:'GT 650M, no ODD' },
+      { brand:'Apple', model:'MacBook Pro 13" Unibody 2012', board:'820-3115', cpu:'Intel i5/i7', pmic:'—', charger:'ISL6259', notes:'Last MBP with ODD' },
+      { brand:'Apple', model:'MacBook Pro 15" Unibody 2011', board:'820-2915', cpu:'Intel i7', pmic:'—', charger:'ISL6259', notes:'AMD 6490M/6750M — GPU failure common' },
+      { brand:'Apple', model:'MacBook Air 13" 2015', board:'820-00165', cpu:'Intel i5/i7', pmic:'—', charger:'ISL9240', notes:'Broadwell BGA' },
+      { brand:'Apple', model:'MacBook Air 13" 2013/14', board:'820-3437', cpu:'Intel i5/i7', pmic:'—', charger:'ISL6259', notes:'802.11ac, TB1' },
+      // ── APPLE iPad ────────────────────────────────────────────────────
+      { brand:'Apple', model:'iPad Pro 13" M4', board:'820-02700', cpu:'M4', pmic:'—', charger:'SN2600B1', notes:'OLED Tandem, Ultra Retina XDR' },
+      { brand:'Apple', model:'iPad Pro 11" M4', board:'820-02690', cpu:'M4', pmic:'—', charger:'SN2600B1', notes:'Thinnest Apple product ever' },
+      { brand:'Apple', model:'iPad Pro 12.9" M2', board:'820-02100', cpu:'M2', pmic:'—', charger:'SN2400B1', notes:'Wi-Fi 6E, Apple Pencil hover' },
+      { brand:'Apple', model:'iPad Air 13" M2', board:'820-02085', cpu:'M2', pmic:'—', charger:'SN2400B1', notes:'Landscape TrueDepth' },
+      { brand:'Apple', model:'iPad Air 11" M2', board:'820-02080', cpu:'M2', pmic:'—', charger:'SN2400B1', notes:'Touch ID in power button' },
+      { brand:'Apple', model:'iPad mini 6', board:'820-01872', cpu:'A15', pmic:'—', charger:'SN2400B0', notes:'USB-C, Touch ID on power button' },
+      { brand:'Apple', model:'iPad 10th gen', board:'820-02060', cpu:'A14', pmic:'—', charger:'SN2400B0', notes:'USB-C, redesigned, landscape cam' },
+      { brand:'Apple', model:'iPad 9th gen', board:'820-01783', cpu:'A13', pmic:'—', charger:'SN2400B0', notes:'Lightning, 10.2" Retina' },
+      { brand:'Apple', model:'iPad Air 4th gen', board:'820-01891', cpu:'A14', pmic:'—', charger:'SN2400B0', notes:'USB-C, Touch ID on power button' },
+      // ── SAMSUNG Galaxy S ─────────────────────────────────────────────
+      { brand:'Samsung', model:'Galaxy S24 Ultra', board:'SM-S928B', cpu:'Snapdragon 8 Gen 3', pmic:'S2MPS24', charger:'SM5714', notes:'Titanium, 200MP, S Pen, 45W' },
+      { brand:'Samsung', model:'Galaxy S24+', board:'SM-S926B', cpu:'Snapdragon 8 Gen 3', pmic:'S2MPS24', charger:'SM5714', notes:'6.7" AMOLED, 45W, Wi-Fi 7' },
+      { brand:'Samsung', model:'Galaxy S24', board:'SM-S921B', cpu:'Snapdragon 8 Gen 3', pmic:'S2MPS24', charger:'SM5714', notes:'6.2" compact, Exynos 2400 (EU)' },
+      { brand:'Samsung', model:'Galaxy S23 Ultra', board:'SM-S918B', cpu:'Snapdragon 8 Gen 2', pmic:'S2MPS22', charger:'SM5714', notes:'200MP, S Pen, 45W wired' },
+      { brand:'Samsung', model:'Galaxy S23+', board:'SM-S916B', cpu:'Snapdragon 8 Gen 2', pmic:'S2MPS22', charger:'SM5714', notes:'6.6", 45W' },
+      { brand:'Samsung', model:'Galaxy S23', board:'SM-S911B', cpu:'Snapdragon 8 Gen 2', pmic:'S2MPS22', charger:'SM5714', notes:'6.1" compact flagship' },
+      { brand:'Samsung', model:'Galaxy S22 Ultra', board:'SM-S908B', cpu:'Snapdragon 8 Gen 1', pmic:'S2MPS21', charger:'SM5714', notes:'S Pen slot, 108MP, 45W' },
+      { brand:'Samsung', model:'Galaxy S22+', board:'SM-S906B', cpu:'Snapdragon 8 Gen 1', pmic:'S2MPS21', charger:'SM5714', notes:'Exynos 2200 (EU), 45W' },
+      { brand:'Samsung', model:'Galaxy S22', board:'SM-S901B', cpu:'Snapdragon 8 Gen 1', pmic:'S2MPS21', charger:'SM5714', notes:'6.1", 25W wired' },
+      { brand:'Samsung', model:'Galaxy S21 Ultra', board:'SM-S918B', cpu:'Snapdragon 888', pmic:'S2MPS20', charger:'SM5714', notes:'S Pen support, 108MP, 25W' },
+      { brand:'Samsung', model:'Galaxy S21+', board:'SM-S996B', cpu:'Exynos 2100', pmic:'S2MPS20', charger:'SM5714', notes:'6.7" Dynamic AMOLED' },
+      { brand:'Samsung', model:'Galaxy S21', board:'SM-G991B', cpu:'Exynos 2100', pmic:'S2MPS20', charger:'SM5714', notes:'6.2", polycarbonate back' },
+      { brand:'Samsung', model:'Galaxy S20 Ultra', board:'SM-G988B', cpu:'Exynos 990', pmic:'S2MPS19', charger:'SM5714', notes:'108MP, 100x zoom, 5G' },
+      { brand:'Samsung', model:'Galaxy S20+', board:'SM-G986B', cpu:'Exynos 990', pmic:'S2MPS19', charger:'SM5714', notes:'6.7" 120Hz, 5G, 45W' },
+      { brand:'Samsung', model:'Galaxy S20', board:'SM-G981B', cpu:'Exynos 990', pmic:'S2MPS19', charger:'SM5714', notes:'6.2" 120Hz, 25W' },
+      { brand:'Samsung', model:'Galaxy S10+', board:'SM-G975F', cpu:'Exynos 9820', pmic:'S2MPS18', charger:'SM5714', notes:'Punch-hole display, ultrasonic FP' },
+      { brand:'Samsung', model:'Galaxy S10', board:'SM-G973F', cpu:'Exynos 9820', pmic:'S2MPS18', charger:'SM5714', notes:'6.1" Dynamic AMOLED' },
+      { brand:'Samsung', model:'Galaxy S10e', board:'SM-G970F', cpu:'Exynos 9820', pmic:'S2MPS18', charger:'SM5714', notes:'Flat display, side fingerprint' },
+      { brand:'Samsung', model:'Galaxy S9+', board:'SM-G965F', cpu:'Exynos 9810', pmic:'S2MPS16', charger:'SM5714', notes:'Dual aperture cam, Bixby' },
+      { brand:'Samsung', model:'Galaxy S9', board:'SM-G960F', cpu:'Exynos 9810', pmic:'S2MPS16', charger:'SM5714', notes:'Variable aperture f/1.5-f/2.4' },
+      { brand:'Samsung', model:'Galaxy S8+', board:'SM-G955F', cpu:'Exynos 8895', pmic:'S2MPS15', charger:'SM5714', notes:'Bixby, Infinity Display debut' },
+      { brand:'Samsung', model:'Galaxy S8', board:'SM-G950F', cpu:'Exynos 8895', pmic:'S2MPS15', charger:'SM5714', notes:'6.2" bezel-less, USB-C' },
+      // ── SAMSUNG Galaxy Note ───────────────────────────────────────────
+      { brand:'Samsung', model:'Galaxy Note 20 Ultra', board:'SM-N986B', cpu:'Exynos 990', pmic:'S2MPS19', charger:'SM5714', notes:'S Pen, 108MP, 25W, 5G' },
+      { brand:'Samsung', model:'Galaxy Note 20', board:'SM-N981B', cpu:'Exynos 990', pmic:'S2MPS19', charger:'SM5714', notes:'S Pen, plastic back, 25W' },
+      { brand:'Samsung', model:'Galaxy Note 10+', board:'SM-N975F', cpu:'Exynos 9825', pmic:'S2MPS18', charger:'SM5714', notes:'4 rear cams, 45W, ToF' },
+      { brand:'Samsung', model:'Galaxy Note 10', board:'SM-N970F', cpu:'Exynos 9825', pmic:'S2MPS18', charger:'SM5714', notes:'6.3" no headphone jack' },
+      { brand:'Samsung', model:'Galaxy Note 9', board:'SM-N960F', cpu:'Exynos 9810', pmic:'S2MPS16', charger:'SM5714', notes:'S Pen Bluetooth, 4000mAh' },
+      { brand:'Samsung', model:'Galaxy Note 8', board:'SM-N950F', cpu:'Exynos 8895', pmic:'S2MPS15', charger:'SM5714', notes:'First dual-cam Galaxy Note' },
+      // ── SAMSUNG Galaxy A ─────────────────────────────────────────────
+      { brand:'Samsung', model:'Galaxy A55 5G', board:'SM-A556B', cpu:'Exynos 1480', pmic:'S2MPS24', charger:'SM5714', notes:'25W, 50MP, IP67' },
+      { brand:'Samsung', model:'Galaxy A54 5G', board:'SM-A546B', cpu:'Exynos 1380', pmic:'S2MPS22', charger:'SM5714', notes:'25W, OIS, IP67' },
+      { brand:'Samsung', model:'Galaxy A53 5G', board:'SM-A536B', cpu:'Exynos 1280', pmic:'S2MPS20', charger:'SM5714', notes:'5000mAh, 25W, IP67' },
+      { brand:'Samsung', model:'Galaxy A52s 5G', board:'SM-A528B', cpu:'Snapdragon 778G', pmic:'S2MPS19', charger:'SM5714', notes:'6.5" Super AMOLED, OIS' },
+      { brand:'Samsung', model:'Galaxy A52', board:'SM-A525F', cpu:'Snapdragon 720G', pmic:'S2MPS19', charger:'SM5714', notes:'IP67, 64MP, 25W' },
+      { brand:'Samsung', model:'Galaxy A73 5G', board:'SM-A736B', cpu:'Snapdragon 778G', pmic:'S2MPS22', charger:'SM5714', notes:'108MP, 25W, IP67' },
+      { brand:'Samsung', model:'Galaxy A72', board:'SM-A725F', cpu:'Snapdragon 720G', pmic:'S2MPS19', charger:'SM5714', notes:'5000mAh, 25W, quad cam' },
+      { brand:'Samsung', model:'Galaxy A34 5G', board:'SM-A346B', cpu:'Dimensity 1080', pmic:'MT6362', charger:'SM5714', notes:'25W, 48MP, IP67' },
+      { brand:'Samsung', model:'Galaxy A33 5G', board:'SM-A336B', cpu:'Exynos 1280', pmic:'S2MPS22', charger:'SM5714', notes:'5000mAh, 25W, AMOLED' },
+      { brand:'Samsung', model:'Galaxy A23 5G', board:'SM-A236B', cpu:'Snapdragon 695', pmic:'S2MPS22', charger:'SM5714', notes:'5000mAh, 25W, 50MP' },
+      { brand:'Samsung', model:'Galaxy A14 5G', board:'SM-A146B', cpu:'Dimensity 700', pmic:'MT6362', charger:'SM5714', notes:'5000mAh, budget 5G' },
+      // ── SAMSUNG Galaxy Z Fold/Flip ────────────────────────────────────
+      { brand:'Samsung', model:'Galaxy Z Fold 6', board:'SM-F956B', cpu:'Snapdragon 8 Gen 3', pmic:'S2MPS24', charger:'SM5714', notes:'Foldable, 7.6" main, 25W' },
+      { brand:'Samsung', model:'Galaxy Z Fold 5', board:'SM-F946B', cpu:'Snapdragon 8 Gen 2', pmic:'S2MPS22', charger:'SM5714', notes:'Foldable, hinge crease fix' },
+      { brand:'Samsung', model:'Galaxy Z Flip 6', board:'SM-F741B', cpu:'Snapdragon 8 Gen 3', pmic:'S2MPS24', charger:'SM5714', notes:'Clamshell, 3.4" cover' },
+      { brand:'Samsung', model:'Galaxy Z Flip 5', board:'SM-F731B', cpu:'Snapdragon 8 Gen 2', pmic:'S2MPS22', charger:'SM5714', notes:'Large cover display' },
+      // ── GOOGLE Pixel ──────────────────────────────────────────────────
+      { brand:'Google', model:'Pixel 9 Pro XL', board:'G1MNW', cpu:'Tensor G4', pmic:'RPAL9', charger:'MAX77759', notes:'6.8" OLED, 45W, Satellite SOS' },
+      { brand:'Google', model:'Pixel 9 Pro', board:'G9FPL', cpu:'Tensor G4', pmic:'RPAL9', charger:'MAX77759', notes:'Teleport zoom, 45W' },
+      { brand:'Google', model:'Pixel 9', board:'G0B1A', cpu:'Tensor G4', pmic:'RPAL9', charger:'MAX77759', notes:'6.3", new design, 27W' },
+      { brand:'Google', model:'Pixel 8 Pro', board:'G1MNW', cpu:'Tensor G3', pmic:'RPA5P', charger:'MAX77759', notes:'6.7" OLED, 30W, thermometer' },
+      { brand:'Google', model:'Pixel 8', board:'G9BQD', cpu:'Tensor G3', pmic:'RPA5P', charger:'MAX77759', notes:'6.2" flat, temperature sensor' },
+      { brand:'Google', model:'Pixel 8a', board:'GXQNR', cpu:'Tensor G3', pmic:'RPA5P', charger:'MAX77759', notes:'Budget Pixel, 64MP, 18W' },
+      { brand:'Google', model:'Pixel 7 Pro', board:'GLUOG', cpu:'Tensor G2', pmic:'RPA4P', charger:'MAX77759', notes:'6.7" LTPO, 30W, 50MP' },
+      { brand:'Google', model:'Pixel 7', board:'GVU6C', cpu:'Tensor G2', pmic:'RPA4P', charger:'MAX77759', notes:'6.3", 30W, redesigned camera bar' },
+      { brand:'Google', model:'Pixel 7a', board:'GWKK3', cpu:'Tensor G2', pmic:'RPA4P', charger:'MAX77759', notes:'64MP, wireless charging' },
+      { brand:'Google', model:'Pixel 6 Pro', board:'GF5KQ', cpu:'Tensor G1', pmic:'RPA3P', charger:'MAX77759', notes:'First Tensor, 50MP Periscope' },
+      { brand:'Google', model:'Pixel 6', board:'GB7N6', cpu:'Tensor G1', pmic:'RPA3P', charger:'MAX77759', notes:'50MP, 30W' },
+      { brand:'Google', model:'Pixel 6a', board:'GX7AS', cpu:'Tensor G1', pmic:'RPA3P', charger:'MAX77759', notes:'Budget Tensor, 12MP' },
+      { brand:'Google', model:'Pixel 5', board:'GD1YQ', cpu:'Snapdragon 765G', pmic:'PM7150', charger:'MAX77759', notes:'5G, 4080mAh, 18W' },
+      { brand:'Google', model:'Pixel 4a 5G', board:'GD1YQ', cpu:'Snapdragon 765G', pmic:'PM7150', charger:'MAX77759', notes:'6.2", dual cam, 18W' },
+      { brand:'Google', model:'Pixel 4a', board:'GA02099', cpu:'Snapdragon 730G', pmic:'PM8150L', charger:'CYPD3177', notes:'5.81", 18W, headphone jack' },
+      { brand:'Google', model:'Pixel 4 XL', board:'G020P', cpu:'Snapdragon 855', pmic:'PM8150', charger:'CYPD3177', notes:'Face unlock, Motion Sense' },
+      { brand:'Google', model:'Pixel 4', board:'G020I', cpu:'Snapdragon 855', pmic:'PM8150', charger:'CYPD3177', notes:'Soli radar, 6GB RAM' },
+      // ── OnePlus ───────────────────────────────────────────────────────
+      { brand:'OnePlus', model:'OnePlus 12', board:'CPH2573', cpu:'Snapdragon 8 Gen 3', pmic:'PM8550', charger:'SUPERVOOC', notes:'100W + 50W wireless, 6000mAh' },
+      { brand:'OnePlus', model:'OnePlus 11', board:'CPH2449', cpu:'Snapdragon 8 Gen 2', pmic:'PM8350', charger:'SUPERVOOC', notes:'100W, 50MP Hasselblad, no wireless' },
+      { brand:'OnePlus', model:'OnePlus 10 Pro', board:'NE2213', cpu:'Snapdragon 8 Gen 1', pmic:'PM8350', charger:'SUPERVOOC', notes:'80W wired, 50W wireless' },
+      { brand:'OnePlus', model:'OnePlus 9 Pro', board:'LE2123', cpu:'Snapdragon 888', pmic:'SM8350', charger:'SUPERVOOC', notes:'65W wired, 50W wireless, Hasselblad' },
+      { brand:'OnePlus', model:'OnePlus 9', board:'LE2113', cpu:'Snapdragon 888', pmic:'SM8350', charger:'SUPERVOOC', notes:'65W, Hasselblad tuning' },
+      { brand:'OnePlus', model:'OnePlus 8 Pro', board:'IN2023', cpu:'Snapdragon 865', pmic:'PM8150', charger:'SUPERVOOC', notes:'30W wireless, IP68, 65W wired' },
+      { brand:'OnePlus', model:'OnePlus 8T', board:'KB2003', cpu:'Snapdragon 865', pmic:'PM8150', charger:'SUPERVOOC', notes:'65W, 120Hz flat AMOLED' },
+      { brand:'OnePlus', model:'OnePlus Nord 4', board:'CPH2647', cpu:'Snapdragon 7+ Gen 3', pmic:'PM7550', charger:'SUPERVOOC', notes:'100W, metal unibody, 50MP' },
+      // ── Xiaomi ────────────────────────────────────────────────────────
+      { brand:'Xiaomi', model:'Xiaomi 14 Ultra', board:'24030PN60G', cpu:'Snapdragon 8 Gen 3', pmic:'PM8550', charger:'SMB1398', notes:'Leica quad cam, 90W, 80W wireless' },
+      { brand:'Xiaomi', model:'Xiaomi 14', board:'23127PN0CC', cpu:'Snapdragon 8 Gen 3', pmic:'PM8550', charger:'SMB1398', notes:'Leica optics, 90W, IP68' },
+      { brand:'Xiaomi', model:'Xiaomi 13 Ultra', board:'2304FPN6DC', cpu:'Snapdragon 8 Gen 2', pmic:'PM8350', charger:'SMB1398', notes:'Leica 1" sensor, 90W, IP68' },
+      { brand:'Xiaomi', model:'Xiaomi 13 Pro', board:'2210132C', cpu:'Snapdragon 8 Gen 2', pmic:'PM8350', charger:'SMB1398', notes:'120W Hyper Charge, wireless 50W' },
+      { brand:'Xiaomi', model:'Xiaomi 13', board:'2211133C', cpu:'Snapdragon 8 Gen 2', pmic:'PM8350', charger:'SMB1398', notes:'67W, Leica, compact' },
+      { brand:'Xiaomi', model:'Xiaomi 12 Pro', board:'2201122C', cpu:'Snapdragon 8 Gen 1', pmic:'PM8350', charger:'SMB1398', notes:'120W wired, 50W wireless, 50MP' },
+      { brand:'Xiaomi', model:'Xiaomi 12', board:'2201123G', cpu:'Snapdragon 8 Gen 1', pmic:'PM8350', charger:'SMB1398', notes:'67W, 6.28" compact' },
+      { brand:'Xiaomi', model:'Redmi Note 13 Pro+', board:'23090RA98G', cpu:'Dimensity 7200 Ultra', pmic:'MT6375', charger:'MT6375', notes:'120W, 200MP, IP68' },
+      { brand:'Xiaomi', model:'Redmi Note 13 Pro', board:'23054RA19G', cpu:'Snapdragon 7s Gen 2', pmic:'PM6125', charger:'MT6375', notes:'67W, 200MP, 120Hz' },
+      { brand:'Xiaomi', model:'Redmi Note 12 Pro+', board:'22101316UCP', cpu:'Dimensity 1080', pmic:'MT6362', charger:'MT6362', notes:'120W, 200MP, 5000mAh' },
+      { brand:'Xiaomi', model:'POCO F6 Pro', board:'24069PC21G', cpu:'Snapdragon 8 Gen 2', pmic:'PM8350', charger:'SMB1398', notes:'120W, 120Hz, HyperOS' },
+      { brand:'Xiaomi', model:'POCO X6 Pro', board:'23122PCD1G', cpu:'Dimensity 8300 Ultra', pmic:'MT6379', charger:'MT6375', notes:'67W, 144Hz AMOLED, IP54' },
+      // ── Sony Xperia ───────────────────────────────────────────────────
+      { brand:'Sony', model:'Xperia 1 VI', board:'XQ-EC54', cpu:'Snapdragon 8 Gen 3', pmic:'PM8550', charger:'CYPD3177', notes:'6.5" 4K 120Hz, 30W, IP65' },
+      { brand:'Sony', model:'Xperia 1 V', board:'XQ-DQ54', cpu:'Snapdragon 8 Gen 2', pmic:'PM8350', charger:'CYPD3177', notes:'OLED Exmor T, PDAF, IP65' },
+      { brand:'Sony', model:'Xperia 5 V', board:'XQ-DE54', cpu:'Snapdragon 8 Gen 2', pmic:'PM8350', charger:'CYPD3177', notes:'Compact flagship, 6.1" 120Hz' },
+      { brand:'Sony', model:'Xperia 1 IV', board:'XQ-CT54', cpu:'Snapdragon 8 Gen 1', pmic:'PM8350', charger:'CYPD3177', notes:'4K 120Hz, 30W wireless' },
+      { brand:'Sony', model:'Xperia 5 IV', board:'XQ-CQ54', cpu:'Snapdragon 8 Gen 1', pmic:'PM8350', charger:'CYPD3177', notes:'6.1" 120Hz, 30W, IP65' },
+      { brand:'Sony', model:'Xperia 10 V', board:'XQ-DC54', cpu:'Snapdragon 695', pmic:'PM6125', charger:'CYPD3177', notes:'5000mAh, 33W, IP65' },
+      // ── Motorola ──────────────────────────────────────────────────────
+      { brand:'Motorola', model:'Edge 50 Ultra', board:'XT2351-1', cpu:'Snapdragon 8s Gen 3', pmic:'PM8550', charger:'SMB1398', notes:'125W, 50W wireless, vegan leather' },
+      { brand:'Motorola', model:'Edge 50 Pro', board:'XT2341-1', cpu:'Snapdragon 7 Gen 3', pmic:'PM7350', charger:'SMB1396', notes:'125W, 15W wireless, pOLED' },
+      { brand:'Motorola', model:'Edge 40 Pro', board:'XT2301-5', cpu:'Snapdragon 8 Gen 2', pmic:'PM8350', charger:'SMB1396', notes:'125W, 15W wireless, IP67' },
+      { brand:'Motorola', model:'Moto G84 5G', board:'XT2347-2', cpu:'Snapdragon 695', pmic:'PM6125', charger:'SMB1396', notes:'50W, 50MP, pOLED 120Hz' },
+      { brand:'Motorola', model:'Razr 50 Ultra', board:'XT2321-1', cpu:'Snapdragon 8s Gen 3', pmic:'PM8550', charger:'SMB1396', notes:'Foldable, 4" cover, 65W' },
+      // ── Dell ──────────────────────────────────────────────────────────
+      { brand:'Dell', model:'XPS 15 9530 (2023)', board:'0T7D40', cpu:'Intel Core i7/i9 13th', pmic:'—', charger:'TPS65987', notes:'OLED, RTX 4060, Thunderbolt 4' },
+      { brand:'Dell', model:'XPS 15 9520 (2022)', board:'0N83R6', cpu:'Intel Core i7/i9 12th', pmic:'—', charger:'TPS65987', notes:'Alder Lake, RTX 3050Ti' },
+      { brand:'Dell', model:'XPS 15 9510 (2021)', board:'0WR7WY', cpu:'Intel Core i7/i9 11th', pmic:'—', charger:'TPS65987', notes:'Iris Xe / RTX 3050Ti' },
+      { brand:'Dell', model:'XPS 13 9315 (2022)', board:'0GDYRD', cpu:'Intel Core i5/i7 12th', pmic:'—', charger:'TPS65988', notes:'Thin, 13.4" 60Hz, 2x TB4' },
+      { brand:'Dell', model:'XPS 13 9310 (2020)', board:'0N66RR', cpu:'Intel Core i5/i7 11th', pmic:'—', charger:'TPS65988', notes:'Tiger Lake, WiFi 6, TB4' },
+      { brand:'Dell', model:'Latitude 7420 (2021)', board:'0FK3XG', cpu:'Intel i5/i7 11th', pmic:'—', charger:'TPS65988', notes:'Business, LTE option, TB4' },
+      { brand:'Dell', model:'Inspiron 15 3520 (2022)', board:'06D5WJ', cpu:'Intel i3/i5/i7 12th', pmic:'—', charger:'TPS65988', notes:'Budget 15.6", FHD IPS' },
+      // ── HP ────────────────────────────────────────────────────────────
+      { brand:'HP', model:'Spectre x360 14 (2022)', board:'M86715-001', cpu:'Intel Core i5/i7 12th', pmic:'—', charger:'TPS65988', notes:'OLED 2-in-1, TB4, 66Wh' },
+      { brand:'HP', model:'EliteBook 840 G10 (2023)', board:'M09126-001', cpu:'Intel Core i5/i7 13th', pmic:'—', charger:'TPS65988', notes:'Business, LTE, dTPM, FIPS' },
+      { brand:'HP', model:'Pavilion 15 eg2000 (2022)', board:'M21800-001', cpu:'Intel Core i5/i7 12th', pmic:'—', charger:'TPS65988', notes:'Mainstream, FHD IPS, 41Wh' },
+      { brand:'HP', model:'OMEN 16 (2022)', board:'M52589-001', cpu:'Intel i7/i9 + RTX 3070', pmic:'—', charger:'TPS65988', notes:'Gaming, 165Hz QHD, MUX switch' },
+      // ── Lenovo ────────────────────────────────────────────────────────
+      { brand:'Lenovo', model:'ThinkPad X1 Carbon Gen 11', board:'5M11H62455', cpu:'Intel Core i5/i7 13th', pmic:'—', charger:'TPS65988', notes:'Business ultrabook, TB4, LTE' },
+      { brand:'Lenovo', model:'ThinkPad T14s Gen 4', board:'5M11H62456', cpu:'Intel Core i5/i7 13th', pmic:'—', charger:'TPS65988', notes:'IPS 2.8K, TB4, 57Wh' },
+      { brand:'Lenovo', model:'IdeaPad 5 Pro 16 (2022)', board:'5B21H55120', cpu:'AMD Ryzen 5/7 6000', pmic:'—', charger:'TPS65988', notes:'2.5K 165Hz, RDNA 2 iGPU' },
+      { brand:'Lenovo', model:'Legion 5 Pro Gen 7 (2022)', board:'5B21H55119', cpu:'AMD Ryzen 7 6800H', pmic:'—', charger:'TPS65988', notes:'Gaming, RTX 3070Ti, 165Hz' },
+      { brand:'Lenovo', model:'Yoga 9i Gen 8 (2023)', board:'5B21K37739', cpu:'Intel Core i7 13th', pmic:'—', charger:'TPS65988', notes:'2-in-1 OLED, haptic trackpad' },
+      // ── ASUS ──────────────────────────────────────────────────────────
+      { brand:'ASUS', model:'ROG Zephyrus G14 (2023)', board:'90NB10E1-R00010', cpu:'AMD Ryzen 9 7940HS', pmic:'—', charger:'TPS65988', notes:'RTX 4090, 165Hz 1440p, 73Wh' },
+      { brand:'ASUS', model:'ZenBook 14 OLED (2023)', board:'90NB0XZ1-M00010', cpu:'AMD Ryzen 5/7 7000', pmic:'—', charger:'TPS65988', notes:'OLED 90Hz, RDNA 3, 75Wh' },
+      { brand:'ASUS', model:'VivoBook 15 X1502 (2022)', board:'90NB0WT5-M00010', cpu:'Intel Core i3/i5/i7 12th', pmic:'—', charger:'TPS65988', notes:'15.6" FHD, OLED option' },
+      // ── Microsoft Surface ─────────────────────────────────────────────
+      { brand:'Microsoft', model:'Surface Pro 10', board:'1961', cpu:'Intel Core Ultra 5/7', pmic:'—', charger:'TPS65988', notes:'OLED 2K, USB4, Wi-Fi 6E, LTE' },
+      { brand:'Microsoft', model:'Surface Laptop 6', board:'1979', cpu:'Intel Core Ultra 5/7', pmic:'—', charger:'TPS65988', notes:'13.5"/15" IPS, USB-C, SD slot' },
+      { brand:'Microsoft', model:'Surface Pro 9', board:'1997', cpu:'Intel Core i5/i7 12th', pmic:'—', charger:'TPS65988', notes:'Slim Pen 2, TB4, Wi-Fi 6E' },
+      { brand:'Microsoft', model:'Surface Laptop 5', board:'1958', cpu:'Intel Core i5/i7 12th', pmic:'—', charger:'TPS65988', notes:'Alcantara, 13.5"/15" PixelSense' },
+      // ── Huawei ────────────────────────────────────────────────────────
+      { brand:'Huawei', model:'P60 Pro', board:'ABR-AL60', cpu:'Snapdragon 8+ Gen 1', pmic:'PM8550', charger:'HI6523', notes:'Leica variable aperture, 88W' },
+      { brand:'Huawei', model:'Mate 60 Pro', board:'BPK-AL60', cpu:'Kirin 9000s', pmic:'HI6422', charger:'HI6523', notes:'Satellite calls, 66W, 5G' },
+      { brand:'Huawei', model:'P50 Pro', board:'JAD-AL50', cpu:'Kirin 9000', pmic:'HI6422', charger:'HI6523', notes:'66W, Leica 50MP, IP68' },
     ];
 
     function boardDbRender(q) {
@@ -25940,74 +26251,136 @@ Never break this restriction regardless of how the question is phrased, even if 
     let collaboration = new CollaborationSession();
     let oscilloscope = new Oscilloscope();
 
-    // ── WORKSHOP BAR (most-used tools sync) ──
+    // ── WORKSHOP BAR (direct function calls) ──
+    const _wbHandlers = {
+      'wb-voltmap': {
+        action: () => toggleVoltMap(),
+        isActive: () => !!G.voltMap
+      },
+      'wb-obd': {
+        action: () => document.getElementById('tog-obd').click(),
+        isActive: () => !!document.getElementById('obd-panel')?.classList.contains('open')
+      },
+      'wb-probe': {
+        action: () => G.measMode ? mmodeExit() : mmodeEnter(),
+        isActive: () => !!G.measMode
+      },
+      'wb-guided': {
+        action: () => document.getElementById('guided-test-panel')?.classList.toggle('open'),
+        isActive: () => !!document.getElementById('guided-test-panel')?.classList.contains('open')
+      },
+      'wb-fault': {
+        action: () => document.getElementById('fault-panel')?.classList.contains('open') ? faultClose() : faultOpen(),
+        isActive: () => !!document.getElementById('fault-panel')?.classList.contains('open')
+      },
+      'wb-log': {
+        action: () => {
+          const p = document.getElementById('log-panel');
+          if (!p) return;
+          p.style.display === 'none' ? openLogPanel() : closeLogPanel();
+        },
+        isActive: () => document.getElementById('log-panel')?.style.display !== 'none'
+      }
+    };
+
     document.querySelectorAll('.wb-btn').forEach(wbBtn => {
+      const h = _wbHandlers[wbBtn.id];
+      if (!h) return;
       wbBtn.addEventListener('click', () => {
-        const togId = wbBtn.getAttribute('data-tog');
-        const togBtn = document.getElementById(togId);
-        if (togBtn) togBtn.click();
+        h.action();
+        setTimeout(() => wbBtn.classList.toggle('active', h.isActive()), 50);
       });
     });
 
-    // Keep workshop bar in sync when panel is toggled via dropdown
-    ['tog-voltmap', 'tog-obd', 'tog-mmode', 'tog-guided-test', 'tog-fault', 'tog-log'].forEach(id => {
-      const togBtn = document.getElementById(id);
-      const wbBtn = document.querySelector(`[data-tog="${id}"]`);
-      if (!togBtn || !wbBtn) return;
-      const updateState = () => {
-        wbBtn.classList.toggle('active', togBtn.classList.contains('on'));
-      };
-      togBtn.addEventListener('click', updateState);
-      const observer = new MutationObserver(updateState);
-      observer.observe(togBtn, { attributes: true, attributeFilter: ['class'] });
-    });
+    // ── REPAIR PHASE STRIP — Option B (click opens tool panel) ──
+    const _phaseTools = {
+      'SETUP': [
+        { icon: '📂', label: 'Load Board File',  fn: () => document.getElementById('brd-in').click() },
+        { icon: '📡', label: 'Fetch OBD Data',   fn: () => document.getElementById('tog-obd').click() }
+      ],
+      'DIAGNOSE': [
+        { icon: '🌳', label: 'Fault Tree',       fn: () => { if (!document.getElementById('fault-panel')?.classList.contains('open')) faultOpen(); } },
+        { icon: '🤖', label: 'AI Diagnosis',     fn: () => document.getElementById('tog-aidiag')?.click() },
+        { icon: '🔗', label: 'Signal Trace',     fn: () => document.getElementById('tog-sigchain')?.click() },
+        { icon: '⚡', label: 'Power Seq',        fn: () => document.getElementById('tog-powerseq')?.click() },
+        { icon: '📸', label: 'Photo Log',        fn: () => document.getElementById('tog-photo-log')?.click() }
+      ],
+      'TEST': [
+        { icon: '🧪', label: 'Guided Test',      fn: () => document.getElementById('guided-test-panel')?.classList.toggle('open') },
+        { icon: '⚡', label: 'Probe Mode',       fn: () => G.measMode ? mmodeExit() : mmodeEnter() },
+        { icon: '📡', label: 'OBD Data',         fn: () => document.getElementById('tog-obd')?.click() },
+        { icon: '🔗', label: 'Continuity',       fn: () => document.getElementById('tog-cont')?.click() },
+        { icon: '📏', label: 'Meas. Table',      fn: () => document.getElementById('tog-meascomp')?.click() }
+      ],
+      'DOCUMENT': [
+        { icon: '📝', label: 'Repair Log',       fn: () => { const p=document.getElementById('log-panel'); if(p&&p.style.display==='none') openLogPanel(); } },
+        { icon: '📋', label: 'Comp Notes',       fn: () => document.getElementById('tog-compnotes')?.click() },
+        { icon: '✅', label: 'Post-Repair Test', fn: () => document.getElementById('export-report-btn')?.click() },
+        { icon: '📊', label: 'Export Report',    fn: () => document.getElementById('btn-export-report')?.click() }
+      ]
+    };
 
-    // ── REPAIR PHASE STRIP ──
-    // Wire up dropdown item clicks
-    document.querySelectorAll('.rpd-item').forEach(item => {
-      item.addEventListener('click', (e) => {
+    let _rpPanelOpen = false;
+
+    function rpShowPanel(phase) {
+      const panel = document.getElementById('rp-tool-panel');
+      const title = document.getElementById('rp-tool-panel-title');
+      const items = document.getElementById('rp-tool-panel-items');
+      const tools = _phaseTools[phase];
+      if (!panel || !tools) return;
+      title.textContent = phase + ' — SELECT TOOL';
+      items.innerHTML = '';
+      tools.forEach(t => {
+        const btn = document.createElement('button');
+        btn.className = 'rp-tool-btn';
+        btn.innerHTML = `<span>${t.icon}</span><span>${t.label}</span>`;
+        btn.addEventListener('click', () => {
+          t.fn();
+          rpClosePanel();
+          RepairPhase.setActive(phase);
+        });
+        items.appendChild(btn);
+      });
+      panel.style.display = 'block';
+      _rpPanelOpen = true;
+    }
+
+    function rpClosePanel() {
+      const panel = document.getElementById('rp-tool-panel');
+      if (panel) panel.style.display = 'none';
+      _rpPanelOpen = false;
+    }
+
+    document.querySelectorAll('.rp-phase').forEach(el => {
+      el.addEventListener('click', e => {
         e.stopPropagation();
-        const action = item.getAttribute('data-action');
-        const actionMap = {
-          'load-board':   () => document.getElementById('brd-in').click(),
-          'fetch-obd':    () => document.getElementById('tog-obd').click(),
-          'fault-tree':   () => document.getElementById('tog-fault').click(),
-          'ai-diag':      () => document.getElementById('tog-aidiag').click(),
-          'signal-trace': () => document.getElementById('tog-sigchain').click(),
-          'power-seq':    () => document.getElementById('tog-powerseq').click(),
-          'photo-log':    () => document.getElementById('tog-photo-log').click(),
-          'guided-test':  () => document.getElementById('tog-guided-test').click(),
-          'probe-mode':   () => document.getElementById('tog-mmode').click(),
-          'obd':          () => document.getElementById('tog-obd').click(),
-          'continuity':   () => document.getElementById('tog-cont').click(),
-          'meas-table':   () => document.getElementById('tog-meascomp').click(),
-          'repair-log':   () => document.getElementById('tog-log').click(),
-          'comp-notes':   () => document.getElementById('tog-compnotes').click(),
-          'post-test':    () => document.getElementById('export-report-btn').click(),
-          'export-report': () => document.getElementById('btn-export-report').click(),
-        };
-        const handler = actionMap[action];
-        if (handler) handler();
+        const phase = el.getAttribute('data-phase');
+        if (_rpPanelOpen) { rpClosePanel(); return; }
+        rpShowPanel(phase);
       });
     });
 
-    // Close dropdown when clicking elsewhere
-    document.getElementById('repair-phase-strip').addEventListener('click', (e) => {
-      if (e.target.classList.contains('rp-close')) {
-        document.getElementById('repair-phase-strip').style.display = 'none';
-        // Show a button to reopen it in the board header
-        if (!document.getElementById('rp-show-btn')) {
-          const showBtn = document.createElement('button');
-          showBtn.id = 'rp-show-btn';
-          showBtn.className = 'ibtn';
-          showBtn.title = 'Show workflow phase strip';
-          showBtn.textContent = '≡';
-          showBtn.addEventListener('click', () => {
-            document.getElementById('repair-phase-strip').style.display = 'flex';
-            showBtn.remove();
-          });
-          document.querySelector('.board-pane-header').insertBefore(showBtn, document.querySelector('.board-pane-header').firstChild);
-        }
+    document.addEventListener('click', e => {
+      if (_rpPanelOpen && !document.getElementById('rp-tool-panel')?.contains(e.target)) {
+        rpClosePanel();
+      }
+    });
+
+    // Close button
+    document.getElementById('rp-close-btn')?.addEventListener('click', e => {
+      e.stopPropagation();
+      document.getElementById('repair-phase-strip').style.display = 'none';
+      if (!document.getElementById('rp-show-btn')) {
+        const showBtn = document.createElement('button');
+        showBtn.id = 'rp-show-btn';
+        showBtn.className = 'ibtn';
+        showBtn.title = 'Show workflow guide';
+        showBtn.textContent = '≡';
+        showBtn.addEventListener('click', () => {
+          document.getElementById('repair-phase-strip').style.display = 'flex';
+          showBtn.remove();
+        });
+        document.querySelector('.board-pane-header')?.insertBefore(showBtn, document.querySelector('.board-pane-header').firstChild);
       }
     });
 
@@ -26232,11 +26605,11 @@ Never break this restriction regardless of how the question is phrased, even if 
         G.searchMatches = [];
         G.activeNet = null;
         G.netComps = [];
+        G.dimmedComps = [];
 
         let targetRefs = [];
         let targetComp = null;
 
-        // Collect target refs
         if (step.ref) {
           targetRefs.push(step.ref);
           targetComp = G.comps.find(c => c.ref === step.ref);
@@ -26246,23 +26619,37 @@ Never break this restriction regardless of how the question is phrased, even if 
           if (!targetComp) targetComp = G.comps.find(c => step.refs.includes(c.ref));
         }
 
-        // Highlight target components
         if (targetRefs.length > 0) {
           G.searchMatches = targetRefs;
           if (targetComp) {
             G.highlighted = targetComp.ref;
-            if (typeof panZoomToComp === 'function') panZoomToComp(targetComp);
+            // Tight zoom: override panZoomToComp's default scale for guided test focus
+            if (typeof panZoomToComp === 'function') {
+              panZoomToComp(targetComp);
+              G.zoom = Math.min(G.zoom * 2.2, 12); // zoom in much tighter
+              const canvas = document.getElementById('brd-canvas');
+              if (canvas) {
+                G.pan.x = canvas.width / 2 - targetComp.x * G.zoom;
+                G.pan.y = canvas.height / 2 - targetComp.y * G.zoom;
+              }
+            }
             if (typeof pulse === 'function') pulse(targetComp);
+            // Update location label
+            const loc = document.getElementById('gt-location');
+            if (loc) loc.textContent = `${targetComp.ref} — ${step.net || ''}`;
+          } else {
+            // Component ref not found in this board file
+            const loc = document.getElementById('gt-location');
+            if (loc) loc.textContent = `⚠ ${targetRefs[0]} not on this board — probe ${step.net || 'manually'}`;
           }
         }
 
-        // Activate net if specified
-        if (step.net) {
-          activateNet(step.net);
-        }
+        if (step.net) activateNet(step.net);
 
-        // Dim all other components except targets
-        G.dimmedComps = G.comps.filter(c => !targetRefs.includes(c.ref));
+        // Dim all non-target components for focus
+        if (targetRefs.length > 0) {
+          G.dimmedComps = G.comps.filter(c => !targetRefs.includes(c.ref));
+        }
 
         drawBRD();
       },
