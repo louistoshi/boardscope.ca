@@ -349,101 +349,81 @@ class ComponentLibrary {
         custom: false
       },
       {
-        id: 'TPS51980',
+        id: 'TPS65083',
         category: 'Power Management',
         manufacturer: 'Texas Instruments',
-        package: 'QFN-32',
-        description: 'Dual-Output Buck Controller for CPU and GPU',
+        package: 'BGA-168',
+        description: 'Power Management Unit for Intel Core Processors (Dell XPS/Latitude)',
         pinout: {
           pins: [
-            { num: 1, name: 'VIN', type: 'POWER', description: 'Input voltage (5-24V)' },
-            { num: 2, name: 'GND', type: 'GND', description: 'Ground' },
-            { num: 5, name: 'VOUT1', type: 'OUTPUT', description: 'CPU voltage output' },
-            { num: 10, name: 'VOUT2', type: 'OUTPUT', description: 'GPU voltage output' },
-            { num: 15, name: 'EN', type: 'INPUT', description: 'Enable pin' }
+            { num: 'A1', name: 'VIN', type: 'POWER', description: 'Main power input' },
+            { num: 'B1', name: 'GND', type: 'GND', description: 'Ground' },
+            { num: 'C1', name: 'LDO_3V3', type: 'OUTPUT', description: '3.3V LDO output' }
           ]
         },
         commonFailures: [
           {
-            symptom: 'No CPU voltage',
-            cause: 'EN pin not asserted or IC dead',
-            test: 'Measure voltage on EN pin',
-            expected: '3.3V',
-            fix: 'Trace EN signal back to PCH. Replace IC if EN present but no output.'
+            symptom: 'Board dead, 0.00A draw',
+            cause: 'Main VIN rail shorted inside IC',
+            test: 'Measure diode drop on VIN pin',
+            expected: '0.45V',
+            fix: 'Replace IC. Common on Dell XPS 9500 series.'
           }
         ],
-        replacements: ['TPS51980A', 'TPS51980RGER'],
-        datasheetUrl: 'https://www.ti.com/product/TPS51980',
-        lcscUrl: 'https://www.lcsc.com/search?q=TPS51980',
-        octpartUrl: 'https://octopart.com/search?q=TPS51980',
-        boards: ['820-3437', '820-00165'],
-        tags: ['buck', 'cpu', 'gpu', 'power', 'dual-output'],
+        replacements: ['TPS650830'],
+        boards: ['LA-J191P', 'LA-K001P'],
+        tags: ['pmu', 'dell', 'intel', 'power'],
         custom: false
       },
       {
-        id: 'LP8550',
-        category: 'Display',
-        manufacturer: 'Texas Instruments',
-        package: 'QFN-24',
-        description: 'LED Backlight Driver with I2C Interface',
+        id: 'MAX77812',
+        category: 'Power Management',
+        manufacturer: 'Maxim Integrated',
+        package: 'WLP-64',
+        description: '20A Multi-Phase Buck Converter (Asus ROG/Mobile)',
         pinout: {
           pins: [
-            { num: 1, name: 'VIN', type: 'POWER', description: 'Input voltage (2.7-25V)' },
-            { num: 2, name: 'GND', type: 'GND', description: 'Ground' },
-            { num: 5, name: 'LED+', type: 'OUTPUT', description: 'LED string positive' },
-            { num: 6, name: 'LED-', type: 'OUTPUT', description: 'LED string negative' },
-            { num: 10, name: 'SDA', type: 'I2C', description: 'I2C data' },
-            { num: 11, name: 'SCL', type: 'I2C', description: 'I2C clock' },
-            { num: 15, name: 'EN', type: 'INPUT', description: 'Enable pin' }
+            { num: 1, name: 'IN', type: 'POWER', description: 'Input supply' },
+            { num: 5, name: 'OUT', type: 'POWER', description: 'Output voltage' },
+            { num: 10, name: 'EN', type: 'INPUT', description: 'Enable' }
           ]
         },
         commonFailures: [
           {
-            symptom: 'No backlight',
-            cause: 'EN pin not asserted or LED string open',
-            test: 'Measure voltage on EN pin and LED+ output',
-            expected: 'EN: 3.3V, LED+: 12-24V',
-            fix: 'Check EN signal. Test LED string continuity. Replace IC if inputs OK but no output.'
+            symptom: 'No CPU power, fans spin but no boot',
+            cause: 'Output inductor cracked or IC faulty',
+            test: 'Check for output voltage on inductors',
+            expected: '0.8V - 1.2V',
+            fix: 'Re-solder inductors or replace MAX77812'
           }
         ],
-        replacements: ['LP8550TLX-E00', 'LP8551'],
-        datasheetUrl: 'https://www.ti.com/product/LP8550',
-        lcscUrl: 'https://www.lcsc.com/search?q=LP8550',
-        octpartUrl: 'https://octopart.com/search?q=LP8550',
-        boards: ['820-3437', '820-00165', '820-3662'],
-        tags: ['backlight', 'led-driver', 'display', 'boost'],
+        boards: ['G513QY', 'G713QY'],
+        tags: ['asus', 'buck', 'cpu-power', 'rog'],
         custom: false
       },
       {
-        id: 'SN74LVC1G125',
-        category: 'Logic',
-        manufacturer: 'Texas Instruments',
-        package: 'SOT-23-5',
-        description: 'Single Bus Buffer Gate with 3-State Output',
+        id: '338S00736',
+        category: 'Power Management',
+        manufacturer: 'Apple',
+        package: 'BGA',
+        description: 'Main PMIC for iPhone 16 Pro / Pro Max',
         pinout: {
           pins: [
-            { num: 1, name: 'OE', type: 'INPUT', description: 'Output enable (active low)' },
-            { num: 2, name: 'A', type: 'INPUT', description: 'Input' },
-            { num: 3, name: 'GND', type: 'GND', description: 'Ground' },
-            { num: 4, name: 'Y', type: 'OUTPUT', description: 'Output' },
-            { num: 5, name: 'VCC', type: 'POWER', description: 'Supply voltage (1.65-5.5V)' }
+            { num: 'A1', name: 'VDD_MAIN', type: 'POWER', description: 'Main system rail' },
+            { num: 'B1', name: 'PP_CPU', type: 'POWER', description: 'CPU core power' }
           ]
         },
         commonFailures: [
           {
-            symptom: 'Signal not passing through',
-            cause: 'IC dead or OE not asserted',
-            test: 'Measure voltage on OE pin (should be LOW) and VCC',
-            expected: 'OE: 0V, VCC: 3.3V',
-            fix: 'Replace IC. Very common failure on liquid damaged boards.'
+            symptom: 'Device dead after liquid damage',
+            cause: 'Corrosion under BGA balls on VDD_MAIN',
+            test: 'Measure current draw on DC power supply',
+            expected: '0mA off, 50mA+ on pulse',
+            fix: 'Reball or replace PMIC'
           }
         ],
-        replacements: ['SN74LVC1G125DBVR', 'NC7SZ125'],
-        datasheetUrl: 'https://www.ti.com/product/SN74LVC1G125',
-        lcscUrl: 'https://www.lcsc.com/search?q=SN74LVC1G125',
-        octpartUrl: 'https://octopart.com/search?q=SN74LVC1G125',
-        boards: ['820-00165', '820-3437', '820-00850', '820-3662'],
-        tags: ['buffer', 'logic', 'level-shifter', 'tristate'],
+        boards: ['820-02200', '820-02150'],
+        tags: ['apple', 'iphone', 'pmic', 'a18-pro'],
         custom: false
       }
     ];

@@ -274,7 +274,9 @@
       background: var(--bg2);
       border-bottom: 1px solid var(--border);
       flex-shrink: 0;
-      min-height: 50px
+      min-height: 50px;
+      grid-column: 1 / -1;
+      grid-row: 1;
     }
 
     /* ── BOARD TABS ── */
@@ -288,6 +290,8 @@
       gap: 2px;
       min-height: 30px;
       overflow-x: auto;
+      grid-column: 1 / -1;
+      grid-row: 2;
     }
 
     #board-tabs.show {
@@ -859,7 +863,9 @@
       display: flex;
       flex: 1;
       overflow: hidden;
-      position: relative
+      position: relative;
+      grid-column: 2;
+      grid-row: 3;
     }
 
     /* ── DROP OVERLAYS ── */
@@ -1217,6 +1223,7 @@
       font-size: 10px !important;
       letter-spacing: .3px !important;
       justify-content: flex-start !important;
+      color: var(--text3) !important;
     }
 
     .tb-drop-item:last-child {
@@ -1230,7 +1237,11 @@
 
     .tb-drop-item.on {
       color: var(--accent) !important;
-      background: #0a1a10 !important
+      background: rgba(50, 205, 50, 0.15) !important
+    }
+
+    body.theme-light .tb-drop-item.on {
+      background: rgba(50, 180, 50, 0.15) !important
     }
 
     #comp-search {
@@ -3531,6 +3542,7 @@
       flex-direction: column;
       box-shadow: 0 6px 28px rgba(128, 96, 192, .25);
       overflow: hidden;
+      overflow-y: auto;
     }
 
     #aidiag-panel.open {
@@ -3544,7 +3556,7 @@
       padding: 7px 12px;
       background: var(--bg3);
       border-bottom: 1px solid var(--border);
-      flex-shrink: 0;
+      flex-shrink: 0 !important;
     }
 
     #aidiag-title {
@@ -3566,7 +3578,9 @@
       display: flex;
       flex-direction: column;
       gap: 8px;
-      overflow-y: auto
+      overflow-y: auto;
+      flex: 1;
+      min-height: 0;
     }
 
     #aidiag-hint {
@@ -6104,7 +6118,8 @@
       border: 1px solid var(--accent);
       border-radius: var(--r);
       width: 380px;
-      max-height: 80vh;
+      max-width: 95vw;
+      max-height: min(80vh, calc(100vh - 80px));
       overflow-y: auto;
       box-shadow: 0 8px 40px rgba(0, 200, 150, .25);
       display: flex;
@@ -6118,7 +6133,7 @@
       padding: 10px 14px;
       background: var(--bg3);
       border-bottom: 1px solid var(--border);
-      flex-shrink: 0
+      flex-shrink: 0 !important;
     }
 
     #meas-net-name {
@@ -6854,6 +6869,291 @@
       transition: width 0.3s ease;
     }
 
+    /* ── GUIDED TEST PANEL ── */
+    #guided-test-panel {
+      position: absolute;
+      top: 50px;
+      right: 20px;
+      z-index: 42;
+      background: var(--bg2);
+      border: 2px solid #4080ff;
+      border-radius: var(--r);
+      width: 360px;
+      max-height: 85vh;
+      display: none;
+      flex-direction: column;
+      box-shadow: 0 8px 32px rgba(64, 128, 255, .3);
+      overflow: hidden;
+    }
+
+    #guided-test-panel.open {
+      display: flex;
+    }
+
+    #gt-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      background: var(--bg3);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+      user-select: none;
+      cursor: move;
+    }
+
+    #gt-title {
+      font-size: 11px;
+      font-weight: 700;
+      color: #4080ff;
+      letter-spacing: 1px;
+      flex: 1;
+    }
+
+    #gt-close {
+      color: var(--text3);
+      cursor: pointer;
+      font-size: 12px;
+    }
+
+    #gt-close:hover {
+      color: var(--text);
+    }
+
+    #gt-controls {
+      display: flex;
+      gap: 8px;
+      padding: 10px 12px;
+      background: var(--bg3);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    #gt-sequence-select {
+      flex: 1;
+      background: var(--bg2);
+      border: 1px solid var(--border2);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 9px;
+      padding: 4px 8px;
+      border-radius: 3px;
+      outline: none;
+    }
+
+    #gt-sequence-select:focus {
+      border-color: #4080ff;
+    }
+
+    .gt-btn {
+      background: var(--bg2);
+      border: 1px solid var(--border2);
+      color: var(--text2);
+      font-family: var(--mono);
+      font-size: 9px;
+      padding: 4px 12px;
+      border-radius: 3px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .gt-btn:hover:not(:disabled) {
+      background: var(--bg3);
+      color: var(--text);
+      border-color: #4080ff;
+    }
+
+    .gt-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    #gt-body {
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      overflow-y: auto;
+      flex: 1;
+      min-height: 0;
+    }
+
+    .gt-step-num {
+      font-size: 9px;
+      color: var(--text3);
+      letter-spacing: 1px;
+      margin-bottom: 4px;
+    }
+
+    .gt-step-name {
+      font-size: 11px;
+      font-weight: 700;
+      color: #4080ff;
+      margin-bottom: 8px;
+    }
+
+    .gt-instruction {
+      font-size: 10px;
+      color: var(--text2);
+      line-height: 1.6;
+      margin-bottom: 10px;
+    }
+
+    .gt-expected {
+      font-size: 9px;
+      color: var(--text3);
+      background: var(--bg3);
+      padding: 6px 8px;
+      border-left: 2px solid #4080ff;
+      margin-bottom: 10px;
+    }
+
+    .gt-input-row {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    #gt-input {
+      flex: 1;
+      background: var(--bg3);
+      border: 1px solid var(--border2);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 10px;
+      padding: 4px 8px;
+      border-radius: 3px;
+      outline: none;
+    }
+
+    #gt-input:focus {
+      border-color: #4080ff;
+    }
+
+    #gt-unit {
+      font-size: 9px;
+      color: var(--text3);
+      min-width: 20px;
+    }
+
+    .gt-action-buttons {
+      display: flex;
+      gap: 6px;
+      justify-content: center;
+    }
+
+    .gt-action-btn {
+      flex: 1;
+      padding: 6px 10px;
+      font-size: 9px;
+      font-weight: 700;
+      border: 1px solid;
+      border-radius: 3px;
+      cursor: pointer;
+      transition: all 0.15s;
+      text-align: center;
+      min-height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .gt-pass {
+      background: rgba(68, 170, 34, 0.2);
+      border-color: #44aa22;
+      color: #44aa22;
+    }
+
+    .gt-pass:hover {
+      background: rgba(68, 170, 34, 0.35);
+    }
+
+    .gt-fail {
+      background: rgba(220, 20, 60, 0.2);
+      border-color: #dc143c;
+      color: #dc143c;
+    }
+
+    .gt-fail:hover {
+      background: rgba(220, 20, 60, 0.35);
+    }
+
+    .gt-skip {
+      background: rgba(100, 100, 100, 0.2);
+      border-color: #666;
+      color: #999;
+    }
+
+    .gt-skip:hover {
+      background: rgba(100, 100, 100, 0.35);
+    }
+
+    #gt-progress-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding: 10px 12px;
+      background: var(--bg3);
+      border-top: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    #gt-step-info {
+      display: flex;
+      justify-content: space-between;
+      font-size: 9px;
+      color: var(--text3);
+    }
+
+    .gt-progress {
+      width: 100%;
+      height: 6px;
+      background: var(--bg2);
+      border-radius: 2px;
+      overflow: hidden;
+      border: 1px solid var(--border2);
+    }
+
+    .gt-progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #4080ff, #6ba3ff);
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+
+    #gt-results-strip {
+      display: flex;
+      gap: 4px;
+      padding: 0 12px 8px;
+      flex-wrap: wrap;
+    }
+
+    .gt-result-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .gt-result-dot.pass {
+      background: #44aa22;
+    }
+
+    .gt-result-dot.fail {
+      background: #dc143c;
+    }
+
+    .gt-result-dot.skip {
+      background: #888;
+    }
+
+    .gt-result-dot:hover {
+      transform: scale(1.3);
+      box-shadow: 0 0 8px currentColor;
+    }
+
     /* ── COMPONENT LIBRARY PANEL ── */
     #complib-panel {
       position: absolute;
@@ -7351,6 +7651,302 @@
       font-size: 14px;
       font-weight: 700;
     }
+
+    /* ── WORKFLOW SIDEBAR ── */
+    /* ── REPAIR PHASE STRIP ── */
+    #repair-phase-strip {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      padding: 6px 12px;
+      height: 28px;
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      overflow-x: auto;
+      overflow-y: hidden;
+      user-select: none;
+    }
+
+    .rp-phase {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      cursor: pointer;
+      position: relative;
+      transition: all 0.12s ease;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .rp-phase:hover {
+      border-color: var(--accent);
+      background: rgba(64, 128, 255, 0.05);
+    }
+
+    .rp-phase.active {
+      border-color: var(--accent);
+      color: var(--accent);
+      animation: phaseActive 2s ease-in-out infinite;
+    }
+
+    .rp-phase.done {
+      border-color: #44cc66;
+      color: #44cc66;
+    }
+
+    .rp-dot {
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+      flex-shrink: 0;
+    }
+
+    .rp-phase.done .rp-dot::after {
+      content: '';
+      position: absolute;
+      left: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: #44cc66;
+    }
+
+    .rp-label {
+      font-size: 9px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    /* Phase dropdown menu */
+    .rp-drop {
+      display: none;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+      min-width: 160px;
+      margin-top: 2px;
+      z-index: 1000;
+    }
+
+    .rp-phase:hover .rp-drop {
+      display: none; /* replaced by click-to-open panel */
+    }
+
+    #rp-tool-panel {
+      position: fixed;
+      top: 52px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 9999;
+      background: var(--bg2);
+      border: 1px solid var(--accent);
+      border-radius: 6px;
+      box-shadow: 0 0 24px rgba(0,200,255,0.15), 0 8px 32px rgba(0,0,0,0.6);
+      min-width: 220px;
+      padding: 6px 0 4px;
+      animation: panelIn 0.12s ease;
+    }
+    #rp-tool-panel-title {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      color: var(--accent);
+      padding: 4px 14px 6px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 2px;
+    }
+    .rp-tool-btn {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      padding: 7px 14px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text);
+      text-align: left;
+      transition: background 0.1s;
+      letter-spacing: .02em;
+    }
+    .rp-tool-btn:hover {
+      background: rgba(64,128,255,0.1);
+      color: var(--accent);
+    }
+
+    .rpd-item {
+      padding: 8px 12px;
+      font-size: 9px;
+      color: var(--text2);
+      cursor: pointer;
+      transition: all 0.1s ease;
+      white-space: nowrap;
+    }
+
+    .rpd-item:first-child {
+      border-top-left-radius: 3px;
+      border-top-right-radius: 3px;
+    }
+
+    .rpd-item:last-child {
+      border-bottom-left-radius: 3px;
+      border-bottom-right-radius: 3px;
+    }
+
+    .rpd-item:hover {
+      background: rgba(64, 128, 255, 0.12);
+      color: var(--accent);
+    }
+
+    .rp-trace {
+      display: inline-block;
+      width: 16px;
+      height: 1px;
+      border-top: 1px dashed var(--text3);
+      flex-shrink: 0;
+    }
+
+    .rp-phase.done .rp-trace,
+    .rp-phase.done ~ .rp-trace {
+      border-color: #44cc66;
+    }
+
+    .rp-hint {
+      flex: 1;
+      font-size: 9px;
+      color: var(--text3);
+      font-style: italic;
+      text-align: right;
+      padding-right: 8px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .rp-close {
+      background: none;
+      border: none;
+      color: var(--text3);
+      cursor: pointer;
+      font-size: 14px;
+      padding: 0 4px;
+      transition: color 0.1s ease;
+      flex-shrink: 0;
+    }
+
+    .rp-close:hover {
+      color: var(--text2);
+    }
+
+    /* Animations */
+    @keyframes phaseActive {
+      0%, 100% { box-shadow: 0 0 4px var(--accent); }
+      50% { box-shadow: 0 0 10px var(--accent); }
+    }
+
+    @keyframes phaseDone {
+      0% { box-shadow: 0 0 0px #44cc66; }
+      50% { box-shadow: 0 0 12px #44cc66; }
+      100% { box-shadow: 0 0 4px #44cc66; }
+    }
+
+    @keyframes panelIn {
+      from { opacity: 0; transform: translateY(-4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── WORKSHOP BAR (most-used tools) ── */
+    #workshop-bar {
+      display: flex;
+      align-items: center;
+      height: 32px;
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      padding: 0 8px;
+      gap: 0;
+      flex-shrink: 0;
+      overflow-x: auto;
+      overflow-y: hidden;
+    }
+
+    .wb-btn {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 0 12px;
+      height: 100%;
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      cursor: pointer;
+      font-family: var(--mono);
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      color: var(--text3);
+      transition: all 0.12s ease;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .wb-btn:hover {
+      color: var(--text);
+      background: rgba(64, 128, 255, 0.06);
+    }
+
+    .wb-btn.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+      background: rgba(64, 128, 255, 0.08);
+      box-shadow: 0 0 6px rgba(0, 200, 255, 0.1);
+    }
+
+    .wb-icon {
+      font-size: 12px;
+    }
+
+    .wb-sep {
+      width: 1px;
+      height: 16px;
+      background: var(--border);
+      flex-shrink: 0;
+    }
+
+    /* ── UNIVERSAL PANEL NEON EFFECTS ── */
+    [id*="-panel"].open,
+    [id*="-win"].open {
+      border-color: rgba(0, 200, 255, 0.35) !important;
+      box-shadow: 0 0 18px rgba(0, 200, 255, 0.12), 0 8px 32px rgba(0,0,0,0.5) !important;
+      animation: panelIn 0.15s ease;
+    }
+
+    [id*="-panel"].dragging,
+    [id*="-win"].dragging {
+      opacity: 0.78 !important;
+      transform: rotate(0.3deg) !important;
+    }
+
+    [id*="-panel"].open,
+    [id*="-win"].open {
+      border: 1px solid rgba(0, 200, 255, 0.35) !important;
+    }
   </style>
 </head>
 
@@ -7416,6 +8012,61 @@
     <div id="board-tab-list"></div>
     <button id="board-tab-add" title="Open another board in a new tab">&#43;</button>
     <input type="file" id="board-tab-in" accept=".bvr,.brd,.brd2,.bdv,.cad,.fz,.csv,.txt" style="display:none">
+  </div>
+
+  <!-- Repair Phase Strip (circuit-trace workflow guide) -->
+  <div id="repair-phase-strip">
+    <div class="rp-phase done" id="rps-setup" data-phase="SETUP" title="SETUP: Load board and data">
+      <span class="rp-dot"></span>
+      <span class="rp-label">SETUP</span>
+      <div class="rp-drop" id="rpd-setup">
+        <div class="rpd-item" data-action="load-board">📂 Load Board File</div>
+        <div class="rpd-item" data-action="fetch-obd">📡 Fetch OBD Data</div>
+      </div>
+    </div>
+    <span class="rp-trace"></span>
+    <div class="rp-phase active" id="rps-diagnose" data-phase="DIAGNOSE" title="DIAGNOSE: Analyze the problem">
+      <span class="rp-dot"></span>
+      <span class="rp-label">DIAGNOSE</span>
+      <div class="rp-drop" id="rpd-diagnose">
+        <div class="rpd-item" data-action="fault-tree">🌳 Fault Tree</div>
+        <div class="rpd-item" data-action="ai-diag">🤖 AI Diagnosis</div>
+        <div class="rpd-item" data-action="signal-trace">🔗 Signal Trace</div>
+        <div class="rpd-item" data-action="power-seq">⚡ Power Seq</div>
+        <div class="rpd-item" data-action="photo-log">📸 Photo Log</div>
+      </div>
+    </div>
+    <span class="rp-trace"></span>
+    <div class="rp-phase" id="rps-test" data-phase="TEST" title="TEST: Measure and verify">
+      <span class="rp-dot"></span>
+      <span class="rp-label">TEST</span>
+      <div class="rp-drop" id="rpd-test">
+        <div class="rpd-item" data-action="guided-test">🧪 Guided Test ★</div>
+        <div class="rpd-item" data-action="probe-mode">⚡ Probe Mode</div>
+        <div class="rpd-item" data-action="obd">📡 OBD Data</div>
+        <div class="rpd-item" data-action="continuity">🔗 Continuity</div>
+        <div class="rpd-item" data-action="meas-table">📏 Meas. Table</div>
+      </div>
+    </div>
+    <span class="rp-trace"></span>
+    <div class="rp-phase" id="rps-document" data-phase="DOCUMENT" title="DOCUMENT: Record and close">
+      <span class="rp-dot"></span>
+      <span class="rp-label">DOCUMENT</span>
+      <div class="rp-drop" id="rpd-document">
+        <div class="rpd-item" data-action="repair-log">📝 Repair Log</div>
+        <div class="rpd-item" data-action="comp-notes">📋 Comp Notes</div>
+        <div class="rpd-item" data-action="post-test">✅ Post-Test</div>
+        <div class="rpd-item" data-action="export-report">📊 Export Report</div>
+      </div>
+    </div>
+    <span class="rp-hint" id="rp-hint">Load a board file to begin</span>
+    <button id="rp-close-btn" class="rp-close" title="Hide phase strip">×</button>
+  </div>
+
+  <!-- Phase strip tool panel (shown on click) -->
+  <div id="rp-tool-panel" style="display:none">
+    <div id="rp-tool-panel-title"></div>
+    <div id="rp-tool-panel-items"></div>
   </div>
 
   <div class="main" id="layout">
@@ -7529,6 +8180,33 @@
           <button class="ibtn" id="brd-flip-y" title="Flip board vertically (y)">&#8597;</button>
         </div>
       </div>
+      <!-- ── WORKSHOP BAR (most-used tools) ── -->
+      <div id="workshop-bar">
+        <button class="wb-btn" id="wb-voltmap" data-tog="tog-voltmap" title="Voltage Map — show expected voltages on board">
+          <span class="wb-icon">🗺</span><span class="wb-label">VOLT MAP</span>
+        </button>
+        <div class="wb-sep"></div>
+        <button class="wb-btn" id="wb-obd" data-tog="tog-obd" title="OBD Data — fetch reference values from OpenBoardData">
+          <span class="wb-icon">📡</span><span class="wb-label">OBD</span>
+        </button>
+        <div class="wb-sep"></div>
+        <button class="wb-btn" id="wb-probe" data-tog="tog-mmode" title="Probe Mode — enter live measurements">
+          <span class="wb-icon">⚡</span><span class="wb-label">PROBE</span>
+        </button>
+        <div class="wb-sep"></div>
+        <button class="wb-btn" id="wb-guided" data-tog="tog-guided-test" title="Guided Test — step-by-step rail testing">
+          <span class="wb-icon">🧪</span><span class="wb-label">GUIDED</span>
+        </button>
+        <div class="wb-sep"></div>
+        <button class="wb-btn" id="wb-fault" data-tog="tog-fault" title="Fault Tree — symptom-based diagnosis">
+          <span class="wb-icon">🌳</span><span class="wb-label">FAULT</span>
+        </button>
+        <div class="wb-sep"></div>
+        <button class="wb-btn" id="wb-log" data-tog="tog-log" title="Repair Log — notes on findings and actions">
+          <span class="wb-icon">📝</span><span class="wb-label">LOG</span>
+        </button>
+      </div>
+
       <div class="brd-toolbar">
         <!-- Search -->
         <div id="search-wrap">
@@ -7603,15 +8281,15 @@
             <div class="tb-drop-label" data-i18n="lbl_guided" style="grid-column:1">DIAGNOSE</div>
             <div class="tb-drop-label" style="grid-column:2">NOTES &amp; REFS</div>
 
-            <button class="tog tb-drop-item" id="tog-mmode" title="Measurement Mode">&#9881; PROBE MODE</button>
+            <button class="tog tb-drop-item" id="tog-mmode" data-context="test" title="Measurement Mode">&#9881; PROBE MODE</button>
             <button class="tog tb-drop-item" id="tog-compnotes" title="Component Notes">&#128203; COMP NOTES</button>
 
             <button class="tog tb-drop-item" id="tog-powerseq"
               title="Power Sequencing Checklist — step-by-step voltage rail verification with live multimeter">&#9889; POWER SEQ</button>
             <button class="tog tb-drop-item" id="tog-netaliases" title="Net Aliases">&#9998; NET ALIASES</button>
 
-            <button class="tog tb-drop-item" id="tog-fault" title="Fault Tree">&#9888; FAULT TREE</button>
-            <button class="tog tb-drop-item" id="tog-photo-log" title="Before/after photo log for this repair">&#128247; PHOTO LOG</button>
+            <button class="tog tb-drop-item" id="tog-fault" data-context="diagnose" title="Fault Tree">&#9888; FAULT TREE</button>
+            <button class="tog tb-drop-item" id="tog-photo-log" data-context="diagnose" title="Before/after photo log for this repair">&#128247; PHOTO LOG</button>
 
             <button class="tog tb-drop-item" id="tog-aidiag"
               title="AI Diagnosis — describe your symptom, get guided analysis">&#129302; AI DIAGNOSIS</button>
@@ -7628,9 +8306,8 @@
             <button class="tog tb-drop-item" id="tog-video-refs"
               title="Video repair references for this board model">&#127910; VIDEO REFS</button>
 
-            <!-- Full-width separators for second section -->
-            <div class="tb-drop-label" style="grid-column:1">DAMAGE</div>
-            <div class="tb-drop-label">DATA &amp; LOG</div>
+            <!-- Full-width separator for data/log section -->
+            <div class="tb-drop-label" style="grid-column:1 / -1">DATA &amp; LOG</div>
 
             <button class="tog tb-drop-item" id="tog-damage"
               title="Liquid Damage Map — mark corroded, bridged, or missing components">&#128167; DAMAGE MAP</button>
@@ -7640,21 +8317,24 @@
             <button class="tog tb-drop-item" id="tog-water-score"
               title="Water Damage Severity Scoring — rate corrosion zones">&#128167; WATER SCORE</button>
             <button class="tb-drop-item" id="btn-meas-diff"
-              title="Before/After diff — compare measurements against a saved snapshot">&#9651; B/A DIFF</button>
+              title="Before/After diff — compare measurements against a saved snapshot"
+              style="color:var(--accent)">&#9651; B/A DIFF</button>
 
             <button class="tog tb-drop-item" id="tog-reball"
               title="Reballing Tracker — log BGA chip reballing workflow">&#9737; REBALLING</button>
-            <button class="tog tb-drop-item" id="tog-obd" title="OpenBoardData">&#9998; OBD DATA</button>
+            <button class="tog tb-drop-item" id="tog-obd" data-context="setup" title="OpenBoardData">&#9998; OBD DATA</button>
 
             <button class="tog tb-drop-item" id="tog-microsolder" title="Micro-soldering checklist">&#128295; MICRO-SOLDER</button>
-            <button class="tog tb-drop-item" id="tog-log" title="Repair Log">&#128221; REPAIR LOG</button>
+            <button class="tog tb-drop-item" id="tog-log" data-context="document" title="Repair Log">&#128221; REPAIR LOG</button>
 
-            <!-- Full-width bottom row -->
-            <div class="tb-drop-label" style="grid-column:1">AUTOMATION</div>
-            <div class="tb-drop-label">EXPORT</div>
+            <!-- Full-width automation/export section -->
+            <div class="tb-drop-label" style="grid-column:1 / -1">AUTOMATION</div>
 
             <button class="tog tb-drop-item" id="tog-macros"
               title="Macro Recorder - record and replay measurement sequences">&#127916; MACROS</button>
+            <button class="tog tb-drop-item" id="tog-guided-test" data-context="test"
+              title="Guided Test Mode - step-by-step repair testing wizard">⚡ GUIDED TEST</button>
+
             <button class="tb-drop-item" id="export-report-btn"
               title="Export a full HTML/PDF repair report"
               style="color:var(--accent)">&#128196; EXPORT REPORT</button>
@@ -8065,6 +8745,65 @@
               </div>
             </div>
 
+            <!-- Guided Test Mode Panel -->
+            <div id="guided-test-panel">
+              <div id="gt-hdr">
+                <span id="gt-title">⚡ GUIDED TEST</span>
+                <span id="gt-close">✕</span>
+              </div>
+              <div id="gt-body">
+                <!-- Sequence selector and controls -->
+                <div id="gt-controls">
+                  <select id="gt-sequence-select">
+                    <option value="">— Select Test Sequence —</option>
+                    <option value="power">Power Rails Check (12 steps)</option>
+                    <option value="usb">USB Port Test (8 steps)</option>
+                    <option value="charging">Charging Circuit (8 steps)</option>
+                    <option value="backlight">Backlight / Display (7 steps)</option>
+                    <option value="diode">Quick Diode Check (10 steps)</option>
+                  </select>
+                  <button id="gt-start-btn">▶ START</button>
+                  <button id="gt-stop-btn" style="display:none">⏹ STOP</button>
+                </div>
+
+                <!-- Progress indicator -->
+                <div id="gt-progress-wrap" style="display:none">
+                  <div id="gt-progress-info">
+                    <span id="gt-step-num">Step 1 of 12</span>
+                    <div id="gt-progress-bar">
+                      <div id="gt-progress-fill"></div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Step content -->
+                <div id="gt-step-content" style="display:none">
+                  <div id="gt-step-name"></div>
+                  <div id="gt-step-instruction"></div>
+                  <div id="gt-step-location"></div>
+
+                  <!-- Measurement input (shown for voltage/diode/resistance) -->
+                  <div id="gt-measurement-wrap" style="display:none">
+                    <div id="gt-expected-range"></div>
+                    <div id="gt-input-row">
+                      <input id="gt-measurement-input" type="text" placeholder="Enter reading…" autocomplete="off">
+                      <span id="gt-unit"></span>
+                    </div>
+                  </div>
+
+                  <!-- Action buttons -->
+                  <div id="gt-action-buttons">
+                    <button id="gt-pass-btn" class="gt-result-btn pass-btn">✓ PASS</button>
+                    <button id="gt-fail-btn" class="gt-result-btn fail-btn">✗ FAIL</button>
+                    <button id="gt-skip-btn" class="gt-result-btn skip-btn" style="display:none">→ SKIP</button>
+                  </div>
+                </div>
+
+                <!-- Results strip -->
+                <div id="gt-results-strip"></div>
+              </div>
+            </div>
+
             <!-- Component Library Panel -->
             <div id="complib-panel">
               <div id="complib-hdr">
@@ -8404,8 +9143,9 @@
         <div id="obd-panel">
           <div id="obd-hdr">
             <span id="obd-title">&#9998; OPENBOARDDATA</span>
+            <input id="obd-search" type="text" placeholder="Search boards..." style="background:var(--bg2);border:1px solid var(--border2);color:var(--text);font-size:9px;padding:2px 6px;border-radius:3px;width:120px;outline:none;margin:0 10px">
             <span id="obd-status">NO DATA</span>
-            <span id="obd-close">&#10005;</span>
+            <span id="obd-close" style="margin-left:10px">&#10005;</span>
           </div>
           <div id="obd-btns">
             <button class="obd-btn" id="obd-import-btn" title="Load a local .obdata file">&#128194; IMPORT
@@ -9523,6 +10263,9 @@
         document.getElementById('brd-canvas').style.display = 'none';
       }
 
+      // Bring tab content above draggable windows
+      document.querySelectorAll('.draggable-panel').forEach(p => p.style.zIndex = '10');
+
       tabRenderList();
     }
 
@@ -9903,6 +10646,49 @@
     let netAliases = new Map(); // original net → alias
     try { const _a = localStorage.getItem('boardscope_aliases'); if (_a) netAliases = new Map(JSON.parse(_a)); } catch (_) { }
 
+    // ── WORKFLOW STATE SYSTEM ──
+    // ── REPAIR PHASE TRACKER ──
+    const RepairPhase = {
+      current: 'DIAGNOSE',
+      done: new Set(),
+
+      markDone(phase) {
+        this.done.add(phase);
+        this.updateUI();
+        const phaseEl = document.getElementById(`rps-${phase.toLowerCase()}`);
+        if (phaseEl) {
+          phaseEl.classList.add('done');
+          phaseEl.classList.remove('active');
+        }
+      },
+
+      setActive(phase) {
+        this.current = phase;
+        this.updateUI();
+        document.querySelectorAll('.rp-phase').forEach(p => {
+          p.classList.remove('active');
+        });
+        const phaseEl = document.getElementById(`rps-${phase.toLowerCase()}`);
+        if (phaseEl) phaseEl.classList.add('active');
+      },
+
+      setHint(text) {
+        document.getElementById('rp-hint').textContent = text;
+      },
+
+      updateUI() {
+        // Update trace lines and phase styling
+        let foundActive = false;
+        document.querySelectorAll('.rp-phase').forEach(phase => {
+          const phaseName = phase.getAttribute('data-phase');
+          if (!foundActive && this.done.has(phaseName)) {
+            phase.classList.add('done');
+            phase.classList.remove('active');
+          }
+        });
+      }
+    };
+
     const G = {
       // PDF
       pdf: null, page: 1, scale: 1.5,
@@ -9921,6 +10707,7 @@
       pdfTarget: null,        // {page, x, y, w, h} — where to draw highlight on PDF
       searchMatches: [],
       searchIdx: 0,
+      dimmedComps: [],        // components to dim/fade out (used by guided test)
       // Net highlight state
       activeNet: null,        // net name string currently highlighted
       netComps: [],           // [{comp, pin}] — all pins on the active net
@@ -10669,6 +11456,11 @@
       setStatus(comps.length + ' PARTS  T:' + t + '  B:' + b);
       const boardMatch = fileName.match(/(\d{3}-\d{4,6})/);
       if (boardMatch) G.boardId = boardMatch[1];
+
+      // Update repair phase state
+      RepairPhase.markDone('SETUP');
+      RepairPhase.setHint('Try: Fault Tree Analysis →');
+
       loadLocalMeas();
       loadLog();
       cnLoad();
@@ -11425,7 +12217,7 @@
         const isSrch = srchSet ? srchSet.has(comp.ref) : false;
         const isTop = comp.side === 'T';
         const isOnNet = hasNet && netRefSet.has(comp.ref);
-        let isDimmed = isHidden || (hasNet && !isOnNet && !isHL);
+        let isDimmed = isHidden || (hasNet && !isOnNet && !isHL) || (G.dimmedComps && G.dimmedComps.includes(comp));
 
         // Data Recovery Mode: Dim everything not on a critical data extraction rail
         if (G.dataRecovMode && !isDimmed && !isHL && !isOnNet && !isSrch) {
@@ -11875,6 +12667,10 @@
         G.activeNet = null; G.netComps = []; G.netCentroid = null;
         document.getElementById('net-panel').style.display = 'none';
         G.highlighted = comp.ref;
+        // Auto-trace if signal chain panel is open
+        if (document.getElementById('sigchain-panel')?.classList.contains('open')) {
+          sigchainTrace();
+        }
         G.mycHops = buildMycelium(comp, 1);
         G.mycNets = new Set(G.mycHops.map(h => h.net));
         comp.pins.forEach(p => { if (p.net && !DEAD_NETS.has(p.net)) G.mycNets.add(p.net); });
@@ -13787,14 +14583,40 @@
       // Assign parsed OBD data to the global state object G
       // G is the main application state container used throughout the app
       G.obd = { netData, compData, sequences };
+
+      // Update workflow state when OBD is loaded
+      WorkflowState.odbLoaded = true;
+      WorkflowState.markStepDone('load-obd');
+      if (WorkflowState.completedPhases.has('SETUP') === false && WorkflowState.boardLoaded) {
+        WorkflowState.markPhaseCompleted('SETUP');
+        WorkflowState.setPhase('DIAGNOSE');
+      }
     }
 
     function renderOBDPanel() {
       const body = document.getElementById('obd-body');
+      if (!body) return;
       body.innerHTML = '';
-      const obd = G.obd;
-      if (!obd) return;
 
+      // If no board data is loaded, show the Board Database browser
+      if (!G.obd || (!G.obd.netData.size && !G.obd.compData.size && !G.obd.sequences.length)) {
+        const brands = [...new Set(BOARD_DB.map(b => b.brand))].sort();
+        body.innerHTML = `
+          <div style="padding:12px">
+            <div style="font-size:9px;font-weight:700;color:var(--text3);margin-bottom:10px;letter-spacing:1.5px;text-transform:uppercase">Explore Board Database</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px">
+              <button class="obd-brand-btn active" onclick="filterOBDList('', this)">ALL BRANDS</button>
+              ${brands.map(brand => `<button class="obd-brand-btn" onclick="filterOBDList('${brand}', this)">${brand.toUpperCase()}</button>`).join('')}
+            </div>
+            <div id="obd-list-results" style="display:grid;grid-template-columns:repeat(auto-fill, minmax(240px, 1fr));gap:10px">
+              ${renderOBDListItems(BOARD_DB)}
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      const obd = G.obd;
       document.getElementById('obd-status').textContent =
         `${obd.netData.size} nets · ${obd.compData.size} comps · ${obd.sequences.length} sequences`;
 
@@ -13829,6 +14651,35 @@
         body.appendChild(titleEl);
         body.appendChild(bodyEl);
       }
+    }
+
+    // ── BOARD DB HELPERS ──
+    window.filterOBDList = (brand, btn) => {
+      // Update active button
+      document.querySelectorAll('.obd-brand-btn').forEach(b => b.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+
+      const results = brand ? BOARD_DB.filter(b => b.brand === brand) : BOARD_DB;
+      const container = document.getElementById('obd-list-results');
+      if (container) container.innerHTML = renderOBDListItems(results);
+    };
+
+    function renderOBDListItems(items) {
+      if (!items.length) return '<div style="color:var(--text3);font-size:10px;padding:20px;text-align:center">No matching boards found</div>';
+      return items.map(item => `
+        <div class="obd-list-item" onclick="autoFetchOBD('${item.board}')">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">
+            <span style="font-weight:700;color:var(--accent);font-size:11px">${item.board}</span>
+            <span style="font-size:8px;padding:2px 5px;background:var(--bg3);border-radius:3px;color:var(--text3)">${item.brand}</span>
+          </div>
+          <div style="font-size:10px;color:var(--text);margin-bottom:2px">${item.model}</div>
+          <div style="font-size:9px;color:var(--text3);line-height:1.3">${item.notes || ''}</div>
+          <div style="margin-top:6px;font-size:8px;color:var(--accent);opacity:0.7;display:flex;gap:8px">
+            <span>CPU: ${item.cpu || '—'}</span>
+            <span>PMIC: ${item.pmic || '—'}</span>
+          </div>
+        </div>
+      `).join('');
     }
 
 
@@ -14719,83 +15570,139 @@
     const FAULT_TREE = [
       {
         symptom: 'No power / dead board',
+        probability: 35,
+        commonFailures: [
+          { component: 'U_PMIC (ISL/CD3215)', probability: 45 },
+          { component: 'C_BULK capacitors', probability: 25 },
+          { component: 'Q_MOSFET switches', probability: 15 },
+          { component: 'F_MAIN fuse', probability: 10 }
+        ],
         steps: [
-          { text: 'Check main battery connector voltage', nets: [], hint: 'Should be 7.2–8.7V on Li-Ion boards' },
-          { text: 'Probe main PPBUS_G3H or system bus rail', nets: ['PPBUS_G3H', 'PPBUS_S5'], hint: 'Primary input to PMIC, ~8.4V on Apple boards' },
-          { text: 'Check ISL / CD3215 / SN2400 charger IC', nets: [], hint: 'Look for VBUS, ACOK, CHGR_ACOK signals' },
-          { text: 'Verify PP3V42_G3H / standby rail', nets: ['PP3V42_G3H', 'PP3V42'], hint: 'Always-on 3.42V from PPBUS via LDO' },
-          { text: 'Check SMC / PCH power sequencing', nets: ['PM_SLP_S5_L', 'PM_SLP_S3_L'], hint: 'SLP_S5 must deassert before S3' },
-          { text: 'Probe PP5V_S5 / PP5V_S0', nets: ['PP5V_S5', 'PP5V_S0'], hint: '5V rails from PMIC' },
-          { text: 'Check PP3V3_S5 / PP3V3_S0', nets: ['PP3V3_S5', 'PP3V3_S0'], hint: '3.3V rails' },
+          { text: 'Check main battery connector voltage', nets: [], hint: 'Should be 7.2–8.7V on Li-Ion boards', components: [], risk: 'safe', tool: 'multimeter' },
+          { text: 'Probe main PPBUS_G3H or system bus rail', nets: ['PPBUS_G3H', 'PPBUS_S5'], hint: 'Primary input to PMIC, ~8.4V on Apple boards', components: ['C_BULK_IN', 'F_MAIN'], risk: 'safe', probability: 90 },
+          { text: 'Check ISL / CD3215 / SN2400 charger IC', nets: [], hint: 'Look for VBUS, ACOK, CHGR_ACOK signals', components: ['U_PMIC'], risk: 'safe', probability: 85 },
+          { text: 'Verify PP3V42_G3H / standby rail', nets: ['PP3V42_G3H', 'PP3V42'], hint: 'Always-on 3.42V from PPBUS via LDO', components: ['U_LDO_STBY'], risk: 'safe', probability: 60 },
+          { text: 'Check SMC / PCH power sequencing', nets: ['PM_SLP_S5_L', 'PM_SLP_S3_L'], hint: 'SLP_S5 must deassert before S3', components: ['U_SMC', 'U_PCH'], risk: 'expert-only', tool: 'oscilloscope', probability: 40 },
+          { text: 'Probe PP5V_S5 / PP5V_S0', nets: ['PP5V_S5', 'PP5V_S0'], hint: '5V rails from PMIC', components: ['U_PMIC_VRM5V'], risk: 'safe', probability: 75 },
+          { text: 'Check PP3V3_S5 / PP3V3_S0', nets: ['PP3V3_S5', 'PP3V3_S0'], hint: '3.3V rails', components: ['U_PMIC_VRM3V3'], risk: 'safe', probability: 70 },
         ]
       },
       {
         symptom: 'No charging',
+        probability: 28,
+        commonFailures: [
+          { component: 'U_CHG (ISL9239/CD3215)', probability: 45 },
+          { component: 'Q_CHARGE_FET', probability: 28 },
+          { component: 'C_BULK_CHG', probability: 15 },
+          { component: 'F_CHARGE fuse', probability: 10 }
+        ],
         steps: [
-          { text: 'Verify VBUS / VBUS_FS presence on USB-C port', nets: ['VBUS', 'VBUS_FS'], hint: '5–20V from charger adapter' },
-          { text: 'Check ACOK / CHGR_ACOK signal', nets: ['ACOK', 'CHGR_ACOK', 'PP_ACOK'], hint: 'Should go high when charger connected' },
-          { text: 'Probe charge FET gate (GATE_CHG, CHGR_FET)', nets: ['GATE_CHG', 'CHGR_FET'], hint: 'FET must be open for charge current to flow' },
-          { text: 'Check PPBUS voltage with charger connected', nets: ['PPBUS_G3H'], hint: 'Should be slightly above battery voltage' },
-          { text: 'Inspect charger IC (ISL9239/CD3215/BQ) outputs', nets: [], hint: 'Check for shorted coil or missing gate drive' },
-          { text: 'Verify SMBus / I2C lines to charger', nets: ['SMB_CLK', 'SMB_DAT'], hint: 'Charger IC communicates with SMC via SMBus' },
+          { text: 'Verify VBUS / VBUS_FS presence on USB-C port', nets: ['VBUS', 'VBUS_FS'], hint: '5–20V from charger adapter', components: ['USB_PORT'], risk: 'safe', tool: 'multimeter', probability: 95 },
+          { text: 'Check ACOK / CHGR_ACOK signal', nets: ['ACOK', 'CHGR_ACOK', 'PP_ACOK'], hint: 'Should go high when charger connected', components: ['U_CHG'], risk: 'safe', probability: 90 },
+          { text: 'Probe charge FET gate (GATE_CHG, CHGR_FET)', nets: ['GATE_CHG', 'CHGR_FET'], hint: 'FET must be open for charge current to flow', components: ['Q_CHARGE_FET'], risk: 'risky', probability: 85 },
+          { text: 'Check PPBUS voltage with charger connected', nets: ['PPBUS_G3H'], hint: 'Should be slightly above battery voltage', components: ['U_CHG', 'C_BULK_CHG'], risk: 'safe', probability: 80 },
+          { text: 'Inspect charger IC (ISL9239/CD3215/BQ) outputs', nets: [], hint: 'Check for shorted coil or missing gate drive', components: ['U_CHG', 'L_CHG'], risk: 'expert-only', tool: 'oscilloscope', probability: 75 },
+          { text: 'Verify SMBus / I2C lines to charger', nets: ['SMB_CLK', 'SMB_DAT'], hint: 'Charger IC communicates with SMC via SMBus', components: ['U_CHG', 'U_SMC'], risk: 'safe', probability: 60 },
         ]
       },
       {
         symptom: 'No backlight',
+        probability: 18,
+        commonFailures: [
+          { component: 'U_BKL_BOOST (LM3534)', probability: 50 },
+          { component: 'L_BKL coil', probability: 25 },
+          { component: 'Q_BKL MOSFET', probability: 15 },
+          { component: 'C_BKL capacitors', probability: 10 }
+        ],
         steps: [
-          { text: 'Check PPVOUT_SW_BL (backlight boost output)', nets: ['PPVOUT_SW_BL', 'LCD_BKL_PWR'], hint: 'Should be 20–40V boosted from PPBUS' },
-          { text: 'Verify BKL_PWM signal from GPU', nets: ['BKL_PWM', 'LCD_BKL_PWM'], hint: 'PWM duty cycle controls brightness' },
-          { text: 'Probe BKL_EN enable line', nets: ['BKL_EN', 'LCD_BKL_EN'], hint: 'Must be high for boost to run' },
-          { text: 'Check boost IC (LM3534/etc) coil continuity', nets: [], hint: 'Shorted coil = zero output voltage' },
-          { text: 'Inspect LCD connector pins for bent/dirty contacts', nets: [], hint: 'Especially BKL+ and BKL- pins' },
+          { text: 'Check PPVOUT_SW_BL (backlight boost output)', nets: ['PPVOUT_SW_BL', 'LCD_BKL_PWR'], hint: 'Should be 20–40V boosted from PPBUS', components: ['U_BKL_BOOST', 'L_BKL'], risk: 'risky', tool: 'multimeter', probability: 92 },
+          { text: 'Verify BKL_PWM signal from GPU', nets: ['BKL_PWM', 'LCD_BKL_PWM'], hint: 'PWM duty cycle controls brightness', components: ['U_GPU'], risk: 'safe', tool: 'oscilloscope', probability: 85 },
+          { text: 'Probe BKL_EN enable line', nets: ['BKL_EN', 'LCD_BKL_EN'], hint: 'Must be high for boost to run', components: ['U_BKL_BOOST'], risk: 'safe', probability: 80 },
+          { text: 'Check boost IC (LM3534/etc) coil continuity', nets: [], hint: 'Shorted coil = zero output voltage', components: ['L_BKL'], risk: 'expert-only', probability: 75 },
+          { text: 'Inspect LCD connector pins for bent/dirty contacts', nets: [], hint: 'Especially BKL+ and BKL- pins', components: ['LCD_CONN'], risk: 'safe', probability: 45 },
         ]
       },
       {
         symptom: 'No display / black screen',
+        probability: 22,
+        commonFailures: [
+          { component: 'U_GPU VRM', probability: 40 },
+          { component: 'LCD_CONN', probability: 30 },
+          { component: 'U_GPU', probability: 18 },
+          { component: 'U_LVDS_BRIDGE', probability: 12 }
+        ],
         steps: [
-          { text: 'Verify PPVCORE_GPU / GPU core voltage', nets: ['PPVCORE_GPU', 'GPU_CORE'], hint: 'Missing GPU core = black screen with power' },
-          { text: 'Check eDP / LVDS connector for damage', nets: [], hint: 'Cold joint or debris on LCD flex connector' },
-          { text: 'Probe PP3V3_MLDO / panel supply', nets: ['PP3V3_MLDO', 'LCD_VCC'], hint: '3.3V panel supply from GPU power block' },
-          { text: 'Verify VDDIO_LCD / display logic supply', nets: ['VDDIO_LCD'], hint: '1.8V or 1.2V I/O supply for panel controller' },
-          { text: 'Check for GPU activity — probe CLK lines', nets: [], hint: 'Any clock activity suggests GPU is alive' },
+          { text: 'Verify PPVCORE_GPU / GPU core voltage', nets: ['PPVCORE_GPU', 'GPU_CORE'], hint: 'Missing GPU core = black screen with power', components: ['U_GPU_VRM'], risk: 'safe', probability: 88 },
+          { text: 'Check eDP / LVDS connector for damage', nets: [], hint: 'Cold joint or debris on LCD flex connector', components: ['LCD_CONN'], risk: 'risky', probability: 82 },
+          { text: 'Probe PP3V3_MLDO / panel supply', nets: ['PP3V3_MLDO', 'LCD_VCC'], hint: '3.3V panel supply from GPU power block', components: ['U_LDO_LCD'], risk: 'safe', probability: 75 },
+          { text: 'Verify VDDIO_LCD / display logic supply', nets: ['VDDIO_LCD'], hint: '1.8V or 1.2V I/O supply for panel controller', components: ['U_LDO_VDDIO'], risk: 'safe', probability: 70 },
+          { text: 'Check for GPU activity — probe CLK lines', nets: [], hint: 'Any clock activity suggests GPU is alive', components: ['U_GPU'], risk: 'expert-only', tool: 'oscilloscope', probability: 65 },
         ]
       },
       {
         symptom: 'No audio',
+        probability: 12,
+        commonFailures: [
+          { component: 'U_AUDIO_CODEC', probability: 45 },
+          { component: 'U_SPK_AMP', probability: 35 },
+          { component: 'AUDIO_JACK', probability: 15 },
+          { component: 'L_AUDIO', probability: 5 }
+        ],
         steps: [
-          { text: 'Check AVDD / PVDD supply to audio codec', nets: ['AVDD', 'PVDD', 'PP3V3_AUDIO'], hint: 'Audio codec analog supply' },
-          { text: 'Probe I2S / MCLK lines between SoC and codec', nets: ['I2S_CLK', 'MCLK', 'AUD_MCLK'], hint: 'No clock = no audio output' },
-          { text: 'Verify speaker amplifier supply (PVDD_SPK)', nets: ['PVDD_SPK'], hint: 'Usually 5–12V boosted supply for amp' },
-          { text: 'Check headphone jack / codec switch signals', nets: ['HPDET', 'HP_DET'], hint: 'Detection pin selects speaker vs HP output' },
+          { text: 'Check AVDD / PVDD supply to audio codec', nets: ['AVDD', 'PVDD', 'PP3V3_AUDIO'], hint: 'Audio codec analog supply', components: ['U_AUDIO_CODEC', 'U_LDO_AUDIO'], risk: 'safe', probability: 85 },
+          { text: 'Probe I2S / MCLK lines between SoC and codec', nets: ['I2S_CLK', 'MCLK', 'AUD_MCLK'], hint: 'No clock = no audio output', components: ['U_SoC', 'U_AUDIO_CODEC'], risk: 'expert-only', tool: 'oscilloscope', probability: 80 },
+          { text: 'Verify speaker amplifier supply (PVDD_SPK)', nets: ['PVDD_SPK'], hint: 'Usually 5–12V boosted supply for amp', components: ['U_SPK_AMP'], risk: 'safe', probability: 75 },
+          { text: 'Check headphone jack / codec switch signals', nets: ['HPDET', 'HP_DET'], hint: 'Detection pin selects speaker vs HP output', components: ['AUDIO_JACK', 'U_AUDIO_CODEC'], risk: 'safe', probability: 60 },
         ]
       },
       {
         symptom: 'No USB / USB port dead',
+        probability: 15,
+        commonFailures: [
+          { component: 'F_USB fuse', probability: 40 },
+          { component: 'U_USB_HUB', probability: 35 },
+          { component: 'ESD_DIODES', probability: 18 },
+          { component: 'R_USB_TERM', probability: 7 }
+        ],
         steps: [
-          { text: 'Verify VBUS on USB port — check filter fuse', nets: ['VBUS', 'PP5V_USB'], hint: 'USB fuse often blows from ESD or short' },
-          { text: 'Check USB hub / retimer IC power supply', nets: [], hint: 'Retimer needs 1.0V, 1.8V, 3.3V rails' },
-          { text: 'Probe USB2 DP/DM differential pair', nets: ['USB2_DP', 'USB2_DM'], hint: 'Should show ~400mV termination voltage at idle' },
-          { text: 'Verify USB3 SuperSpeed lane signals', nets: ['USB3_TX', 'USB3_RX'], hint: 'Check for 50Ω continuity to IC' },
-          { text: 'Check SMC USB power enable signal', nets: ['PP5V_USB_EN', 'USBPWR_EN'], hint: 'SMC controls USB VBUS FET' },
+          { text: 'Verify VBUS on USB port — check filter fuse', nets: ['VBUS', 'PP5V_USB'], hint: 'USB fuse often blows from ESD or short', components: ['F_USB', 'USB_PORT'], risk: 'safe', probability: 90 },
+          { text: 'Check USB hub / retimer IC power supply', nets: [], hint: 'Retimer needs 1.0V, 1.8V, 3.3V rails', components: ['U_USB_HUB', 'U_REDRIVER'], risk: 'safe', probability: 85 },
+          { text: 'Probe USB2 DP/DM differential pair', nets: ['USB2_DP', 'USB2_DM'], hint: 'Should show ~400mV termination voltage at idle', components: ['USB_PORT', 'R_USB_TERM'], risk: 'expert-only', tool: 'oscilloscope', probability: 80 },
+          { text: 'Verify USB3 SuperSpeed lane signals', nets: ['USB3_TX', 'USB3_RX'], hint: 'Check for 50Ω continuity to IC', components: ['U_REDRIVER'], risk: 'expert-only', probability: 75 },
+          { text: 'Check SMC USB power enable signal', nets: ['PP5V_USB_EN', 'USBPWR_EN'], hint: 'SMC controls USB VBUS FET', components: ['U_SMC', 'Q_USB_FET'], risk: 'safe', probability: 70 },
         ]
       },
       {
         symptom: 'Overheating / fan always on',
+        probability: 14,
+        commonFailures: [
+          { component: 'THERMAL_DIODE', probability: 45 },
+          { component: 'NTC_THERMISTOR', probability: 30 },
+          { component: 'U_FAN_CTRL', probability: 15 },
+          { component: 'Shorted Power Rail', probability: 10 }
+        ],
         steps: [
-          { text: 'Check SMC temperature sensor readings', nets: [], hint: 'Read SMC keys via Apple diag or iStatMenus' },
-          { text: 'Probe CPU/GPU thermal diode pins', nets: [], hint: 'Open circuit on thermal diode = max fan speed' },
-          { text: 'Verify NTC thermistors on board', nets: [], hint: 'Should measure 5–50kΩ at room temp' },
-          { text: 'Check fan connector and fan PWM signal', nets: ['FAN_PWM', 'FAN_TACH'], hint: 'PWM duty directly controls fan speed' },
-          { text: 'Inspect for shorted power rail causing excess heat', nets: [], hint: 'Use thermal camera or freeze spray' },
+          { text: 'Check SMC temperature sensor readings', nets: [], hint: 'Read SMC keys via Apple diag or iStatMenus', components: ['U_SMC', 'THERMAL_SENSOR'], risk: 'safe', probability: 85 },
+          { text: 'Probe CPU/GPU thermal diode pins', nets: [], hint: 'Open circuit on thermal diode = max fan speed', components: ['THERMAL_DIODE'], risk: 'safe', probability: 88 },
+          { text: 'Verify NTC thermistors on board', nets: [], hint: 'Should measure 5–50kΩ at room temp', components: ['NTC_THERMISTOR'], risk: 'safe', probability: 80 },
+          { text: 'Check fan connector and fan PWM signal', nets: ['FAN_PWM', 'FAN_TACH'], hint: 'PWM duty directly controls fan speed', components: ['U_FAN_CTRL', 'Q_FAN'], risk: 'expert-only', tool: 'oscilloscope', probability: 75 },
+          { text: 'Inspect for shorted power rail causing excess heat', nets: [], hint: 'Use thermal camera or freeze spray', components: ['U_VRM'], risk: 'risky', probability: 60 },
         ]
       },
       {
         symptom: 'Kernel panic / random crashes',
+        probability: 9,
+        commonFailures: [
+          { component: 'U_VRM (CPU/GPU)', probability: 50 },
+          { component: 'Cold Solder Joint', probability: 30 },
+          { component: 'RAM VRM', probability: 12 },
+          { component: 'C_BULK capacitors', probability: 8 }
+        ],
         steps: [
-          { text: 'Check CPU/GPU core voltage ripple (scope)', nets: ['PPVCORE_CPU', 'PPVCORE_GPU'], hint: 'Ripple >50mVpp under load suggests VRM fault' },
-          { text: 'Verify RAM supply voltages', nets: ['PP1V35_S0', 'VDDQ'], hint: 'Unstable RAM voltage causes random panics' },
-          { text: 'Check SSD / NVMe power rail', nets: ['PP3V3_SSD', 'PPVCC_SSD'], hint: 'Unstable SSD power causes I/O panics' },
-          { text: 'Inspect cold joints on CPU/GPU with thermal camera', nets: [], hint: 'Intermittent connection = random crash pattern' },
+          { text: 'Check CPU/GPU core voltage ripple (scope)', nets: ['PPVCORE_CPU', 'PPVCORE_GPU'], hint: 'Ripple >50mVpp under load suggests VRM fault', components: ['U_VRM_CPU', 'U_VRM_GPU'], risk: 'expert-only', tool: 'oscilloscope', probability: 92 },
+          { text: 'Verify RAM supply voltages', nets: ['PP1V35_S0', 'VDDQ'], hint: 'Unstable RAM voltage causes random panics', components: ['U_RAM_VRM'], risk: 'safe', tool: 'multimeter', probability: 85 },
+          { text: 'Check SSD / NVMe power rail', nets: ['PP3V3_SSD', 'PPVCC_SSD'], hint: 'Unstable SSD power causes I/O panics', components: ['U_SSD_VRM'], risk: 'safe', probability: 75 },
+          { text: 'Inspect cold joints on CPU/GPU with thermal camera', nets: [], hint: 'Intermittent connection = random crash pattern', components: ['U_CPU', 'U_GPU', 'U_RAM'], risk: 'risky', probability: 80 },
         ]
       },
     ];
@@ -14815,6 +15722,27 @@
       faultOpenIdx = -1;
     }
 
+    async function _faultAI(symptom, container) {
+      try {
+        const result = await aiChat(
+          [{ role: 'user', content: `Board repair symptom: "${symptom}"\n\nGive 4-6 specific diagnostic steps for a repair technician doing board-level repair. For each step: what to probe, expected voltage/signal, and what a bad reading means. Be specific.` }],
+          'You are an expert electronics repair technician specializing in laptop and smartphone board-level repair. Give concise, actionable diagnostic steps.',
+          { max_tokens: 1200 }
+        );
+        const text = typeof result === 'string' ? result
+          : result?.content?.[0]?.text
+          || result?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        if (!text) throw new Error('empty');
+        container.innerHTML = `
+          <div style="padding:10px 14px">
+            <div style="font-size:9px;color:var(--accent);letter-spacing:.1em;margin-bottom:8px;border-bottom:1px solid var(--border);padding-bottom:6px">&#129302; AI DIAGNOSIS — "${symptom}"</div>
+            <div style="font-size:11px;color:var(--text);line-height:1.7;white-space:pre-wrap">${text}</div>
+          </div>`;
+      } catch(e) {
+        container.innerHTML = '<div style="padding:14px;color:var(--text3);font-size:10px">AI unavailable — configure AI in Settings</div>';
+      }
+    }
+
     function faultRender(filter) {
       const body = document.getElementById('fault-body');
       body.innerHTML = '';
@@ -14825,7 +15753,8 @@
         : FAULT_TREE;
 
       if (!matches.length) {
-        body.innerHTML = '<div style="padding:14px;text-align:center;color:var(--text3);font-size:10px">NO MATCHING SYMPTOMS</div>';
+        body.innerHTML = '<div style="padding:14px;text-align:center;color:var(--text3);font-size:10px">No exact match — asking AI...</div>';
+        _faultAI(q, body);
         return;
       }
 
@@ -16523,8 +17452,11 @@ ${logHtml ? `<h2>REPAIR LOG</h2><ul>${logHtml}</ul>` : ''}
     function sigchainOpen() {
       document.getElementById('sigchain-panel').classList.add('open');
       document.getElementById('tog-sigchain').classList.add('on');
-      // Pre-fill with highlighted component
-      if (G.highlighted) document.getElementById('sigchain-ref').value = G.highlighted;
+      // Pre-fill with highlighted component and auto-trace
+      if (G.highlighted) {
+        document.getElementById('sigchain-ref').value = G.highlighted;
+        sigchainTrace();
+      }
     }
     function sigchainClose() {
       document.getElementById('sigchain-panel').classList.remove('open');
@@ -19699,6 +20631,59 @@ Rules: 6-10 rails in power-on order. "net" is the exact schematic net name. "tol
       saveSettings(); applySettingsToUI(); drawBRD();
     });
 
+    /* ── AI HELPER FUNCTION ── */
+    // Call Gemini or OpenRouter API directly from the frontend
+    async function aiChat(messages, system, opts = {}) {
+      const provider = document.getElementById('sp-ai-provider')?.value || localStorage.getItem('bs_ai_provider') || 'openrouter';
+      const apiKey = document.getElementById('sp-ai-key')?.value || localStorage.getItem('bs_ai_key');
+      const model = document.getElementById('sp-ai-model')?.value || localStorage.getItem('bs_ai_model') ||
+        (provider === 'google' ? 'gemini-2.0-flash' : 'qwen/qwen-2.5-72b-instruct');
+
+      if (!apiKey) {
+        return { error: { type: 'no_api_key', message: 'No API key configured' } };
+      }
+
+      try {
+        if (provider === 'google') {
+          // Gemini API
+          const body = {
+            contents: [{ parts: messages.map(m => ({ text: m.content })) }],
+            systemInstruction: { parts: [{ text: system }] },
+            generationConfig: { maxOutputTokens: opts.max_tokens || 1024 }
+          };
+          const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+          });
+          const data = await resp.json();
+          if (data.error) return { error: data.error };
+          const content = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+          return { content };
+        } else {
+          // OpenRouter (OpenAI-compatible)
+          const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${apiKey}`
+            },
+            body: JSON.stringify({
+              model: model,
+              messages: [{ role: 'system', content: system }, ...messages],
+              max_tokens: opts.max_tokens || 1024
+            })
+          });
+          const data = await resp.json();
+          if (data.error) return { error: data.error };
+          const content = data.choices?.[0]?.message?.content || '';
+          return { content };
+        }
+      } catch (e) {
+        return { error: { message: e.message } };
+      }
+    }
+
     /* ── MULTIMETER TOGGLE ── */
     const spShowMeter = document.getElementById('sp-show-meter');
     spShowMeter.addEventListener('change', () => {
@@ -19772,28 +20757,18 @@ Rules: 6-10 rails in power-on order. "net" is the exact schematic net name. "tol
       aiStatus.textContent = 'Saving…';
       aiStatus.style.color = 'var(--text3)';
       try {
-        const resp = await fetch('/ai-setup', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            provider: aiProvider.value === 'ollama_local' ? 'openai_compat' : aiProvider.value,
-            key: key,
-            model: aiModel.value.trim(),
-            base_url: aiBaseUrl.value.trim(),
-          })
-        });
-        const data = await resp.json();
-        if (data.success) {
-          aiStatus.textContent = `✓ Saved — ${aiProvider.value}${aiModel.value ? ' / ' + aiModel.value : ''}`;
-          aiStatus.style.color = 'var(--accent)';
-          aiKey.value = '';
-          aiKey.placeholder = '✓ API key saved — enter new key to change';
-        } else {
-          aiStatus.textContent = '✗ Error: ' + (data.error || 'Failed to save');
-          aiStatus.style.color = 'var(--red)';
-        }
+        // Save to localStorage instead of calling server
+        localStorage.setItem('bs_ai_provider', aiProvider.value);
+        localStorage.setItem('bs_ai_key', key);
+        localStorage.setItem('bs_ai_model', aiModel.value.trim());
+        localStorage.setItem('bs_ai_baseurl', aiBaseUrl.value.trim());
+
+        aiStatus.textContent = `✓ Saved — ${aiProvider.value}${aiModel.value ? ' / ' + aiModel.value : ''}`;
+        aiStatus.style.color = 'var(--accent)';
+        aiKey.value = '';
+        aiKey.placeholder = '✓ API key saved — enter new key to change';
       } catch (e) {
-        aiStatus.textContent = '✗ Could not reach server: ' + e.message;
+        aiStatus.textContent = '✗ Error: ' + e.message;
         aiStatus.style.color = 'var(--red)';
       }
     });
@@ -19803,16 +20778,11 @@ Rules: 6-10 rails in power-on order. "net" is the exact schematic net name. "tol
       aiStatus.textContent = 'Testing connection…';
       aiStatus.style.color = 'var(--text3)';
       try {
-        const resp = await fetch('/ai', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            max_tokens: 16,
-            system: 'Reply with exactly: OK',
-            messages: [{ role: 'user', content: 'ping' }],
-          })
-        });
-        const data = await resp.json();
+        const data = await aiChat(
+          [{ role: 'user', content: 'ping' }],
+          'Reply with exactly: OK',
+          { max_tokens: 16 }
+        );
         if (data.error) {
           const msg = data.error.type === 'no_api_key'
             ? '✗ No API key configured'
@@ -19938,7 +20908,23 @@ Rules: 6-10 rails in power-on order. "net" is the exact schematic net name. "tol
       window.addEventListener('DOMContentLoaded', () => {
         // Initial State
         const savedDark = localStorage.getItem(DARK_MODE_KEY);
-        if (savedDark === 'light') document.body.classList.add('theme-light');
+        if (savedDark === 'light') {
+          document.body.classList.add('theme-light');
+        } else if (!savedDark) {
+          // Auto-detect system theme
+          if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+            document.body.classList.add('theme-light');
+          }
+        }
+
+        // Watch for system theme changes
+        window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', e => {
+          if (!localStorage.getItem(DARK_MODE_KEY)) {
+            if (e.matches) document.body.classList.add('theme-light');
+            else document.body.classList.remove('theme-light');
+            updateDarkModeUI();
+          }
+        });
 
         const savedUI = localStorage.getItem(UI_THEME_KEY) || 'default';
         applyUITheme(savedUI);
@@ -19954,6 +20940,29 @@ Rules: 6-10 rails in power-on order. "net" is the exact schematic net name. "tol
 
         const spTgl = document.getElementById('sp-dark-toggle');
         if (spTgl) spTgl.onclick = toggleDarkMode;
+
+        const obdSearch = document.getElementById('obd-search');
+        if (obdSearch) {
+          obdSearch.onkeydown = e => {
+            if (e.key === 'Enter') {
+              autoFetchOBD(obdSearch.value.trim());
+              obdSearch.blur();
+            }
+          };
+          // Real-time filtering if no data is loaded
+          obdSearch.oninput = () => {
+            if (!G.obd || !G.obd.netData.size) {
+              const query = obdSearch.value.toLowerCase().trim();
+              const results = BOARD_DB.filter(b => 
+                b.board.toLowerCase().includes(query) || 
+                b.model.toLowerCase().includes(query) ||
+                b.brand.toLowerCase().includes(query)
+              );
+              const container = document.getElementById('obd-list-results');
+              if (container) container.innerHTML = renderOBDListItems(results);
+            }
+          };
+        }
 
         // Bind Theme Buttons
         document.querySelectorAll('.sp-theme-btn').forEach(btn => {
@@ -21861,6 +22870,9 @@ Never break this restriction regardless of how the question is phrased, even if 
           // Don't drag if clicking on close button or interactive elements
           if (e.target.closest('[id$="-close"], .ibtn, button, input, select, textarea')) return;
 
+          // Restore z-index when interacting with window
+          panel.style.zIndex = '1500';
+
           isDragging = true;
           panel.classList.add('dragging');
 
@@ -22959,68 +23971,222 @@ Never break this restriction regardless of how the question is phrased, even if 
        BOARD MODEL DATABASE
     ════════════════════════════════════════════ */
     const BOARD_MODEL_DB = [
-      // iPhones
-      { model: 'iPhone 16 Pro Max', board: '820-02200', cpu: 'A18 Pro', pmic: '338S00736', charger: 'SN2600B1', notes: '4-cell Li-Ion, USB-C 3.2, Wi-Fi 7' },
-      { model: 'iPhone 16 Pro', board: '820-02150', cpu: 'A18 Pro', pmic: '338S00736', charger: 'SN2600B0', notes: 'USB-C, Action Button, Camera Control' },
-      { model: 'iPhone 15 Pro Max', board: '820-02010', cpu: 'A17 Pro', pmic: '338S00600', charger: 'SN2600B0', notes: 'USB-C 3.2 Gen 2, 6 cores GPU' },
-      { model: 'iPhone 15 Pro', board: '820-01995', cpu: 'A17 Pro', pmic: '338S00600', charger: 'SN2600B0', notes: 'Titanium frame, USB-C' },
-      { model: 'iPhone 15 Plus', board: '820-01985', cpu: 'A16', pmic: '338S00500', charger: 'SN2400B1', notes: 'Dynamic Island, USB-C' },
-      { model: 'iPhone 15', board: '820-01970', cpu: 'A16', pmic: '338S00500', charger: 'SN2400B1', notes: 'First standard iPhone with USB-C' },
-      { model: 'iPhone 14 Pro Max', board: '820-01900', cpu: 'A15', pmic: '338S00480', charger: 'SN2400B0', notes: '48MP triple cam, Always-On display' },
-      { model: 'iPhone 14 Pro', board: '820-01880', cpu: 'A15', pmic: '338S00480', charger: 'SN2400B0', notes: 'Dynamic Island debut' },
-      { model: 'iPhone 14 Plus', board: '820-01860', cpu: 'A15', pmic: '338S00460', charger: 'SN2400B0', notes: '6.7" Max-sized non-Pro' },
-      { model: 'iPhone 14', board: '820-01840', cpu: 'A15', pmic: '338S00460', charger: 'SN2400B0', notes: 'Crash Detection, Emergency SOS via satellite' },
-      { model: 'iPhone 13 Pro Max', board: '820-01770', cpu: 'A15', pmic: '338S00420', charger: 'SN2400B0', notes: 'ProMotion 120Hz, 1TB option' },
-      { model: 'iPhone 13 Pro', board: '820-01750', cpu: 'A15', pmic: '338S00420', charger: 'SN2400B0', notes: 'Macro photography' },
-      { model: 'iPhone 13', board: '820-01730', cpu: 'A15', pmic: '338S00400', charger: 'SN2400B0', notes: 'Notch reduced, sensor-shift OIS' },
-      { model: 'iPhone 12 Pro Max', board: '820-01553', cpu: 'A14', pmic: '338S00384', charger: 'SN2400B0', notes: '5G mmWave (US), LiDAR' },
-      { model: 'iPhone 12 Pro', board: '820-01547', cpu: 'A14', pmic: '338S00384', charger: 'SN2400B0', notes: '5G, first iPhone with ProRAW' },
-      { model: 'iPhone 12', board: '820-01538', cpu: 'A14', pmic: '338S00350', charger: 'SN2400B0', notes: 'MagSafe introduced' },
-      { model: 'iPhone 11 Pro Max', board: '820-01443', cpu: 'A13', pmic: '338S00306', charger: 'SN2400B0', notes: 'Triple cam, iOS 13' },
-      { model: 'iPhone 11 Pro', board: '820-01437', cpu: 'A13', pmic: '338S00306', charger: 'SN2400B0', notes: 'Frosted glass back, triple cam' },
-      { model: 'iPhone 11', board: '820-01398', cpu: 'A13', pmic: '338S00306', charger: 'SN2400B0', notes: 'Dual camera, Night Mode' },
-      { model: 'iPhone XS Max', board: '820-01250', cpu: 'A12', pmic: '338S00275', charger: 'SN2400B0', notes: '6.5" OLED, Face ID gen2' },
-      { model: 'iPhone XS', board: '820-01245', cpu: 'A12', pmic: '338S00275', charger: 'SN2400B0', notes: 'First 7nm Apple chip (A12)' },
-      { model: 'iPhone XR', board: '820-01230', cpu: 'A12', pmic: '338S00275', charger: 'SN2400B0', notes: 'LCD Liquid Retina, Face ID' },
-      { model: 'iPhone X', board: '820-01104', cpu: 'A11', pmic: '338S00248', charger: 'SN2400B0', notes: 'Face ID debut, no home button' },
-      { model: 'iPhone 8 Plus', board: '820-00863', cpu: 'A11', pmic: '338S00220', charger: 'SN2400B0', notes: 'Wireless charging, glass back' },
-      { model: 'iPhone 8', board: '820-00860', cpu: 'A11', pmic: '338S00220', charger: 'SN2400B0', notes: 'True Tone, MFi Lightning' },
-      { model: 'iPhone 7 Plus', board: '820-00655', cpu: 'A10', pmic: '338S00178', charger: 'ISL9240', notes: 'Dual camera, no 3.5mm jack' },
-      { model: 'iPhone 7', board: '820-00645', cpu: 'A10', pmic: '338S00178', charger: 'ISL9240', notes: 'Haptic home button, IP67' },
-      // MacBook boards
-      { model: 'MacBook Pro 14" M3 Pro', board: '820-02600', cpu: 'M3 Pro', pmic: '—', charger: 'SN2600B1', notes: 'USB-C 140W, MagSafe 3, HDMI 2.1' },
-      { model: 'MacBook Pro 16" M3 Max', board: '820-02610', cpu: 'M3 Max', pmic: '—', charger: 'SN2600B1', notes: '16-core CPU, 40-core GPU, up to 128GB' },
-      { model: 'MacBook Air 15" M2', board: '820-02200', cpu: 'M2', pmic: '—', charger: 'SN2400B1', notes: 'No fan, 35W dual USB-C' },
-      { model: 'MacBook Air 13" M2', board: '820-02050', cpu: 'M2', pmic: '—', charger: 'SN2400B1', notes: 'Redesigned chassis, MagSafe 2' },
-      { model: 'MacBook Pro 14/16" M1', board: '820-01987', cpu: 'M1 Pro/Max', pmic: '—', charger: 'SN2400B0', notes: 'Mini-LED ProMotion, SD slot' },
-      { model: 'MacBook Air M1', board: '820-01739', cpu: 'M1', pmic: '—', charger: 'SN2400B0', notes: 'Fanless, 18hr battery' },
-      { model: 'MacBook Pro 13" 2020', board: '820-01814', cpu: 'Intel i5/i7', pmic: '—', charger: 'CD3215C00', notes: 'Touch Bar, Scissor keyboard' },
-      { model: 'MacBook Pro 16" 2019', board: '820-01700', cpu: 'Intel i7/i9', pmic: '—', charger: 'CD3215C00', notes: 'AMD GPU, Magic Keyboard' },
-      { model: 'MacBook Pro 15" 2019', board: '820-01612', cpu: 'Intel i7/i9', pmic: '—', charger: 'CD3215C00', notes: 'Touch Bar, 4x TB3' },
-      { model: 'MacBook Pro 13" 2018', board: '820-01451', cpu: 'Intel i5/i7', pmic: '—', charger: 'CD3215B00', notes: 'TB3 x4, 8th gen Intel' },
-      { model: 'MacBook Pro 15" 2018', board: '820-00928', cpu: 'Intel i7/i9', pmic: '—', charger: 'CD3215B00', notes: 'True Tone, Radeon 555X' },
-      { model: 'MacBook Pro 13" 2017', board: '820-00923', cpu: 'Intel i5/i7', pmic: '—', charger: 'TPS65988', notes: 'TB3 x2 (Kaby Lake)' },
-      { model: 'MacBook Pro 15" 2017', board: '820-00281', cpu: 'Intel i7/i9', pmic: '—', charger: 'TPS65988', notes: 'Radeon Pro 555/560' },
-      { model: 'MacBook Air 2020 Intel', board: '820-02002', cpu: 'Intel i3/i5/i7', pmic: '—', charger: 'TPS65988', notes: 'Retina, Touch ID, TB3 x2' },
-      { model: 'MacBook 12" 2017', board: '820-00244', cpu: 'Intel Core m3', pmic: '—', charger: 'TPS65987', notes: 'Single USB-C, fanless' },
-      { model: 'MacBook Pro 13" 2015', board: '820-4924', cpu: 'Intel i5/i7', pmic: '—', charger: 'ISL9240', notes: 'Force Touch trackpad debut' },
-      { model: 'MacBook Pro 15" 2015', board: '820-4924', cpu: 'Intel i7', pmic: '—', charger: 'ISL9240', notes: 'Retina, AMD R9 M370X' },
-      { model: 'MacBook Pro 13" 2014', board: '820-3476', cpu: 'Intel i5', pmic: '—', charger: 'ISL9240', notes: 'Retina, no SD, PCIe SSD' },
-      { model: 'MacBook Pro 15" 2014', board: '820-3787', cpu: 'Intel i7', pmic: '—', charger: 'ISL9240', notes: 'GT 750M, 16GB RAM max' },
-      { model: 'MacBook Pro 13" 2013', board: '820-3476', cpu: 'Intel i5/i7', pmic: '—', charger: 'ISL9240', notes: '802.11ac, dual TB2' },
-      { model: 'MacBook Pro 15" 2013', board: '820-3662', cpu: 'Intel i7', pmic: '—', charger: 'ISL9240', notes: 'Iris Pro, GT 750M' },
-      { model: 'MacBook Pro 13" 2012 Retina', board: '820-3462', cpu: 'Intel i5/i7', pmic: '—', charger: 'ISL6259', notes: 'First Retina MacBook Pro 13"' },
-      { model: 'MacBook Pro 15" 2012 Retina', board: '820-3332', cpu: 'Intel i7', pmic: '—', charger: 'ISL6259', notes: 'GT 650M, no ODD' },
-      { model: 'MacBook Pro 13" Unibody 2012', board: '820-3115', cpu: 'Intel i5/i7', pmic: '—', charger: 'ISL6259', notes: 'Last MBP with ODD and non-Retina' },
-      { model: 'MacBook Pro 15" Unibody 2011', board: '820-2915', cpu: 'Intel i7', pmic: '—', charger: 'ISL6259', notes: 'AMD 6490M/6750M — GPU failure common' },
-      { model: 'MacBook Air 13" 2015', board: '820-00165', cpu: 'Intel i5/i7', pmic: '—', charger: 'ISL9240', notes: '1.6GHz BGA, Broadwell' },
-      { model: 'MacBook Air 13" 2013/14', board: '820-3437', cpu: 'Intel i5/i7', pmic: '—', charger: 'ISL6259', notes: '802.11ac, TB1, 12hr battery' },
-      // iPad
-      { model: 'iPad Pro 12.9" M4', board: '820-02700', cpu: 'M4', pmic: '—', charger: 'SN2600B1', notes: 'OLED Tandem, Ultra Retina XDR' },
-      { model: 'iPad Pro 11" M4', board: '820-02690', cpu: 'M4', pmic: '—', charger: 'SN2600B1', notes: 'World\'s thinnest Apple product' },
-      { model: 'iPad Pro 12.9" M2', board: '820-02100', cpu: 'M2', pmic: '—', charger: 'SN2400B1', notes: 'Wi-Fi 6E, Apple Pencil hover' },
-      { model: 'iPad Air M2', board: '820-02080', cpu: 'M2', pmic: '—', charger: 'SN2400B1', notes: '11" and 13", landscape TrueDepth' },
-      { model: 'iPad mini 6', board: '820-01872', cpu: 'A15', pmic: '—', charger: 'SN2400B0', notes: 'USB-C, Touch ID on power button' },
+      // ── APPLE iPHONE ─────────────────────────────────────────────────
+      { brand:'Apple', model:'iPhone 16 Pro Max', board:'820-02200', cpu:'A18 Pro', pmic:'338S00736', charger:'SN2600B1', notes:'4-cell Li-Ion, USB-C 3.2, Wi-Fi 7' },
+      { brand:'Apple', model:'iPhone 16 Pro', board:'820-02150', cpu:'A18 Pro', pmic:'338S00736', charger:'SN2600B0', notes:'USB-C, Action Button, Camera Control' },
+      { brand:'Apple', model:'iPhone 16 Plus', board:'820-02130', cpu:'A18', pmic:'338S00700', charger:'SN2600B0', notes:'USB-C, 6.7" Super Retina' },
+      { brand:'Apple', model:'iPhone 16', board:'820-02120', cpu:'A18', pmic:'338S00700', charger:'SN2600B0', notes:'Camera Control button' },
+      { brand:'Asus', model:'ROG Strix G15', board:'G513QY', cpu:'Ryzen 9 5900HX', pmic:'MAX77812', charger:'BQ24780S', notes:'Liquid metal TIM, dual fan' },
+      { brand:'Dell', model:'XPS 15 9500', board:'LA-J191P', cpu:'i7-10750H', pmic:'TPS65083', charger:'ISL95857', notes:'USB-C charging only' },
+      { brand:'Samsung', model:'Galaxy S24 Ultra', board:'SM-S928B', cpu:'Snapdragon 8 Gen 3', pmic:'PM8550', charger:'MAX77705', notes:'Titanium frame, 5000mAh' },
+      { brand:'Lenovo', model:'ThinkPad X1 Carbon Gen 9', board:'HT4B0/HT5B0', cpu:'i7-1165G7', pmic:'TPS65988', charger:'ISL9241', notes:'Dual Thunderbolt 4' },
+      { brand:'Apple', model:'iPhone 15 Pro Max', board:'820-02010', cpu:'A17 Pro', pmic:'338S00600', charger:'SN2600B0', notes:'USB-C 3.2 Gen 2, 6 cores GPU' },
+      { brand:'Apple', model:'iPhone 15 Pro', board:'820-01995', cpu:'A17 Pro', pmic:'338S00600', charger:'SN2600B0', notes:'Titanium frame, USB-C' },
+      { brand:'Apple', model:'iPhone 15 Plus', board:'820-01985', cpu:'A16', pmic:'338S00500', charger:'SN2400B1', notes:'Dynamic Island, USB-C' },
+      { brand:'Apple', model:'iPhone 15', board:'820-01970', cpu:'A16', pmic:'338S00500', charger:'SN2400B1', notes:'First standard iPhone with USB-C' },
+      { brand:'Apple', model:'iPhone 14 Pro Max', board:'820-01900', cpu:'A15', pmic:'338S00480', charger:'SN2400B0', notes:'48MP triple cam, Always-On display' },
+      { brand:'Apple', model:'iPhone 14 Pro', board:'820-01880', cpu:'A15', pmic:'338S00480', charger:'SN2400B0', notes:'Dynamic Island debut' },
+      { brand:'Apple', model:'iPhone 14 Plus', board:'820-01860', cpu:'A15', pmic:'338S00460', charger:'SN2400B0', notes:'6.7" Max-sized non-Pro' },
+      { brand:'Apple', model:'iPhone 14', board:'820-01840', cpu:'A15', pmic:'338S00460', charger:'SN2400B0', notes:'Crash Detection, Emergency SOS' },
+      { brand:'Apple', model:'iPhone 13 Pro Max', board:'820-01770', cpu:'A15', pmic:'338S00420', charger:'SN2400B0', notes:'ProMotion 120Hz, 1TB option' },
+      { brand:'Apple', model:'iPhone 13 Pro', board:'820-01750', cpu:'A15', pmic:'338S00420', charger:'SN2400B0', notes:'Macro photography' },
+      { brand:'Apple', model:'iPhone 13', board:'820-01730', cpu:'A15', pmic:'338S00400', charger:'SN2400B0', notes:'Notch reduced, sensor-shift OIS' },
+      { brand:'Apple', model:'iPhone 13 mini', board:'820-01710', cpu:'A15', pmic:'338S00400', charger:'SN2400B0', notes:'5.4" compact, last mini' },
+      { brand:'Apple', model:'iPhone 12 Pro Max', board:'820-01553', cpu:'A14', pmic:'338S00384', charger:'SN2400B0', notes:'5G mmWave (US), LiDAR' },
+      { brand:'Apple', model:'iPhone 12 Pro', board:'820-01547', cpu:'A14', pmic:'338S00384', charger:'SN2400B0', notes:'5G, first iPhone with ProRAW' },
+      { brand:'Apple', model:'iPhone 12', board:'820-01538', cpu:'A14', pmic:'338S00350', charger:'SN2400B0', notes:'MagSafe introduced' },
+      { brand:'Apple', model:'iPhone 12 mini', board:'820-01519', cpu:'A14', pmic:'338S00350', charger:'SN2400B0', notes:'5G, smallest 5G iPhone' },
+      { brand:'Apple', model:'iPhone SE (3rd gen)', board:'820-01530', cpu:'A15', pmic:'338S00400', charger:'SN2400B0', notes:'5G, Touch ID, iPhone 8 form' },
+      { brand:'Apple', model:'iPhone 11 Pro Max', board:'820-01443', cpu:'A13', pmic:'338S00306', charger:'SN2400B0', notes:'Triple cam, iOS 13' },
+      { brand:'Apple', model:'iPhone 11 Pro', board:'820-01437', cpu:'A13', pmic:'338S00306', charger:'SN2400B0', notes:'Frosted glass back, triple cam' },
+      { brand:'Apple', model:'iPhone 11', board:'820-01398', cpu:'A13', pmic:'338S00306', charger:'SN2400B0', notes:'Dual camera, Night Mode' },
+      { brand:'Apple', model:'iPhone XS Max', board:'820-01250', cpu:'A12', pmic:'338S00275', charger:'SN2400B0', notes:'6.5" OLED, Face ID gen2' },
+      { brand:'Apple', model:'iPhone XS', board:'820-01245', cpu:'A12', pmic:'338S00275', charger:'SN2400B0', notes:'First 7nm Apple chip (A12)' },
+      { brand:'Apple', model:'iPhone XR', board:'820-01230', cpu:'A12', pmic:'338S00275', charger:'SN2400B0', notes:'LCD Liquid Retina, Face ID' },
+      { brand:'Apple', model:'iPhone X', board:'820-01104', cpu:'A11', pmic:'338S00248', charger:'SN2400B0', notes:'Face ID debut, no home button' },
+      { brand:'Apple', model:'iPhone SE (2nd gen)', board:'820-01105', cpu:'A13', pmic:'338S00306', charger:'SN2400B0', notes:'iPhone 8 chassis, A13 chip' },
+      { brand:'Apple', model:'iPhone 8 Plus', board:'820-00863', cpu:'A11', pmic:'338S00220', charger:'SN2400B0', notes:'Wireless charging, glass back' },
+      { brand:'Apple', model:'iPhone 8', board:'820-00860', cpu:'A11', pmic:'338S00220', charger:'SN2400B0', notes:'True Tone, MFi Lightning' },
+      { brand:'Apple', model:'iPhone 7 Plus', board:'820-00655', cpu:'A10', pmic:'338S00178', charger:'ISL9240', notes:'Dual camera, no 3.5mm jack' },
+      { brand:'Apple', model:'iPhone 7', board:'820-00645', cpu:'A10', pmic:'338S00178', charger:'ISL9240', notes:'Haptic home button, IP67' },
+      { brand:'Apple', model:'iPhone 6s Plus', board:'820-00327', cpu:'A9', pmic:'338S00123', charger:'ISL9240', notes:'3D Touch, 12MP camera' },
+      { brand:'Apple', model:'iPhone 6s', board:'820-00226', cpu:'A9', pmic:'338S00123', charger:'ISL9240', notes:'3D Touch, 64-bit A9' },
+      { brand:'Apple', model:'iPhone 6 Plus', board:'820-3593', cpu:'A8', pmic:'338S1251', charger:'ISL6259', notes:'Touch Disease common issue' },
+      { brand:'Apple', model:'iPhone 6', board:'820-3483', cpu:'A8', pmic:'338S1251', charger:'ISL6259', notes:'Bendgate, Touch IC issues' },
+      // ── APPLE MacBook ─────────────────────────────────────────────────
+      { brand:'Apple', model:'MacBook Pro 14" M4 Pro', board:'820-02750', cpu:'M4 Pro', pmic:'—', charger:'SN2600B1', notes:'12-core CPU, USB-C 140W, HDMI 2.1' },
+      { brand:'Apple', model:'MacBook Pro 16" M4 Max', board:'820-02760', cpu:'M4 Max', pmic:'—', charger:'SN2600B1', notes:'16-core CPU, 40-core GPU, up to 128GB' },
+      { brand:'Apple', model:'MacBook Air 13" M3', board:'820-02650', cpu:'M3', pmic:'—', charger:'SN2600B0', notes:'Wi-Fi 6E, MagSafe 3, up to 24GB' },
+      { brand:'Apple', model:'MacBook Air 15" M3', board:'820-02660', cpu:'M3', pmic:'—', charger:'SN2600B0', notes:'15.3" Liquid Retina, MagSafe 3' },
+      { brand:'Apple', model:'MacBook Pro 14" M3 Pro', board:'820-02600', cpu:'M3 Pro', pmic:'—', charger:'SN2600B1', notes:'USB-C 140W, MagSafe 3, HDMI 2.1' },
+      { brand:'Apple', model:'MacBook Pro 16" M3 Max', board:'820-02610', cpu:'M3 Max', pmic:'—', charger:'SN2600B1', notes:'16-core CPU, 40-core GPU, up to 128GB' },
+      { brand:'Apple', model:'MacBook Air 15" M2', board:'820-02200', cpu:'M2', pmic:'—', charger:'SN2400B1', notes:'No fan, 35W dual USB-C' },
+      { brand:'Apple', model:'MacBook Air 13" M2', board:'820-02050', cpu:'M2', pmic:'—', charger:'SN2400B1', notes:'Redesigned chassis, MagSafe 2' },
+      { brand:'Apple', model:'MacBook Pro 14/16" M1', board:'820-01987', cpu:'M1 Pro/Max', pmic:'—', charger:'SN2400B0', notes:'Mini-LED ProMotion, SD slot' },
+      { brand:'Apple', model:'MacBook Air M1', board:'820-01739', cpu:'M1', pmic:'—', charger:'SN2400B0', notes:'Fanless, 18hr battery' },
+      { brand:'Apple', model:'MacBook Pro 13" 2020', board:'820-01814', cpu:'Intel i5/i7', pmic:'—', charger:'CD3215C00', notes:'Touch Bar, Scissor keyboard' },
+      { brand:'Apple', model:'MacBook Pro 16" 2019', board:'820-01700', cpu:'Intel i7/i9', pmic:'—', charger:'CD3215C00', notes:'AMD GPU, Magic Keyboard' },
+      { brand:'Apple', model:'MacBook Pro 15" 2019', board:'820-01612', cpu:'Intel i7/i9', pmic:'—', charger:'CD3215C00', notes:'Touch Bar, 4x TB3' },
+      { brand:'Apple', model:'MacBook Pro 13" 2018', board:'820-01451', cpu:'Intel i5/i7', pmic:'—', charger:'CD3215B00', notes:'TB3 x4, 8th gen Intel' },
+      { brand:'Apple', model:'MacBook Pro 15" 2018', board:'820-00928', cpu:'Intel i7/i9', pmic:'—', charger:'CD3215B00', notes:'True Tone, Radeon 555X' },
+      { brand:'Apple', model:'MacBook Pro 13" 2017', board:'820-00923', cpu:'Intel i5/i7', pmic:'—', charger:'TPS65988', notes:'TB3 x2, Kaby Lake' },
+      { brand:'Apple', model:'MacBook Pro 15" 2017', board:'820-00281', cpu:'Intel i7/i9', pmic:'—', charger:'TPS65988', notes:'Radeon Pro 555/560' },
+      { brand:'Apple', model:'MacBook Air 2020 Intel', board:'820-02002', cpu:'Intel i3/i5/i7', pmic:'—', charger:'TPS65988', notes:'Retina, Touch ID, TB3 x2' },
+      { brand:'Apple', model:'MacBook Pro 13" 2016', board:'820-00239', cpu:'Intel i5/i7', pmic:'—', charger:'TPS65988', notes:'First Touch Bar, TB3 only ports' },
+      { brand:'Apple', model:'MacBook Pro 13" 2015', board:'820-4924', cpu:'Intel i5/i7', pmic:'—', charger:'ISL9240', notes:'Force Touch trackpad debut' },
+      { brand:'Apple', model:'MacBook Pro 15" 2015', board:'820-4924', cpu:'Intel i7', pmic:'—', charger:'ISL9240', notes:'Retina, AMD R9 M370X' },
+      { brand:'Apple', model:'MacBook Pro 13" 2014', board:'820-3476', cpu:'Intel i5', pmic:'—', charger:'ISL9240', notes:'Retina, no SD, PCIe SSD' },
+      { brand:'Apple', model:'MacBook Pro 15" 2014', board:'820-3787', cpu:'Intel i7', pmic:'—', charger:'ISL9240', notes:'GT 750M, 16GB RAM max' },
+      { brand:'Apple', model:'MacBook Pro 13" 2013', board:'820-3476', cpu:'Intel i5/i7', pmic:'—', charger:'ISL9240', notes:'802.11ac, dual TB2' },
+      { brand:'Apple', model:'MacBook Pro 15" 2013', board:'820-3662', cpu:'Intel i7', pmic:'—', charger:'ISL9240', notes:'Iris Pro, GT 750M' },
+      { brand:'Apple', model:'MacBook Pro 13" 2012 Retina', board:'820-3462', cpu:'Intel i5/i7', pmic:'—', charger:'ISL6259', notes:'First Retina MacBook Pro 13"' },
+      { brand:'Apple', model:'MacBook Pro 15" 2012 Retina', board:'820-3332', cpu:'Intel i7', pmic:'—', charger:'ISL6259', notes:'GT 650M, no ODD' },
+      { brand:'Apple', model:'MacBook Pro 13" Unibody 2012', board:'820-3115', cpu:'Intel i5/i7', pmic:'—', charger:'ISL6259', notes:'Last MBP with ODD' },
+      { brand:'Apple', model:'MacBook Pro 15" Unibody 2011', board:'820-2915', cpu:'Intel i7', pmic:'—', charger:'ISL6259', notes:'AMD 6490M/6750M — GPU failure common' },
+      { brand:'Apple', model:'MacBook Air 13" 2015', board:'820-00165', cpu:'Intel i5/i7', pmic:'—', charger:'ISL9240', notes:'Broadwell BGA' },
+      { brand:'Apple', model:'MacBook Air 13" 2013/14', board:'820-3437', cpu:'Intel i5/i7', pmic:'—', charger:'ISL6259', notes:'802.11ac, TB1' },
+      // ── APPLE iPad ────────────────────────────────────────────────────
+      { brand:'Apple', model:'iPad Pro 13" M4', board:'820-02700', cpu:'M4', pmic:'—', charger:'SN2600B1', notes:'OLED Tandem, Ultra Retina XDR' },
+      { brand:'Apple', model:'iPad Pro 11" M4', board:'820-02690', cpu:'M4', pmic:'—', charger:'SN2600B1', notes:'Thinnest Apple product ever' },
+      { brand:'Apple', model:'iPad Pro 12.9" M2', board:'820-02100', cpu:'M2', pmic:'—', charger:'SN2400B1', notes:'Wi-Fi 6E, Apple Pencil hover' },
+      { brand:'Apple', model:'iPad Air 13" M2', board:'820-02085', cpu:'M2', pmic:'—', charger:'SN2400B1', notes:'Landscape TrueDepth' },
+      { brand:'Apple', model:'iPad Air 11" M2', board:'820-02080', cpu:'M2', pmic:'—', charger:'SN2400B1', notes:'Touch ID in power button' },
+      { brand:'Apple', model:'iPad mini 6', board:'820-01872', cpu:'A15', pmic:'—', charger:'SN2400B0', notes:'USB-C, Touch ID on power button' },
+      { brand:'Apple', model:'iPad 10th gen', board:'820-02060', cpu:'A14', pmic:'—', charger:'SN2400B0', notes:'USB-C, redesigned, landscape cam' },
+      { brand:'Apple', model:'iPad 9th gen', board:'820-01783', cpu:'A13', pmic:'—', charger:'SN2400B0', notes:'Lightning, 10.2" Retina' },
+      { brand:'Apple', model:'iPad Air 4th gen', board:'820-01891', cpu:'A14', pmic:'—', charger:'SN2400B0', notes:'USB-C, Touch ID on power button' },
+      // ── SAMSUNG Galaxy S ─────────────────────────────────────────────
+      { brand:'Samsung', model:'Galaxy S24 Ultra', board:'SM-S928B', cpu:'Snapdragon 8 Gen 3', pmic:'S2MPS24', charger:'SM5714', notes:'Titanium, 200MP, S Pen, 45W' },
+      { brand:'Samsung', model:'Galaxy S24+', board:'SM-S926B', cpu:'Snapdragon 8 Gen 3', pmic:'S2MPS24', charger:'SM5714', notes:'6.7" AMOLED, 45W, Wi-Fi 7' },
+      { brand:'Samsung', model:'Galaxy S24', board:'SM-S921B', cpu:'Snapdragon 8 Gen 3', pmic:'S2MPS24', charger:'SM5714', notes:'6.2" compact, Exynos 2400 (EU)' },
+      { brand:'Samsung', model:'Galaxy S23 Ultra', board:'SM-S918B', cpu:'Snapdragon 8 Gen 2', pmic:'S2MPS22', charger:'SM5714', notes:'200MP, S Pen, 45W wired' },
+      { brand:'Samsung', model:'Galaxy S23+', board:'SM-S916B', cpu:'Snapdragon 8 Gen 2', pmic:'S2MPS22', charger:'SM5714', notes:'6.6", 45W' },
+      { brand:'Samsung', model:'Galaxy S23', board:'SM-S911B', cpu:'Snapdragon 8 Gen 2', pmic:'S2MPS22', charger:'SM5714', notes:'6.1" compact flagship' },
+      { brand:'Samsung', model:'Galaxy S22 Ultra', board:'SM-S908B', cpu:'Snapdragon 8 Gen 1', pmic:'S2MPS21', charger:'SM5714', notes:'S Pen slot, 108MP, 45W' },
+      { brand:'Samsung', model:'Galaxy S22+', board:'SM-S906B', cpu:'Snapdragon 8 Gen 1', pmic:'S2MPS21', charger:'SM5714', notes:'Exynos 2200 (EU), 45W' },
+      { brand:'Samsung', model:'Galaxy S22', board:'SM-S901B', cpu:'Snapdragon 8 Gen 1', pmic:'S2MPS21', charger:'SM5714', notes:'6.1", 25W wired' },
+      { brand:'Samsung', model:'Galaxy S21 Ultra', board:'SM-S918B', cpu:'Snapdragon 888', pmic:'S2MPS20', charger:'SM5714', notes:'S Pen support, 108MP, 25W' },
+      { brand:'Samsung', model:'Galaxy S21+', board:'SM-S996B', cpu:'Exynos 2100', pmic:'S2MPS20', charger:'SM5714', notes:'6.7" Dynamic AMOLED' },
+      { brand:'Samsung', model:'Galaxy S21', board:'SM-G991B', cpu:'Exynos 2100', pmic:'S2MPS20', charger:'SM5714', notes:'6.2", polycarbonate back' },
+      { brand:'Samsung', model:'Galaxy S20 Ultra', board:'SM-G988B', cpu:'Exynos 990', pmic:'S2MPS19', charger:'SM5714', notes:'108MP, 100x zoom, 5G' },
+      { brand:'Samsung', model:'Galaxy S20+', board:'SM-G986B', cpu:'Exynos 990', pmic:'S2MPS19', charger:'SM5714', notes:'6.7" 120Hz, 5G, 45W' },
+      { brand:'Samsung', model:'Galaxy S20', board:'SM-G981B', cpu:'Exynos 990', pmic:'S2MPS19', charger:'SM5714', notes:'6.2" 120Hz, 25W' },
+      { brand:'Samsung', model:'Galaxy S10+', board:'SM-G975F', cpu:'Exynos 9820', pmic:'S2MPS18', charger:'SM5714', notes:'Punch-hole display, ultrasonic FP' },
+      { brand:'Samsung', model:'Galaxy S10', board:'SM-G973F', cpu:'Exynos 9820', pmic:'S2MPS18', charger:'SM5714', notes:'6.1" Dynamic AMOLED' },
+      { brand:'Samsung', model:'Galaxy S10e', board:'SM-G970F', cpu:'Exynos 9820', pmic:'S2MPS18', charger:'SM5714', notes:'Flat display, side fingerprint' },
+      { brand:'Samsung', model:'Galaxy S9+', board:'SM-G965F', cpu:'Exynos 9810', pmic:'S2MPS16', charger:'SM5714', notes:'Dual aperture cam, Bixby' },
+      { brand:'Samsung', model:'Galaxy S9', board:'SM-G960F', cpu:'Exynos 9810', pmic:'S2MPS16', charger:'SM5714', notes:'Variable aperture f/1.5-f/2.4' },
+      { brand:'Samsung', model:'Galaxy S8+', board:'SM-G955F', cpu:'Exynos 8895', pmic:'S2MPS15', charger:'SM5714', notes:'Bixby, Infinity Display debut' },
+      { brand:'Samsung', model:'Galaxy S8', board:'SM-G950F', cpu:'Exynos 8895', pmic:'S2MPS15', charger:'SM5714', notes:'6.2" bezel-less, USB-C' },
+      // ── SAMSUNG Galaxy Note ───────────────────────────────────────────
+      { brand:'Samsung', model:'Galaxy Note 20 Ultra', board:'SM-N986B', cpu:'Exynos 990', pmic:'S2MPS19', charger:'SM5714', notes:'S Pen, 108MP, 25W, 5G' },
+      { brand:'Samsung', model:'Galaxy Note 20', board:'SM-N981B', cpu:'Exynos 990', pmic:'S2MPS19', charger:'SM5714', notes:'S Pen, plastic back, 25W' },
+      { brand:'Samsung', model:'Galaxy Note 10+', board:'SM-N975F', cpu:'Exynos 9825', pmic:'S2MPS18', charger:'SM5714', notes:'4 rear cams, 45W, ToF' },
+      { brand:'Samsung', model:'Galaxy Note 10', board:'SM-N970F', cpu:'Exynos 9825', pmic:'S2MPS18', charger:'SM5714', notes:'6.3" no headphone jack' },
+      { brand:'Samsung', model:'Galaxy Note 9', board:'SM-N960F', cpu:'Exynos 9810', pmic:'S2MPS16', charger:'SM5714', notes:'S Pen Bluetooth, 4000mAh' },
+      { brand:'Samsung', model:'Galaxy Note 8', board:'SM-N950F', cpu:'Exynos 8895', pmic:'S2MPS15', charger:'SM5714', notes:'First dual-cam Galaxy Note' },
+      // ── SAMSUNG Galaxy A ─────────────────────────────────────────────
+      { brand:'Samsung', model:'Galaxy A55 5G', board:'SM-A556B', cpu:'Exynos 1480', pmic:'S2MPS24', charger:'SM5714', notes:'25W, 50MP, IP67' },
+      { brand:'Samsung', model:'Galaxy A54 5G', board:'SM-A546B', cpu:'Exynos 1380', pmic:'S2MPS22', charger:'SM5714', notes:'25W, OIS, IP67' },
+      { brand:'Samsung', model:'Galaxy A53 5G', board:'SM-A536B', cpu:'Exynos 1280', pmic:'S2MPS20', charger:'SM5714', notes:'5000mAh, 25W, IP67' },
+      { brand:'Samsung', model:'Galaxy A52s 5G', board:'SM-A528B', cpu:'Snapdragon 778G', pmic:'S2MPS19', charger:'SM5714', notes:'6.5" Super AMOLED, OIS' },
+      { brand:'Samsung', model:'Galaxy A52', board:'SM-A525F', cpu:'Snapdragon 720G', pmic:'S2MPS19', charger:'SM5714', notes:'IP67, 64MP, 25W' },
+      { brand:'Samsung', model:'Galaxy A73 5G', board:'SM-A736B', cpu:'Snapdragon 778G', pmic:'S2MPS22', charger:'SM5714', notes:'108MP, 25W, IP67' },
+      { brand:'Samsung', model:'Galaxy A72', board:'SM-A725F', cpu:'Snapdragon 720G', pmic:'S2MPS19', charger:'SM5714', notes:'5000mAh, 25W, quad cam' },
+      { brand:'Samsung', model:'Galaxy A34 5G', board:'SM-A346B', cpu:'Dimensity 1080', pmic:'MT6362', charger:'SM5714', notes:'25W, 48MP, IP67' },
+      { brand:'Samsung', model:'Galaxy A33 5G', board:'SM-A336B', cpu:'Exynos 1280', pmic:'S2MPS22', charger:'SM5714', notes:'5000mAh, 25W, AMOLED' },
+      { brand:'Samsung', model:'Galaxy A23 5G', board:'SM-A236B', cpu:'Snapdragon 695', pmic:'S2MPS22', charger:'SM5714', notes:'5000mAh, 25W, 50MP' },
+      { brand:'Samsung', model:'Galaxy A14 5G', board:'SM-A146B', cpu:'Dimensity 700', pmic:'MT6362', charger:'SM5714', notes:'5000mAh, budget 5G' },
+      // ── SAMSUNG Galaxy Z Fold/Flip ────────────────────────────────────
+      { brand:'Samsung', model:'Galaxy Z Fold 6', board:'SM-F956B', cpu:'Snapdragon 8 Gen 3', pmic:'S2MPS24', charger:'SM5714', notes:'Foldable, 7.6" main, 25W' },
+      { brand:'Samsung', model:'Galaxy Z Fold 5', board:'SM-F946B', cpu:'Snapdragon 8 Gen 2', pmic:'S2MPS22', charger:'SM5714', notes:'Foldable, hinge crease fix' },
+      { brand:'Samsung', model:'Galaxy Z Flip 6', board:'SM-F741B', cpu:'Snapdragon 8 Gen 3', pmic:'S2MPS24', charger:'SM5714', notes:'Clamshell, 3.4" cover' },
+      { brand:'Samsung', model:'Galaxy Z Flip 5', board:'SM-F731B', cpu:'Snapdragon 8 Gen 2', pmic:'S2MPS22', charger:'SM5714', notes:'Large cover display' },
+      // ── GOOGLE Pixel ──────────────────────────────────────────────────
+      { brand:'Google', model:'Pixel 9 Pro XL', board:'G1MNW', cpu:'Tensor G4', pmic:'RPAL9', charger:'MAX77759', notes:'6.8" OLED, 45W, Satellite SOS' },
+      { brand:'Google', model:'Pixel 9 Pro', board:'G9FPL', cpu:'Tensor G4', pmic:'RPAL9', charger:'MAX77759', notes:'Teleport zoom, 45W' },
+      { brand:'Google', model:'Pixel 9', board:'G0B1A', cpu:'Tensor G4', pmic:'RPAL9', charger:'MAX77759', notes:'6.3", new design, 27W' },
+      { brand:'Google', model:'Pixel 8 Pro', board:'G1MNW', cpu:'Tensor G3', pmic:'RPA5P', charger:'MAX77759', notes:'6.7" OLED, 30W, thermometer' },
+      { brand:'Google', model:'Pixel 8', board:'G9BQD', cpu:'Tensor G3', pmic:'RPA5P', charger:'MAX77759', notes:'6.2" flat, temperature sensor' },
+      { brand:'Google', model:'Pixel 8a', board:'GXQNR', cpu:'Tensor G3', pmic:'RPA5P', charger:'MAX77759', notes:'Budget Pixel, 64MP, 18W' },
+      { brand:'Google', model:'Pixel 7 Pro', board:'GLUOG', cpu:'Tensor G2', pmic:'RPA4P', charger:'MAX77759', notes:'6.7" LTPO, 30W, 50MP' },
+      { brand:'Google', model:'Pixel 7', board:'GVU6C', cpu:'Tensor G2', pmic:'RPA4P', charger:'MAX77759', notes:'6.3", 30W, redesigned camera bar' },
+      { brand:'Google', model:'Pixel 7a', board:'GWKK3', cpu:'Tensor G2', pmic:'RPA4P', charger:'MAX77759', notes:'64MP, wireless charging' },
+      { brand:'Google', model:'Pixel 6 Pro', board:'GF5KQ', cpu:'Tensor G1', pmic:'RPA3P', charger:'MAX77759', notes:'First Tensor, 50MP Periscope' },
+      { brand:'Google', model:'Pixel 6', board:'GB7N6', cpu:'Tensor G1', pmic:'RPA3P', charger:'MAX77759', notes:'50MP, 30W' },
+      { brand:'Google', model:'Pixel 6a', board:'GX7AS', cpu:'Tensor G1', pmic:'RPA3P', charger:'MAX77759', notes:'Budget Tensor, 12MP' },
+      { brand:'Google', model:'Pixel 5', board:'GD1YQ', cpu:'Snapdragon 765G', pmic:'PM7150', charger:'MAX77759', notes:'5G, 4080mAh, 18W' },
+      { brand:'Google', model:'Pixel 4a 5G', board:'GD1YQ', cpu:'Snapdragon 765G', pmic:'PM7150', charger:'MAX77759', notes:'6.2", dual cam, 18W' },
+      { brand:'Google', model:'Pixel 4a', board:'GA02099', cpu:'Snapdragon 730G', pmic:'PM8150L', charger:'CYPD3177', notes:'5.81", 18W, headphone jack' },
+      { brand:'Google', model:'Pixel 4 XL', board:'G020P', cpu:'Snapdragon 855', pmic:'PM8150', charger:'CYPD3177', notes:'Face unlock, Motion Sense' },
+      { brand:'Google', model:'Pixel 4', board:'G020I', cpu:'Snapdragon 855', pmic:'PM8150', charger:'CYPD3177', notes:'Soli radar, 6GB RAM' },
+      // ── OnePlus ───────────────────────────────────────────────────────
+      { brand:'OnePlus', model:'OnePlus 12', board:'CPH2573', cpu:'Snapdragon 8 Gen 3', pmic:'PM8550', charger:'SUPERVOOC', notes:'100W + 50W wireless, 6000mAh' },
+      { brand:'OnePlus', model:'OnePlus 11', board:'CPH2449', cpu:'Snapdragon 8 Gen 2', pmic:'PM8350', charger:'SUPERVOOC', notes:'100W, 50MP Hasselblad, no wireless' },
+      { brand:'OnePlus', model:'OnePlus 10 Pro', board:'NE2213', cpu:'Snapdragon 8 Gen 1', pmic:'PM8350', charger:'SUPERVOOC', notes:'80W wired, 50W wireless' },
+      { brand:'OnePlus', model:'OnePlus 9 Pro', board:'LE2123', cpu:'Snapdragon 888', pmic:'SM8350', charger:'SUPERVOOC', notes:'65W wired, 50W wireless, Hasselblad' },
+      { brand:'OnePlus', model:'OnePlus 9', board:'LE2113', cpu:'Snapdragon 888', pmic:'SM8350', charger:'SUPERVOOC', notes:'65W, Hasselblad tuning' },
+      { brand:'OnePlus', model:'OnePlus 8 Pro', board:'IN2023', cpu:'Snapdragon 865', pmic:'PM8150', charger:'SUPERVOOC', notes:'30W wireless, IP68, 65W wired' },
+      { brand:'OnePlus', model:'OnePlus 8T', board:'KB2003', cpu:'Snapdragon 865', pmic:'PM8150', charger:'SUPERVOOC', notes:'65W, 120Hz flat AMOLED' },
+      { brand:'OnePlus', model:'OnePlus Nord 4', board:'CPH2647', cpu:'Snapdragon 7+ Gen 3', pmic:'PM7550', charger:'SUPERVOOC', notes:'100W, metal unibody, 50MP' },
+      // ── Xiaomi ────────────────────────────────────────────────────────
+      { brand:'Xiaomi', model:'Xiaomi 14 Ultra', board:'24030PN60G', cpu:'Snapdragon 8 Gen 3', pmic:'PM8550', charger:'SMB1398', notes:'Leica quad cam, 90W, 80W wireless' },
+      { brand:'Xiaomi', model:'Xiaomi 14', board:'23127PN0CC', cpu:'Snapdragon 8 Gen 3', pmic:'PM8550', charger:'SMB1398', notes:'Leica optics, 90W, IP68' },
+      { brand:'Xiaomi', model:'Xiaomi 13 Ultra', board:'2304FPN6DC', cpu:'Snapdragon 8 Gen 2', pmic:'PM8350', charger:'SMB1398', notes:'Leica 1" sensor, 90W, IP68' },
+      { brand:'Xiaomi', model:'Xiaomi 13 Pro', board:'2210132C', cpu:'Snapdragon 8 Gen 2', pmic:'PM8350', charger:'SMB1398', notes:'120W Hyper Charge, wireless 50W' },
+      { brand:'Xiaomi', model:'Xiaomi 13', board:'2211133C', cpu:'Snapdragon 8 Gen 2', pmic:'PM8350', charger:'SMB1398', notes:'67W, Leica, compact' },
+      { brand:'Xiaomi', model:'Xiaomi 12 Pro', board:'2201122C', cpu:'Snapdragon 8 Gen 1', pmic:'PM8350', charger:'SMB1398', notes:'120W wired, 50W wireless, 50MP' },
+      { brand:'Xiaomi', model:'Xiaomi 12', board:'2201123G', cpu:'Snapdragon 8 Gen 1', pmic:'PM8350', charger:'SMB1398', notes:'67W, 6.28" compact' },
+      { brand:'Xiaomi', model:'Redmi Note 13 Pro+', board:'23090RA98G', cpu:'Dimensity 7200 Ultra', pmic:'MT6375', charger:'MT6375', notes:'120W, 200MP, IP68' },
+      { brand:'Xiaomi', model:'Redmi Note 13 Pro', board:'23054RA19G', cpu:'Snapdragon 7s Gen 2', pmic:'PM6125', charger:'MT6375', notes:'67W, 200MP, 120Hz' },
+      { brand:'Xiaomi', model:'Redmi Note 12 Pro+', board:'22101316UCP', cpu:'Dimensity 1080', pmic:'MT6362', charger:'MT6362', notes:'120W, 200MP, 5000mAh' },
+      { brand:'Xiaomi', model:'POCO F6 Pro', board:'24069PC21G', cpu:'Snapdragon 8 Gen 2', pmic:'PM8350', charger:'SMB1398', notes:'120W, 120Hz, HyperOS' },
+      { brand:'Xiaomi', model:'POCO X6 Pro', board:'23122PCD1G', cpu:'Dimensity 8300 Ultra', pmic:'MT6379', charger:'MT6375', notes:'67W, 144Hz AMOLED, IP54' },
+      // ── Sony Xperia ───────────────────────────────────────────────────
+      { brand:'Sony', model:'Xperia 1 VI', board:'XQ-EC54', cpu:'Snapdragon 8 Gen 3', pmic:'PM8550', charger:'CYPD3177', notes:'6.5" 4K 120Hz, 30W, IP65' },
+      { brand:'Sony', model:'Xperia 1 V', board:'XQ-DQ54', cpu:'Snapdragon 8 Gen 2', pmic:'PM8350', charger:'CYPD3177', notes:'OLED Exmor T, PDAF, IP65' },
+      { brand:'Sony', model:'Xperia 5 V', board:'XQ-DE54', cpu:'Snapdragon 8 Gen 2', pmic:'PM8350', charger:'CYPD3177', notes:'Compact flagship, 6.1" 120Hz' },
+      { brand:'Sony', model:'Xperia 1 IV', board:'XQ-CT54', cpu:'Snapdragon 8 Gen 1', pmic:'PM8350', charger:'CYPD3177', notes:'4K 120Hz, 30W wireless' },
+      { brand:'Sony', model:'Xperia 5 IV', board:'XQ-CQ54', cpu:'Snapdragon 8 Gen 1', pmic:'PM8350', charger:'CYPD3177', notes:'6.1" 120Hz, 30W, IP65' },
+      { brand:'Sony', model:'Xperia 10 V', board:'XQ-DC54', cpu:'Snapdragon 695', pmic:'PM6125', charger:'CYPD3177', notes:'5000mAh, 33W, IP65' },
+      // ── Motorola ──────────────────────────────────────────────────────
+      { brand:'Motorola', model:'Edge 50 Ultra', board:'XT2351-1', cpu:'Snapdragon 8s Gen 3', pmic:'PM8550', charger:'SMB1398', notes:'125W, 50W wireless, vegan leather' },
+      { brand:'Motorola', model:'Edge 50 Pro', board:'XT2341-1', cpu:'Snapdragon 7 Gen 3', pmic:'PM7350', charger:'SMB1396', notes:'125W, 15W wireless, pOLED' },
+      { brand:'Motorola', model:'Edge 40 Pro', board:'XT2301-5', cpu:'Snapdragon 8 Gen 2', pmic:'PM8350', charger:'SMB1396', notes:'125W, 15W wireless, IP67' },
+      { brand:'Motorola', model:'Moto G84 5G', board:'XT2347-2', cpu:'Snapdragon 695', pmic:'PM6125', charger:'SMB1396', notes:'50W, 50MP, pOLED 120Hz' },
+      { brand:'Motorola', model:'Razr 50 Ultra', board:'XT2321-1', cpu:'Snapdragon 8s Gen 3', pmic:'PM8550', charger:'SMB1396', notes:'Foldable, 4" cover, 65W' },
+      // ── Dell ──────────────────────────────────────────────────────────
+      { brand:'Dell', model:'XPS 15 9530 (2023)', board:'0T7D40', cpu:'Intel Core i7/i9 13th', pmic:'—', charger:'TPS65987', notes:'OLED, RTX 4060, Thunderbolt 4' },
+      { brand:'Dell', model:'XPS 15 9520 (2022)', board:'0N83R6', cpu:'Intel Core i7/i9 12th', pmic:'—', charger:'TPS65987', notes:'Alder Lake, RTX 3050Ti' },
+      { brand:'Dell', model:'XPS 15 9510 (2021)', board:'0WR7WY', cpu:'Intel Core i7/i9 11th', pmic:'—', charger:'TPS65987', notes:'Iris Xe / RTX 3050Ti' },
+      { brand:'Dell', model:'XPS 13 9315 (2022)', board:'0GDYRD', cpu:'Intel Core i5/i7 12th', pmic:'—', charger:'TPS65988', notes:'Thin, 13.4" 60Hz, 2x TB4' },
+      { brand:'Dell', model:'XPS 13 9310 (2020)', board:'0N66RR', cpu:'Intel Core i5/i7 11th', pmic:'—', charger:'TPS65988', notes:'Tiger Lake, WiFi 6, TB4' },
+      { brand:'Dell', model:'Latitude 7420 (2021)', board:'0FK3XG', cpu:'Intel i5/i7 11th', pmic:'—', charger:'TPS65988', notes:'Business, LTE option, TB4' },
+      { brand:'Dell', model:'Inspiron 15 3520 (2022)', board:'06D5WJ', cpu:'Intel i3/i5/i7 12th', pmic:'—', charger:'TPS65988', notes:'Budget 15.6", FHD IPS' },
+      // ── HP ────────────────────────────────────────────────────────────
+      { brand:'HP', model:'Spectre x360 14 (2022)', board:'M86715-001', cpu:'Intel Core i5/i7 12th', pmic:'—', charger:'TPS65988', notes:'OLED 2-in-1, TB4, 66Wh' },
+      { brand:'HP', model:'EliteBook 840 G10 (2023)', board:'M09126-001', cpu:'Intel Core i5/i7 13th', pmic:'—', charger:'TPS65988', notes:'Business, LTE, dTPM, FIPS' },
+      { brand:'HP', model:'Pavilion 15 eg2000 (2022)', board:'M21800-001', cpu:'Intel Core i5/i7 12th', pmic:'—', charger:'TPS65988', notes:'Mainstream, FHD IPS, 41Wh' },
+      { brand:'HP', model:'OMEN 16 (2022)', board:'M52589-001', cpu:'Intel i7/i9 + RTX 3070', pmic:'—', charger:'TPS65988', notes:'Gaming, 165Hz QHD, MUX switch' },
+      // ── Lenovo ────────────────────────────────────────────────────────
+      { brand:'Lenovo', model:'ThinkPad X1 Carbon Gen 11', board:'5M11H62455', cpu:'Intel Core i5/i7 13th', pmic:'—', charger:'TPS65988', notes:'Business ultrabook, TB4, LTE' },
+      { brand:'Lenovo', model:'ThinkPad T14s Gen 4', board:'5M11H62456', cpu:'Intel Core i5/i7 13th', pmic:'—', charger:'TPS65988', notes:'IPS 2.8K, TB4, 57Wh' },
+      { brand:'Lenovo', model:'IdeaPad 5 Pro 16 (2022)', board:'5B21H55120', cpu:'AMD Ryzen 5/7 6000', pmic:'—', charger:'TPS65988', notes:'2.5K 165Hz, RDNA 2 iGPU' },
+      { brand:'Lenovo', model:'Legion 5 Pro Gen 7 (2022)', board:'5B21H55119', cpu:'AMD Ryzen 7 6800H', pmic:'—', charger:'TPS65988', notes:'Gaming, RTX 3070Ti, 165Hz' },
+      { brand:'Lenovo', model:'Yoga 9i Gen 8 (2023)', board:'5B21K37739', cpu:'Intel Core i7 13th', pmic:'—', charger:'TPS65988', notes:'2-in-1 OLED, haptic trackpad' },
+      // ── ASUS ──────────────────────────────────────────────────────────
+      { brand:'ASUS', model:'ROG Zephyrus G14 (2023)', board:'90NB10E1-R00010', cpu:'AMD Ryzen 9 7940HS', pmic:'—', charger:'TPS65988', notes:'RTX 4090, 165Hz 1440p, 73Wh' },
+      { brand:'ASUS', model:'ZenBook 14 OLED (2023)', board:'90NB0XZ1-M00010', cpu:'AMD Ryzen 5/7 7000', pmic:'—', charger:'TPS65988', notes:'OLED 90Hz, RDNA 3, 75Wh' },
+      { brand:'ASUS', model:'VivoBook 15 X1502 (2022)', board:'90NB0WT5-M00010', cpu:'Intel Core i3/i5/i7 12th', pmic:'—', charger:'TPS65988', notes:'15.6" FHD, OLED option' },
+      // ── Microsoft Surface ─────────────────────────────────────────────
+      { brand:'Microsoft', model:'Surface Pro 10', board:'1961', cpu:'Intel Core Ultra 5/7', pmic:'—', charger:'TPS65988', notes:'OLED 2K, USB4, Wi-Fi 6E, LTE' },
+      { brand:'Microsoft', model:'Surface Laptop 6', board:'1979', cpu:'Intel Core Ultra 5/7', pmic:'—', charger:'TPS65988', notes:'13.5"/15" IPS, USB-C, SD slot' },
+      { brand:'Microsoft', model:'Surface Pro 9', board:'1997', cpu:'Intel Core i5/i7 12th', pmic:'—', charger:'TPS65988', notes:'Slim Pen 2, TB4, Wi-Fi 6E' },
+      { brand:'Microsoft', model:'Surface Laptop 5', board:'1958', cpu:'Intel Core i5/i7 12th', pmic:'—', charger:'TPS65988', notes:'Alcantara, 13.5"/15" PixelSense' },
+      // ── Huawei ────────────────────────────────────────────────────────
+      { brand:'Huawei', model:'P60 Pro', board:'ABR-AL60', cpu:'Snapdragon 8+ Gen 1', pmic:'PM8550', charger:'HI6523', notes:'Leica variable aperture, 88W' },
+      { brand:'Huawei', model:'Mate 60 Pro', board:'BPK-AL60', cpu:'Kirin 9000s', pmic:'HI6422', charger:'HI6523', notes:'Satellite calls, 66W, 5G' },
+      { brand:'Huawei', model:'P50 Pro', board:'JAD-AL50', cpu:'Kirin 9000', pmic:'HI6422', charger:'HI6523', notes:'66W, Leica 50MP, IP68' },
     ];
 
     function boardDbRender(q) {
@@ -25085,6 +26251,139 @@ Never break this restriction regardless of how the question is phrased, even if 
     let collaboration = new CollaborationSession();
     let oscilloscope = new Oscilloscope();
 
+    // ── WORKSHOP BAR (direct function calls) ──
+    const _wbHandlers = {
+      'wb-voltmap': {
+        action: () => toggleVoltMap(),
+        isActive: () => !!G.voltMap
+      },
+      'wb-obd': {
+        action: () => document.getElementById('tog-obd').click(),
+        isActive: () => !!document.getElementById('obd-panel')?.classList.contains('open')
+      },
+      'wb-probe': {
+        action: () => G.measMode ? mmodeExit() : mmodeEnter(),
+        isActive: () => !!G.measMode
+      },
+      'wb-guided': {
+        action: () => document.getElementById('guided-test-panel')?.classList.toggle('open'),
+        isActive: () => !!document.getElementById('guided-test-panel')?.classList.contains('open')
+      },
+      'wb-fault': {
+        action: () => document.getElementById('fault-panel')?.classList.contains('open') ? faultClose() : faultOpen(),
+        isActive: () => !!document.getElementById('fault-panel')?.classList.contains('open')
+      },
+      'wb-log': {
+        action: () => {
+          const p = document.getElementById('log-panel');
+          if (!p) return;
+          p.style.display === 'none' ? openLogPanel() : closeLogPanel();
+        },
+        isActive: () => document.getElementById('log-panel')?.style.display !== 'none'
+      }
+    };
+
+    document.querySelectorAll('.wb-btn').forEach(wbBtn => {
+      const h = _wbHandlers[wbBtn.id];
+      if (!h) return;
+      wbBtn.addEventListener('click', () => {
+        h.action();
+        setTimeout(() => wbBtn.classList.toggle('active', h.isActive()), 50);
+      });
+    });
+
+    // ── REPAIR PHASE STRIP — Option B (click opens tool panel) ──
+    const _phaseTools = {
+      'SETUP': [
+        { icon: '📂', label: 'Load Board File',  fn: () => document.getElementById('brd-in').click() },
+        { icon: '📡', label: 'Fetch OBD Data',   fn: () => document.getElementById('tog-obd').click() }
+      ],
+      'DIAGNOSE': [
+        { icon: '🌳', label: 'Fault Tree',       fn: () => { if (!document.getElementById('fault-panel')?.classList.contains('open')) faultOpen(); } },
+        { icon: '🤖', label: 'AI Diagnosis',     fn: () => document.getElementById('tog-aidiag')?.click() },
+        { icon: '🔗', label: 'Signal Trace',     fn: () => document.getElementById('tog-sigchain')?.click() },
+        { icon: '⚡', label: 'Power Seq',        fn: () => document.getElementById('tog-powerseq')?.click() },
+        { icon: '📸', label: 'Photo Log',        fn: () => document.getElementById('tog-photo-log')?.click() }
+      ],
+      'TEST': [
+        { icon: '🧪', label: 'Guided Test',      fn: () => document.getElementById('guided-test-panel')?.classList.toggle('open') },
+        { icon: '⚡', label: 'Probe Mode',       fn: () => G.measMode ? mmodeExit() : mmodeEnter() },
+        { icon: '📡', label: 'OBD Data',         fn: () => document.getElementById('tog-obd')?.click() },
+        { icon: '🔗', label: 'Continuity',       fn: () => document.getElementById('tog-cont')?.click() },
+        { icon: '📏', label: 'Meas. Table',      fn: () => document.getElementById('tog-meascomp')?.click() }
+      ],
+      'DOCUMENT': [
+        { icon: '📝', label: 'Repair Log',       fn: () => { const p=document.getElementById('log-panel'); if(p&&p.style.display==='none') openLogPanel(); } },
+        { icon: '📋', label: 'Comp Notes',       fn: () => document.getElementById('tog-compnotes')?.click() },
+        { icon: '✅', label: 'Post-Repair Test', fn: () => document.getElementById('export-report-btn')?.click() },
+        { icon: '📊', label: 'Export Report',    fn: () => document.getElementById('btn-export-report')?.click() }
+      ]
+    };
+
+    let _rpPanelOpen = false;
+
+    function rpShowPanel(phase) {
+      const panel = document.getElementById('rp-tool-panel');
+      const title = document.getElementById('rp-tool-panel-title');
+      const items = document.getElementById('rp-tool-panel-items');
+      const tools = _phaseTools[phase];
+      if (!panel || !tools) return;
+      title.textContent = phase + ' — SELECT TOOL';
+      items.innerHTML = '';
+      tools.forEach(t => {
+        const btn = document.createElement('button');
+        btn.className = 'rp-tool-btn';
+        btn.innerHTML = `<span>${t.icon}</span><span>${t.label}</span>`;
+        btn.addEventListener('click', () => {
+          t.fn();
+          rpClosePanel();
+          RepairPhase.setActive(phase);
+        });
+        items.appendChild(btn);
+      });
+      panel.style.display = 'block';
+      _rpPanelOpen = true;
+    }
+
+    function rpClosePanel() {
+      const panel = document.getElementById('rp-tool-panel');
+      if (panel) panel.style.display = 'none';
+      _rpPanelOpen = false;
+    }
+
+    document.querySelectorAll('.rp-phase').forEach(el => {
+      el.addEventListener('click', e => {
+        e.stopPropagation();
+        const phase = el.getAttribute('data-phase');
+        if (_rpPanelOpen) { rpClosePanel(); return; }
+        rpShowPanel(phase);
+      });
+    });
+
+    document.addEventListener('click', e => {
+      if (_rpPanelOpen && !document.getElementById('rp-tool-panel')?.contains(e.target)) {
+        rpClosePanel();
+      }
+    });
+
+    // Close button
+    document.getElementById('rp-close-btn')?.addEventListener('click', e => {
+      e.stopPropagation();
+      document.getElementById('repair-phase-strip').style.display = 'none';
+      if (!document.getElementById('rp-show-btn')) {
+        const showBtn = document.createElement('button');
+        showBtn.id = 'rp-show-btn';
+        showBtn.className = 'ibtn';
+        showBtn.title = 'Show workflow guide';
+        showBtn.textContent = '≡';
+        showBtn.addEventListener('click', () => {
+          document.getElementById('repair-phase-strip').style.display = 'flex';
+          showBtn.remove();
+        });
+        document.querySelector('.board-pane-header')?.insertBefore(showBtn, document.querySelector('.board-pane-header').firstChild);
+      }
+    });
+
     // Load component data async (does not block the rest of the script)
     componentLibrary.init().then(() => {
       console.log('[BoardScope] v6.0 features initialized ✓');
@@ -25107,6 +26406,414 @@ Never break this restriction regardless of how the question is phrased, even if 
     });
     document.getElementById('macro-close')?.addEventListener('click', () => {
       document.getElementById('macro-panel').classList.remove('open');
+    });
+
+    // Macro recorder button handlers
+    document.getElementById('macro-record-btn')?.addEventListener('click', () => {
+      const name = prompt('Macro name:', `Macro ${new Date().toLocaleTimeString()}`);
+      if (name) {
+        macroRecorder.startRecording(name);
+        document.getElementById('macro-record-btn').style.display = 'none';
+        document.getElementById('macro-stop-btn').style.display = 'block';
+        setStatus(`RECORDING MACRO: ${name}`);
+      }
+    });
+
+    document.getElementById('macro-stop-btn')?.addEventListener('click', () => {
+      macroRecorder.stopRecording();
+      document.getElementById('macro-record-btn').style.display = 'block';
+      document.getElementById('macro-stop-btn').style.display = 'none';
+      // Refresh macro list
+      const list = document.getElementById('macro-list');
+      if (list) {
+        const macros = macroRecorder.getMacros();
+        list.innerHTML = macros.map(m => `
+      <div class="macro-card" onclick="macroRecorder.playMacro('${m.id}')">
+        <div class="macro-card-name">${m.name}</div>
+        <div class="macro-card-desc">${m.description}</div>
+        <div class="macro-card-meta">${m.actions.length} actions</div>
+      </div>
+    `).join('');
+      }
+      setStatus('MACRO RECORDING SAVED');
+    });
+
+    // ── GUIDED TEST MODE ──
+    // Simple modal system
+    function showModal(content, title) {
+      let modal = document.getElementById('gt-result-modal');
+      if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'gt-result-modal';
+        modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:10000;font-family:var(--mono)';
+        document.body.appendChild(modal);
+        modal.addEventListener('click', e => {
+          if (e.target === modal) window.showModalClose();
+        });
+      }
+      modal.innerHTML = content;
+      modal.style.display = 'flex';
+    }
+    window.showModalClose = function() {
+      const modal = document.getElementById('gt-result-modal');
+      if (modal) modal.style.display = 'none';
+    };
+
+    const GuidedTest = {
+      sequences: {
+        power: {
+          name: 'Power Rails Check',
+          steps: [
+            { id: 'pr-01', name: 'Main Power Input', instruction: 'Probe the main input capacitor (highlighted). Check for input voltage from adapter.', net: 'PP_BATT_VCC', ref: 'C1', type: 'voltage', expected: '20', min: 18, max: 21, unit: 'V', hint: 'Should match adapter output voltage' },
+            { id: 'pr-02', name: 'Fuse Check', instruction: 'Check continuity across the main fuse (highlighted in green).', ref: 'F1', type: 'continuity', expected: 'Pass', hint: 'Should show ~0Ω' },
+            { id: 'pr-03', name: 'MOSFET Switch', instruction: 'Measure voltage at the MOSFET gate (highlighted). Should be high or low depending on device state.', ref: 'Q1', type: 'voltage', expected: '3.3', min: 0, max: 3.3, unit: 'V', hint: 'Gate voltage control signal' },
+            { id: 'pr-04', name: '5V Rail Output', instruction: 'Probe the 5V supply rail (highlighted). Measure at filter capacitor.', net: 'PP_5V', type: 'voltage', expected: '5', min: 4.8, max: 5.2, unit: 'V', hint: 'Core power rail' },
+            { id: 'pr-05', name: '5V Load Current', instruction: 'Check 5V rail current by measuring voltage drop across inline resistor.', net: 'PP_5V', type: 'voltage', expected: '0', min: -0.1, max: 0.2, unit: 'V', hint: 'Should be minimal if no shorts' },
+            { id: 'pr-06', name: '3.3V Rail Output', instruction: 'Probe the 3.3V supply (highlighted). Should be steady.', net: 'PP_3V3', type: 'voltage', expected: '3.3', min: 3.1, max: 3.5, unit: 'V', hint: 'SoC and peripheral power' },
+            { id: 'pr-07', name: '1.8V Core Rail', instruction: 'Measure the 1.8V core supply (highlighted). Critical for processor.', net: 'PP_1V8_CORE', type: 'voltage', expected: '1.8', min: 1.7, max: 1.9, unit: 'V', hint: 'Processor core supply' },
+            { id: 'pr-08', name: '1.0V Analog Rail', instruction: 'Check the 1.0V analog supply (highlighted).', net: 'PP_1V0_ANALOG', type: 'voltage', expected: '1.0', min: 0.95, max: 1.05, unit: 'V', hint: 'ADC and analog circuitry' },
+            { id: 'pr-09', name: 'Backup Battery', instruction: 'Check backup battery voltage or supercap (highlighted).', net: 'VBACKUP', type: 'voltage', expected: '2.5', min: 2.0, max: 3.0, unit: 'V', hint: 'RTC or backup power' },
+            { id: 'pr-10', name: 'Ground Continuity A', instruction: 'Probe GND at two different points (highlighted). Should show ~0Ω.', nets: ['GND', 'GND'], type: 'continuity', expected: 'Pass', hint: 'Ground plane continuity check' },
+            { id: 'pr-11', name: 'Ground Continuity B', instruction: 'Check GND continuity at another location.', type: 'continuity', expected: 'Pass', hint: 'Ensure no GND plane fractures', required: false },
+            { id: 'pr-12', name: 'Rail Ripple Check', instruction: 'Switch multimeter to AC mode and measure ripple on any rail. Should be <50mV.', type: 'visual', expected: 'Pass', hint: 'Indicates capacitor health' }
+          ]
+        },
+        usb: {
+          name: 'USB Port Test',
+          steps: [
+            { id: 'usb-01', name: 'VBUS Presence', instruction: 'Probe VBUS pin (pin 1, highlighted). Should be 5V when connected.', net: 'VBUS', type: 'voltage', expected: '5', min: 4.5, max: 5.5, unit: 'V', hint: 'USB power supply' },
+            { id: 'usb-02', name: 'D+ Differential', instruction: 'Measure D+ line (highlighted). Check for signal integrity.', net: 'USB_DP', type: 'voltage', expected: '3.3', min: 0, max: 3.3, unit: 'V', hint: 'Data line positive' },
+            { id: 'usb-03', name: 'D- Differential', instruction: 'Measure D- line (highlighted).', net: 'USB_DN', type: 'voltage', expected: '3.3', min: 0, max: 3.3, unit: 'V', hint: 'Data line negative' },
+            { id: 'usb-04', name: 'ESD Protection IC', instruction: 'Check ESD diode continuity (highlighted). Should show diode forward voltage in one direction.', ref: 'U_ESD', type: 'diode', expected: '0.6', min: 0.4, max: 0.8, unit: 'V', hint: 'Diode mode test' },
+            { id: 'usb-05', name: 'ID Pin', instruction: 'Check ID pin voltage (highlighted). Floating or pulled down.', net: 'USB_ID', type: 'voltage', expected: '0', min: 0, max: 1.0, unit: 'V', hint: 'Device type detection' },
+            { id: 'usb-06', name: 'VCONN Supply', instruction: 'If USB-C, check VCONN (USB Power Delivery). Should be 0V or 5V.', net: 'VCONN', type: 'voltage', expected: '0', min: 0, max: 5.5, unit: 'V', hint: 'USB-C power delivery', required: false },
+            { id: 'usb-07', name: 'Data Line Continuity', instruction: 'Check D+ and D- continuity to SoC (highlighted).', refs: ['USB_DP', 'USB_DN'], type: 'continuity', expected: 'Pass', hint: 'Should show <1Ω' },
+            { id: 'usb-08', name: 'USB Termination', instruction: 'Verify termination resistors (highlighted). Should be ~100Ω each.', refs: ['R_DP_TERM', 'R_DN_TERM'], type: 'visual', expected: 'Pass', hint: 'Signal quality assurance' }
+          ]
+        },
+        charging: {
+          name: 'Charging Circuit',
+          steps: [
+            { id: 'chg-01', name: 'Adapter Input', instruction: 'Probe adapter input (highlighted). Should match adapter rating.', net: 'VADIN', type: 'voltage', expected: '20', min: 18, max: 21, unit: 'V', hint: 'Power adapter voltage' },
+            { id: 'chg-02', name: 'Charge IC Enable', instruction: 'Check charge IC enable pin (highlighted). Should be high when charging.', ref: 'U_CHG', type: 'voltage', expected: '3.3', min: 2.5, max: 3.3, unit: 'V', hint: 'Enable/disable control' },
+            { id: 'chg-03', name: 'Battery Voltage', instruction: 'Measure battery voltage (highlighted). Full charge is usually 4.2V.', net: 'VBAT', type: 'voltage', expected: '4.2', min: 3.0, max: 4.2, unit: 'V', hint: 'Battery cell voltage' },
+            { id: 'chg-04', name: 'Charge Current Path', instruction: 'Measure voltage across charge current sense resistor (highlighted).', ref: 'R_CHG_SENSE', type: 'voltage', expected: '0.1', min: 0, max: 0.5, unit: 'V', hint: 'Current flow indicator' },
+            { id: 'chg-05', name: 'Thermal Sensor', instruction: 'Check thermistor voltage (highlighted). Should vary with temperature.', net: 'THERM_SENSE', type: 'voltage', expected: '1.5', min: 0.5, max: 2.5, unit: 'V', hint: 'Temperature protection' },
+            { id: 'chg-06', name: 'Charge Status Pin', instruction: 'Measure charge status pin (highlighted). High = charging, Low = complete.', ref: 'CHG_STAT', type: 'voltage', expected: '3.3', min: 0, max: 3.3, unit: 'V', hint: 'LED or indicator line' },
+            { id: 'chg-07', name: 'Battery Presence', instruction: 'Check battery presence resistor (highlighted). Should pull to GND.', net: 'BATT_PRESENT', type: 'continuity', expected: 'Pass', hint: 'Battery detection circuit', required: false },
+            { id: 'chg-08', name: 'Charge IC Temp', instruction: 'Visually inspect charge IC (highlighted) for heat or damage.', ref: 'U_CHG', type: 'visual', expected: 'Pass', hint: 'No burning smell or discoloration' }
+          ]
+        },
+        backlight: {
+          name: 'Backlight / Display',
+          steps: [
+            { id: 'bkl-01', name: 'Backlight Driver Input', instruction: 'Measure backlight driver input (highlighted). Should be 3.3V or 5V.', net: 'PP_BKL_VIN', type: 'voltage', expected: '3.3', min: 3.0, max: 3.6, unit: 'V', hint: 'Driver supply voltage' },
+            { id: 'bkl-02', name: 'Backlight Driver Output', instruction: 'Check LED driver output (highlighted). Should be PWM or DC high.', net: 'BKL_PWM', type: 'voltage', expected: '3.3', min: 0, max: 3.3, unit: 'V', hint: 'LED current control' },
+            { id: 'bkl-03', name: 'LED String Voltage', instruction: 'Measure voltage across LED string (highlighted). Depends on LED count.', net: 'LED_ANODE', type: 'voltage', expected: '20', min: 15, max: 25, unit: 'V', hint: 'LED array supply' },
+            { id: 'bkl-04', name: 'Panel VCC', instruction: 'Check display panel VCC (highlighted). Usually 3.3V.', net: 'LCD_VCC', type: 'voltage', expected: '3.3', min: 3.1, max: 3.5, unit: 'V', hint: 'Display power' },
+            { id: 'bkl-05', name: 'LVDS/eDP Clock', instruction: 'Check data line continuity to panel connector (highlighted).', refs: ['LVDS_CK_P', 'LVDS_CK_N'], type: 'continuity', expected: 'Pass', hint: 'Differential pairs' },
+            { id: 'bkl-06', name: 'Panel Connector', instruction: 'Visually inspect panel connector (highlighted) for corrosion or damage.', type: 'visual', expected: 'Pass', hint: 'Check pins and contacts' },
+            { id: 'bkl-07', name: 'Backlight Brightness', instruction: 'Connect a USB adapter and test backlight at full brightness.', type: 'visual', expected: 'Pass', hint: 'Uniform brightness, no dead zones' }
+          ]
+        },
+        diode: {
+          name: 'Quick Diode Check',
+          steps: [
+            { id: 'diode-01', name: 'Main CPU Diode', instruction: 'Switch to diode mode, probe CPU pins (highlighted). Should read 0.4-0.7V in one direction.', ref: 'U_CPU', type: 'diode', expected: '0.6', min: 0.4, max: 0.8, unit: 'V', hint: 'Junction forward voltage' },
+            { id: 'diode-02', name: 'Power Delivery MOSFET', instruction: 'Test MOSFET drain-source junction (highlighted).', ref: 'Q_POWER', type: 'diode', expected: '0.5', min: 0.3, max: 0.7, unit: 'V', hint: 'MOSFET body diode' },
+            { id: 'diode-03', name: 'Memory IC Diode', instruction: 'Test memory chip (highlighted). Check one pin to GND.', ref: 'U_MEM', type: 'diode', expected: '0.6', min: 0.4, max: 0.8, unit: 'V', hint: 'ESD protection diode' },
+            { id: 'diode-04', name: 'PMIC Diode', instruction: 'Test PMIC (highlighted). Should show typical diode characteristics.', ref: 'U_PMIC', type: 'diode', expected: '0.6', min: 0.4, max: 0.8, unit: 'V', hint: 'Power management IC' },
+            { id: 'diode-05', name: 'Charging IC Diode', instruction: 'Test charge controller (highlighted).', ref: 'U_CHG', type: 'diode', expected: '0.6', min: 0.4, max: 0.8, unit: 'V', hint: 'Charge management' },
+            { id: 'diode-06', name: 'Peripheral IC #1', instruction: 'Test first peripheral IC (highlighted).', ref: 'U_PERIPH1', type: 'diode', expected: '0.6', min: 0.4, max: 0.8, unit: 'V', hint: 'Audio or interface chip', required: false },
+            { id: 'diode-07', name: 'Peripheral IC #2', instruction: 'Test second peripheral IC (highlighted).', ref: 'U_PERIPH2', type: 'diode', expected: '0.6', min: 0.4, max: 0.8, unit: 'V', hint: 'Sensor or controller', required: false },
+            { id: 'diode-08', name: 'Schottky Diode Check', instruction: 'Check any Schottky diodes (highlighted). Should read 0.2-0.4V.', ref: 'D_SCH', type: 'diode', expected: '0.3', min: 0.2, max: 0.4, unit: 'V', hint: 'Schottky forward voltage', required: false },
+            { id: 'diode-09', name: 'Rectifier Bridge', instruction: 'Test rectifier diodes (highlighted) if present.', ref: 'D_RECT', type: 'diode', expected: '0.6', min: 0.5, max: 0.7, unit: 'V', hint: 'Power rectification', required: false },
+            { id: 'diode-10', name: 'Board Health Summary', instruction: 'All critical chips passed diode check. Compare to known-good reference unit if available.', type: 'visual', expected: 'Pass', hint: 'No missing or shorted chips' }
+          ]
+        }
+      },
+
+      current: null,
+      stepIndex: 0,
+      results: [],
+
+      start(seqId) {
+        if (!seqId || !this.sequences[seqId]) {
+          setStatus('Please select a test sequence');
+          return;
+        }
+        this.current = this.sequences[seqId];
+        this.stepIndex = 0;
+        this.results = [];
+        document.getElementById('gt-sequence-select').disabled = true;
+        document.getElementById('gt-start-btn').style.display = 'none';
+        document.getElementById('gt-stop-btn').style.display = 'block';
+        document.getElementById('gt-progress-wrap').style.display = '';
+        document.getElementById('gt-step-content').style.display = '';
+        this.showStep();
+        setStatus(`GUIDED TEST STARTED: ${this.current.name}`);
+      },
+
+      showStep() {
+        if (!this.current || this.stepIndex >= this.current.steps.length) {
+          this.finish();
+          return;
+        }
+        const step = this.current.steps[this.stepIndex];
+        const totalSteps = this.current.steps.length;
+
+        document.getElementById('gt-step-num').textContent = `Step ${this.stepIndex + 1} of ${totalSteps}`;
+        const percent = Math.round((this.stepIndex / totalSteps) * 100);
+        document.getElementById('gt-progress-fill').style.width = percent + '%';
+
+        document.getElementById('gt-step-name').textContent = '◉ ' + step.name;
+        document.getElementById('gt-step-instruction').textContent = step.instruction;
+
+        let locationText = '';
+        if (step.ref) locationText += `Component: ${step.ref}`;
+        if (step.net) locationText += (locationText ? ' | ' : '') + `Net: ${step.net}`;
+        if (locationText) {
+          document.getElementById('gt-step-location').textContent = '📍 ' + locationText;
+          document.getElementById('gt-step-location').style.display = '';
+        } else {
+          document.getElementById('gt-step-location').style.display = 'none';
+        }
+
+        const isMeasurement = ['voltage', 'diode', 'resistance'].includes(step.type);
+        const measWrap = document.getElementById('gt-measurement-wrap');
+        if (isMeasurement) {
+          measWrap.style.display = '';
+          document.getElementById('gt-expected-range').textContent = `Expected: ${step.expected} ${step.unit} (${step.min}–${step.max})`;
+          document.getElementById('gt-unit').textContent = step.unit;
+          document.getElementById('gt-measurement-input').value = '';
+          document.getElementById('gt-measurement-input').placeholder = `Enter ${step.type} reading…`;
+          document.getElementById('gt-measurement-input').focus();
+        } else {
+          measWrap.style.display = 'none';
+        }
+
+        document.getElementById('gt-skip-btn').style.display = (step.required === false) ? '' : 'none';
+
+        this.highlight(step);
+      },
+
+      highlight(step) {
+        if (!G.cvs) return;
+
+        // Clear previous state
+        G.highlighted = null;
+        G.searchMatches = [];
+        G.activeNet = null;
+        G.netComps = [];
+        G.dimmedComps = [];
+
+        let targetRefs = [];
+        let targetComp = null;
+
+        if (step.ref) {
+          targetRefs.push(step.ref);
+          targetComp = G.comps.find(c => c.ref === step.ref);
+        }
+        if (step.refs) {
+          targetRefs = [...targetRefs, ...step.refs];
+          if (!targetComp) targetComp = G.comps.find(c => step.refs.includes(c.ref));
+        }
+
+        if (targetRefs.length > 0) {
+          G.searchMatches = targetRefs;
+          if (targetComp) {
+            G.highlighted = targetComp.ref;
+            // Tight zoom: override panZoomToComp's default scale for guided test focus
+            if (typeof panZoomToComp === 'function') {
+              panZoomToComp(targetComp);
+              G.zoom = Math.min(G.zoom * 2.2, 12); // zoom in much tighter
+              const canvas = document.getElementById('brd-canvas');
+              if (canvas) {
+                G.pan.x = canvas.width / 2 - targetComp.x * G.zoom;
+                G.pan.y = canvas.height / 2 - targetComp.y * G.zoom;
+              }
+            }
+            if (typeof pulse === 'function') pulse(targetComp);
+            // Update location label
+            const loc = document.getElementById('gt-location');
+            if (loc) loc.textContent = `${targetComp.ref} — ${step.net || ''}`;
+          } else {
+            // Component ref not found in this board file
+            const loc = document.getElementById('gt-location');
+            if (loc) loc.textContent = `⚠ ${targetRefs[0]} not on this board — probe ${step.net || 'manually'}`;
+          }
+        }
+
+        if (step.net) activateNet(step.net);
+
+        // Dim all non-target components for focus
+        if (targetRefs.length > 0) {
+          G.dimmedComps = G.comps.filter(c => !targetRefs.includes(c.ref));
+        }
+
+        drawBRD();
+      },
+
+      record(pass, value) {
+        if (!this.current || this.stepIndex >= this.current.steps.length) return;
+        const step = this.current.steps[this.stepIndex];
+        const isMeasurement = ['voltage', 'diode', 'resistance'].includes(step.type);
+
+        let passFlag = pass;
+        if (isMeasurement && value !== null) {
+          const numVal = parseFloat(value);
+          if (!isNaN(numVal)) {
+            passFlag = numVal >= step.min && numVal <= step.max;
+          }
+        }
+
+        this.results.push({
+          step: step.id,
+          name: step.name,
+          pass: passFlag,
+          value: value,
+          unit: step.unit || ''
+        });
+
+        this.updateResultsStrip();
+        this.stepIndex++;
+        setTimeout(() => this.showStep(), 300);
+      },
+
+      skip() {
+        if (!this.current || this.stepIndex >= this.current.steps.length) return;
+        const step = this.current.steps[this.stepIndex];
+        this.results.push({
+          step: step.id,
+          name: step.name,
+          pass: null,
+          value: null,
+          skipped: true
+        });
+        this.updateResultsStrip();
+        this.stepIndex++;
+        setTimeout(() => this.showStep(), 300);
+      },
+
+      stop() {
+        this.current = null;
+        this.stepIndex = 0;
+        document.getElementById('gt-sequence-select').disabled = false;
+        document.getElementById('gt-start-btn').style.display = '';
+        document.getElementById('gt-stop-btn').style.display = 'none';
+        document.getElementById('gt-progress-wrap').style.display = 'none';
+        document.getElementById('gt-step-content').style.display = 'none';
+        document.getElementById('gt-results-strip').innerHTML = '';
+        G.highlighted = null;
+        G.searchMatches = [];
+        G.dimmedComps = [];
+        G.activeNet = null;
+        G.netComps = [];
+        drawBRD();
+        setStatus('GUIDED TEST STOPPED');
+      },
+
+      updateResultsStrip() {
+        const strip = document.getElementById('gt-results-strip');
+        const recent = this.results.slice(-5);
+        strip.innerHTML = recent.map(r => {
+          let color = '#666';
+          if (r.skipped) color = '#999';
+          else if (r.pass) color = '#44cc66';
+          else if (!r.pass) color = '#ff5533';
+          return `<span style="display:inline-block;width:12px;height:12px;background:${color};border-radius:50%;margin:2px" title="${r.name}"></span>`;
+        }).join('');
+      },
+
+      finish() {
+        this.stop();
+        const pass = this.results.filter(r => r.pass === true).length;
+        const fail = this.results.filter(r => r.pass === false).length;
+        const skip = this.results.filter(r => r.skipped).length;
+        const total = this.results.length;
+
+        const html = `
+          <div style="background:var(--bg2);border:2px solid var(--accent);border-radius:8px;padding:20px;max-width:700px;margin:20px auto;font-family:var(--mono)">
+            <div style="font-size:18px;font-weight:700;color:var(--accent);margin-bottom:16px">⚡ TEST COMPLETE</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;margin-bottom:20px">
+              <div style="background:var(--bg3);padding:12px;border-radius:4px;text-align:center">
+                <div style="font-size:24px;font-weight:700;color:var(--text)">${total}</div>
+                <div style="font-size:10px;color:var(--text3);margin-top:4px">TOTAL</div>
+              </div>
+              <div style="background:var(--bg3);padding:12px;border-radius:4px;text-align:center">
+                <div style="font-size:24px;font-weight:700;color:#44cc66">${pass}</div>
+                <div style="font-size:10px;color:var(--text3);margin-top:4px">PASSED</div>
+              </div>
+              <div style="background:var(--bg3);padding:12px;border-radius:4px;text-align:center">
+                <div style="font-size:24px;font-weight:700;color:#ff5533">${fail}</div>
+                <div style="font-size:10px;color:var(--text3);margin-top:4px">FAILED</div>
+              </div>
+              <div style="background:var(--bg3);padding:12px;border-radius:4px;text-align:center">
+                <div style="font-size:24px;font-weight:700;color:#999">${skip}</div>
+                <div style="font-size:10px;color:var(--text3);margin-top:4px">SKIPPED</div>
+              </div>
+            </div>
+            <div style="border-top:1px solid var(--border);padding-top:16px;margin-bottom:16px">
+              <div style="font-size:11px;font-weight:700;color:var(--text3);letter-spacing:1px;margin-bottom:8px">DETAILED RESULTS</div>
+              ${this.results.map(r => `
+                <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);font-size:10px">
+                  <span style="width:16px;height:16px;border-radius:50%;background:${r.skipped ? '#999' : r.pass ? '#44cc66' : '#ff5533'};flex-shrink:0"></span>
+                  <span style="flex:1;color:var(--text)">${r.name}</span>
+                  ${r.value !== null ? `<span style="color:var(--text2)">${r.value} ${r.unit}</span>` : ''}
+                  ${r.skipped ? '<span style="color:var(--text3)">skipped</span>' : ''}
+                </div>
+              `).join('')}
+            </div>
+            <button onclick="showModalClose()" style="background:var(--accent);color:var(--bg);border:none;padding:10px 20px;border-radius:4px;cursor:pointer;font-size:11px;font-weight:700;width:100%">CLOSE REPORT</button>
+          </div>
+        `;
+
+        showModal(html, 'Guided Test Report');
+        setStatus(`GUIDED TEST COMPLETE: ${pass}/${total} passed`);
+      }
+    };
+
+    // Guided Test toolbar button
+    document.getElementById('tog-guided-test')?.addEventListener('click', () => {
+      document.getElementById('guided-test-panel').classList.toggle('open');
+      document.getElementById('gt-sequence-select').focus();
+    });
+
+    // Guided Test event handlers
+    document.getElementById('gt-close')?.addEventListener('click', () => {
+      if (GuidedTest.current) GuidedTest.stop();
+      document.getElementById('guided-test-panel').classList.remove('open');
+    });
+
+    document.getElementById('gt-start-btn')?.addEventListener('click', () => {
+      const seqId = document.getElementById('gt-sequence-select').value;
+      GuidedTest.start(seqId);
+    });
+
+    document.getElementById('gt-stop-btn')?.addEventListener('click', () => {
+      GuidedTest.stop();
+    });
+
+    document.getElementById('gt-pass-btn')?.addEventListener('click', () => {
+      const isMeasurement = GuidedTest.current?.steps[GuidedTest.stepIndex]?.type.match(/voltage|diode|resistance/);
+      const value = isMeasurement ? document.getElementById('gt-measurement-input').value : null;
+      GuidedTest.record(true, value);
+    });
+
+    document.getElementById('gt-fail-btn')?.addEventListener('click', () => {
+      const isMeasurement = GuidedTest.current?.steps[GuidedTest.stepIndex]?.type.match(/voltage|diode|resistance/);
+      const value = isMeasurement ? document.getElementById('gt-measurement-input').value : null;
+      GuidedTest.record(false, value);
+    });
+
+    document.getElementById('gt-skip-btn')?.addEventListener('click', () => {
+      GuidedTest.skip();
+    });
+
+    document.getElementById('gt-measurement-input')?.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        document.getElementById('gt-pass-btn').click();
+      }
     });
 
     // ── COMPONENT LIBRARY HANDLERS ──
@@ -25281,7 +26988,15 @@ Schema:
     let _visualResolvers = { pass: null, fail: null };
 
     document.getElementById('tog-testing')?.addEventListener('click', () => {
-      document.getElementById('testing-panel').classList.toggle('open');
+      const testPanel = document.getElementById('testing-panel');
+      testPanel.classList.toggle('open');
+      if (testPanel.classList.contains('open')) {
+        // Auto-populate board name when panel opens
+        const boardQuery = document.getElementById('test-board-query');
+        if (boardQuery && !boardQuery.value && G.boardId) {
+          boardQuery.value = G.boardId;
+        }
+      }
       _testRefreshSelect();
 
       // Apply pro lock or AI key status to the lookup section
