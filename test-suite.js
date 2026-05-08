@@ -24,22 +24,22 @@ class TestSuite {
     this.currentSuite = null;
     this.currentTest = null;
     this._listeners = {};
-    
+
     // Initialize built-in test suites
     this._initBuiltinSuites();
   }
-  
+
   // ── EVENT BUS ──
   on(event, callback) {
     if (!this._listeners[event]) this._listeners[event] = [];
     this._listeners[event].push(callback);
   }
-  
+
   emit(event, data) {
     if (!this._listeners[event]) return;
     this._listeners[event].forEach(cb => cb(data));
   }
-  
+
   // ── TEST EXECUTION ──
   async runSuite(suiteId, options = {}) {
     const suite = this.suites.find(s => s.id === suiteId);
@@ -47,15 +47,15 @@ class TestSuite {
       console.error('[TestSuite] Suite not found:', suiteId);
       return { success: false, error: 'Suite not found' };
     }
-    
+
     if (this.running) {
       console.warn('[TestSuite] Already running a test suite');
       return { success: false, error: 'Already running' };
     }
-    
+
     this.running = true;
     this.currentSuite = suite;
-    
+
     const result = {
       suiteId: suite.id,
       suiteName: suite.name,
@@ -73,17 +73,17 @@ class TestSuite {
       skipCount: 0,
       notes: []
     };
-    
+
     this.emit('suite-started', { suite, result });
     console.log('[TestSuite] Starting suite:', suite.name);
-    
+
     try {
       for (let i = 0; i < suite.tests.length; i++) {
         if (!this.running) break; // User stopped
-        
+
         const test = suite.tests[i];
         this.currentTest = test;
-        
+
         // Check dependencies
         if (test.dependsOn) {
           const depResult = result.results.find(r => r.testId === test.dependsOn);
@@ -100,17 +100,17 @@ class TestSuite {
             continue;
           }
         }
-        
+
         this.emit('test-started', { test, index: i, total: suite.tests.length });
-        
+
         const testResult = await this._runTest(test);
         result.results.push(testResult);
-        
+
         if (testResult.status === 'PASS') {
           result.passCount++;
         } else if (testResult.status === 'FAIL') {
           result.failCount++;
-          
+
           // Stop if critical test failed
           if (test.critical) {
             console.warn('[TestSuite] Critical test failed, stopping suite');
@@ -119,50 +119,50 @@ class TestSuite {
         } else if (testResult.status === 'SKIP') {
           result.skipCount++;
         }
-        
+
         this.emit('test-completed', { test, result: testResult, index: i, total: suite.tests.length });
       }
-      
+
       result.endTime = Date.now();
       result.duration = result.endTime - result.startTime;
       result.overallStatus = result.failCount === 0 ? 'PASS' : 'FAIL';
-      
+
       // Save result
       this.results.push(result);
       this._saveResults();
-      
+
       // Update suite stats
       suite.lastRun = result.runDate;
       suite.runCount = (suite.runCount || 0) + 1;
-      
+
       this.running = false;
       this.currentSuite = null;
       this.currentTest = null;
-      
+
       this.emit('suite-completed', { suite, result });
       console.log('[TestSuite] Suite completed:', result.overallStatus);
-      
+
       return { success: true, result };
-      
+
     } catch (error) {
       this.running = false;
       this.currentSuite = null;
       this.currentTest = null;
-      
+
       result.endTime = Date.now();
       result.duration = result.endTime - result.startTime;
       result.overallStatus = 'ERROR';
-      
+
       this.emit('suite-error', { suite, error: error.message });
       console.error('[TestSuite] Suite error:', error);
-      
+
       return { success: false, error: error.message, result };
     }
   }
-  
+
   async _runTest(test) {
     const startTime = Date.now();
-    
+
     try {
       let testResult = {
         testId: test.id,
@@ -176,7 +176,7 @@ class TestSuite {
         duration: null,
         notes: ''
       };
-      
+
       switch (test.type) {
         case 'measurement':
           testResult = await this._testMeasurement(test, testResult);
@@ -194,10 +194,10 @@ class TestSuite {
           testResult.status = 'SKIP';
           testResult.notes = 'Unknown test type';
       }
-      
+
       testResult.duration = Date.now() - startTime;
       return testResult;
-      
+
     } catch (error) {
       return {
         testId: test.id,
@@ -209,12 +209,14 @@ class TestSuite {
       };
     }
   }
-  
+
   async _testMeasurement(test, result) {
     // Highlight net on board
     if (typeof activateNet === 'function') activateNet(test.target);
 
-    if (!window.G_meter || !window.G_meter.connected) {
+    // Support multiple global variable names for the multimeter instance
+    const meter = window.G_meter || window.multimeterInstance || window.meter;
+    if (!meter || !meter.connected) {
       result.status = 'SKIP';
       result.notes = 'Multimeter not connected';
       return result;
@@ -304,12 +306,14 @@ class TestSuite {
 
   async _waitForStableReading(timeout) {
     return new Promise((resolve) => {
-      if (!window.G_meter || !window.G_meter.connected) { resolve(null); return; }
+      // Support multiple global variable names for the multimeter instance
+      const meter = window.G_meter || window.multimeterInstance || window.meter;
+      if (!meter || !meter.connected) { resolve(null); return; }
       let done = false;
       const timer = setTimeout(() => {
         if (!done) { done = true; resolve(null); }
       }, timeout);
-      window.G_meter.on('stable', function onStable(reading) {
+      meter.on('stable', function onStable(reading) {
         if (!done) {
           done = true;
           clearTimeout(timer);
@@ -318,16 +322,16 @@ class TestSuite {
       });
     });
   }
-  
+
   _delay(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
-  
+
   stopSuite() {
     this.running = false;
     console.log('[TestSuite] Suite stopped by user');
   }
-  
+
   // ── REPORT GENERATION ──
   generateReport(result) {
     const html = `
@@ -416,23 +420,23 @@ class TestSuite {
 </body>
 </html>
     `;
-    
+
     return html;
   }
-  
+
   exportReportHTML(result) {
     const html = this.generateReport(result);
     const blob = new Blob([html], { type: 'text/html' });
     const url = URL.createObjectURL(blob);
-    
+
     const a = document.createElement('a');
     a.href = url;
     a.download = `test-report-${result.suiteId}-${Date.now()}.html`;
     a.click();
-    
+
     URL.revokeObjectURL(url);
   }
-  
+
   exportReportPDF(result) {
     // Generate HTML and trigger print dialog
     const html = this.generateReport(result);
@@ -441,28 +445,28 @@ class TestSuite {
     win.document.close();
     win.print();
   }
-  
+
   // ── SUITE MANAGEMENT ──
   getSuites() {
     return this.suites;
   }
-  
+
   getSuite(suiteId) {
     return this.suites.find(s => s.id === suiteId);
   }
-  
+
   getResults(suiteId = null) {
     if (suiteId) {
       return this.results.filter(r => r.suiteId === suiteId);
     }
     return this.results;
   }
-  
+
   getLatestResult(suiteId) {
     const suiteResults = this.getResults(suiteId);
     return suiteResults.length > 0 ? suiteResults[suiteResults.length - 1] : null;
   }
-  
+
   // ── STORAGE ──
   _saveResults() {
     try {
@@ -473,7 +477,7 @@ class TestSuite {
       console.error('[TestSuite] Save results error:', error);
     }
   }
-  
+
   _loadResults() {
     try {
       const stored = localStorage.getItem('boardscope_test_results');
@@ -483,7 +487,7 @@ class TestSuite {
       this.results = [];
     }
   }
-  
+
   // ── BUILT-IN TEST SUITES ──
 
   // Helper: build a measurement test object
@@ -501,13 +505,13 @@ class TestSuite {
     return {
       id, name, description, boardModels, estimatedDuration: 300000,
       tests: [
-        this._t(p('ppbus'),   'PPBUS_G3H',   'PPBUS_G3H',   ppbus, 0.5,  'V', true),
-        this._t(p('pp3v42'),  'PP3V42_G3H',  'PP3V42_G3H',  3.42,  0.1,  'V', true,  p('ppbus')),
-        this._t(p('pp5v'),    'PP5V_S5',     'PP5V_S5',     5.0,   0.2,  'V', true,  p('pp3v42')),
-        this._t(p('pp3v3s5'), 'PP3V3_S5',    'PP3V3_S5',    3.3,   0.1,  'V', true,  p('pp5v')),
-        this._t(p('pp3v3s4'), 'PP3V3_S4',    'PP3V3_S4',    3.3,   0.1,  'V', false, p('pp3v3s5')),
-        this._t(p('pp1v8'),   'PP1V8_S0',    'PP1V8_S0',    1.8,   0.1,  'V', false, p('pp3v3s4')),
-        this._t(p('pp1v05'),  'PP1V05_S0',   'PP1V05_S0',   1.05,  0.05, 'V', false, p('pp1v8')),
+        this._t(p('ppbus'), 'PPBUS_G3H', 'PPBUS_G3H', ppbus, 0.5, 'V', true),
+        this._t(p('pp3v42'), 'PP3V42_G3H', 'PP3V42_G3H', 3.42, 0.1, 'V', true, p('ppbus')),
+        this._t(p('pp5v'), 'PP5V_S5', 'PP5V_S5', 5.0, 0.2, 'V', true, p('pp3v42')),
+        this._t(p('pp3v3s5'), 'PP3V3_S5', 'PP3V3_S5', 3.3, 0.1, 'V', true, p('pp5v')),
+        this._t(p('pp3v3s4'), 'PP3V3_S4', 'PP3V3_S4', 3.3, 0.1, 'V', false, p('pp3v3s5')),
+        this._t(p('pp1v8'), 'PP1V8_S0', 'PP1V8_S0', 1.8, 0.1, 'V', false, p('pp3v3s4')),
+        this._t(p('pp1v05'), 'PP1V05_S0', 'PP1V05_S0', 1.05, 0.05, 'V', false, p('pp1v8')),
         ...extraTests
       ],
       created: '2026-04-18T00:00:00.000Z', lastRun: null, runCount: 0
@@ -520,12 +524,12 @@ class TestSuite {
     return {
       id, name, description, boardModels, estimatedDuration: 180000,
       tests: [
-        this._t(p('batt'),    'Battery (PP_VCC_MAIN)',  'PP_VCC_MAIN',      battV, 0.4,  'V', true),
-        this._t(p('1v8'),     'PP1V8_ALWAYS',           'PP1V8_ALWAYS',     1.8,   0.1,  'V', true,  p('batt')),
-        this._t(p('nand'),    'PP3V0_NAND',             'PP3V0_NAND',       3.0,   0.1,  'V', true,  p('1v8')),
-        this._t(p('vbus'),    'USB VBUS (charging)',    'USB_VBUS',         5.0,   0.3,  'V', false),
-        this._t(p('chgr'),    'CHGR_ACOK',             'CHGR_ACOK',        3.3,   0.2,  'V', false, p('vbus')),
-        this._t(p('boost'),   'PPVDD_BOOST (display)', 'PPVDD_BOOST',      5.4,   0.3,  'V', false, p('nand')),
+        this._t(p('batt'), 'Battery (PP_VCC_MAIN)', 'PP_VCC_MAIN', battV, 0.4, 'V', true),
+        this._t(p('1v8'), 'PP1V8_ALWAYS', 'PP1V8_ALWAYS', 1.8, 0.1, 'V', true, p('batt')),
+        this._t(p('nand'), 'PP3V0_NAND', 'PP3V0_NAND', 3.0, 0.1, 'V', true, p('1v8')),
+        this._t(p('vbus'), 'USB VBUS (charging)', 'USB_VBUS', 5.0, 0.3, 'V', false),
+        this._t(p('chgr'), 'CHGR_ACOK', 'CHGR_ACOK', 3.3, 0.2, 'V', false, p('vbus')),
+        this._t(p('boost'), 'PPVDD_BOOST (display)', 'PPVDD_BOOST', 5.4, 0.3, 'V', false, p('nand')),
       ],
       created: '2026-04-18T00:00:00.000Z', lastRun: null, runCount: 0
     };
@@ -543,9 +547,9 @@ class TestSuite {
         boardModels: ['All'],
         estimatedDuration: 60000,
         tests: [
-          this._t('qp-bus',  'Main Bus',  'PPBUS_G3H', 12.6, 1.0, 'V', true),
-          this._t('qp-3v3',  '3.3V Rail', 'PP3V3_S5',  3.3,  0.3, 'V', true),
-          this._t('qp-1v8',  '1.8V Rail', 'PP1V8_S0',  1.8,  0.2, 'V', false),
+          this._t('qp-bus', 'Main Bus', 'PPBUS_G3H', 12.6, 1.0, 'V', true),
+          this._t('qp-3v3', '3.3V Rail', 'PP3V3_S5', 3.3, 0.3, 'V', true),
+          this._t('qp-1v8', '1.8V Rail', 'PP1V8_S0', 1.8, 0.2, 'V', false),
         ],
         created: '2026-04-18T00:00:00.000Z', lastRun: null, runCount: 0
       },
@@ -553,7 +557,7 @@ class TestSuite {
       // ── MacBook Pro 13" Retina 2013-2014 (820-3437) ──
       this._macSuite('mbp13-3437', 'MacBook Pro 13" 2013-14 (820-3437)', ['820-3437-B'],
         'Full power sequence — 820-3437. PPBUS from MagSafe ~16.5V or battery ~12.6V.',
-        12.6, [this._t(p('mbp13-3437','smc'), 'SMC_RESET_L', 'SMC_RESET_L', 3.3, 0.2, 'V', false, p('mbp13-3437','pp1v05'))]),
+        12.6, [this._t(p('mbp13-3437', 'smc'), 'SMC_RESET_L', 'SMC_RESET_L', 3.3, 0.2, 'V', false, p('mbp13-3437', 'pp1v05'))]),
 
       // ── MacBook Pro 15" Retina 2013-2014 (820-3787) ──
       this._macSuite('mbp15-3787', 'MacBook Pro 15" 2013-14 (820-3787)', ['820-3787-A'],
@@ -566,7 +570,7 @@ class TestSuite {
       // ── MacBook Pro 13" 2016 Touch Bar (820-00165) ──
       this._macSuite('mbp13-00165', 'MacBook Pro 13" 2016 Touch Bar (820-00165)', ['820-00165-A'],
         'USB-C board. PPBUS from USB-C PD negotiation (~20V→converted). PP3V42 from ISL9240.',
-        12.6, [this._t(p('mbp13-00165','pd'), 'USBC_VBUS', 'USBC_VBUS', 20.0, 2.0, 'V', true)]),
+        12.6, [this._t(p('mbp13-00165', 'pd'), 'USBC_VBUS', 'USBC_VBUS', 20.0, 2.0, 'V', true)]),
 
       // ── MacBook Pro 13" 2016 No Touch Bar (820-00923) ──
       this._macSuite('mbp13-00923', 'MacBook Pro 13" 2016 No TB (820-00923)', ['820-00923-A'],
@@ -580,12 +584,12 @@ class TestSuite {
       // ── MacBook Pro 13" 2018-2019 Touch Bar (820-01521) ──
       this._macSuite('mbp13-01521', 'MacBook Pro 13" 2018-19 (820-01521)', ['820-01521-A'],
         'Coffee Lake — 820-01521. T2 chip controls power sequence. Check PP3V42 first.',
-        12.6, [this._t(p('mbp13-01521','t2'), 'PP3V3_S0SW_T2', 'PP3V3_S0SW_T2', 3.3, 0.1, 'V', false, p('mbp13-01521','pp1v05'))]),
+        12.6, [this._t(p('mbp13-01521', 't2'), 'PP3V3_S0SW_T2', 'PP3V3_S0SW_T2', 3.3, 0.1, 'V', false, p('mbp13-01521', 'pp1v05'))]),
 
       // ── MacBook Pro 16" 2019 (820-01814) ──
       this._macSuite('mbp16-01814', 'MacBook Pro 16" 2019 (820-01814)', ['820-01814-A'],
         'Ice Lake — 820-01814. T2 chip. Higher current demands on 1V05 and VCORE rails.',
-        12.6, [this._t(p('mbp16-01814','vcore'), 'PPVCORE_S0', 'PPVCORE_S0', 1.0, 0.15, 'V', false, p('mbp16-01814','pp1v05'))]),
+        12.6, [this._t(p('mbp16-01814', 'vcore'), 'PPVCORE_S0', 'PPVCORE_S0', 1.0, 0.15, 'V', false, p('mbp16-01814', 'pp1v05'))]),
 
       // ── MacBook Pro 13" 2020 Intel (820-01987) ──
       this._macSuite('mbp13-01987', 'MacBook Pro 13" 2020 Intel (820-01987)', ['820-01987-A'],
@@ -599,12 +603,12 @@ class TestSuite {
         boardModels: ['820-02390-A'],
         estimatedDuration: 300000,
         tests: [
-          this._t('m1-ppbus',   'PPBUS_G3H',       'PPBUS_G3H',       12.6, 0.5,  'V', true),
-          this._t('m1-pp3v42',  'PP3V42_G3H',      'PP3V42_G3H',      3.42, 0.1,  'V', true,  'm1-ppbus'),
-          this._t('m1-pp3v3s5', 'PP3V3_S5',        'PP3V3_S5',        3.3,  0.1,  'V', true,  'm1-pp3v42'),
-          this._t('m1-pp1v8',   'PP1V8_S0',        'PP1V8_S0',        1.8,  0.1,  'V', false, 'm1-pp3v3s5'),
-          this._t('m1-pp0v9',   'PP0V9_S0',        'PP0V9_S0',        0.9,  0.05, 'V', false, 'm1-pp1v8'),
-          this._t('m1-ppddr',   'PPDDR_S0 (LPDDR)', 'PPDDR_S0',      1.1,  0.05, 'V', false, 'm1-pp0v9'),
+          this._t('m1-ppbus', 'PPBUS_G3H', 'PPBUS_G3H', 12.6, 0.5, 'V', true),
+          this._t('m1-pp3v42', 'PP3V42_G3H', 'PP3V42_G3H', 3.42, 0.1, 'V', true, 'm1-ppbus'),
+          this._t('m1-pp3v3s5', 'PP3V3_S5', 'PP3V3_S5', 3.3, 0.1, 'V', true, 'm1-pp3v42'),
+          this._t('m1-pp1v8', 'PP1V8_S0', 'PP1V8_S0', 1.8, 0.1, 'V', false, 'm1-pp3v3s5'),
+          this._t('m1-pp0v9', 'PP0V9_S0', 'PP0V9_S0', 0.9, 0.05, 'V', false, 'm1-pp1v8'),
+          this._t('m1-ppddr', 'PPDDR_S0 (LPDDR)', 'PPDDR_S0', 1.1, 0.05, 'V', false, 'm1-pp0v9'),
         ],
         created: '2026-04-18T00:00:00.000Z', lastRun: null, runCount: 0
       },
@@ -625,11 +629,11 @@ class TestSuite {
         boardModels: ['820-02388-A'],
         estimatedDuration: 240000,
         tests: [
-          this._t('mba-m1-ppbus',  'PPBUS_G3H',    'PPBUS_G3H',    12.6, 0.5,  'V', true),
-          this._t('mba-m1-pp3v42', 'PP3V42_G3H',   'PP3V42_G3H',   3.42, 0.1,  'V', true,  'mba-m1-ppbus'),
-          this._t('mba-m1-pp3v3',  'PP3V3_S5',     'PP3V3_S5',     3.3,  0.1,  'V', true,  'mba-m1-pp3v42'),
-          this._t('mba-m1-pp1v8',  'PP1V8_S0',     'PP1V8_S0',     1.8,  0.1,  'V', false, 'mba-m1-pp3v3'),
-          this._t('mba-m1-pp0v9',  'PP0V9_S0',     'PP0V9_S0',     0.9,  0.05, 'V', false, 'mba-m1-pp1v8'),
+          this._t('mba-m1-ppbus', 'PPBUS_G3H', 'PPBUS_G3H', 12.6, 0.5, 'V', true),
+          this._t('mba-m1-pp3v42', 'PP3V42_G3H', 'PP3V42_G3H', 3.42, 0.1, 'V', true, 'mba-m1-ppbus'),
+          this._t('mba-m1-pp3v3', 'PP3V3_S5', 'PP3V3_S5', 3.3, 0.1, 'V', true, 'mba-m1-pp3v42'),
+          this._t('mba-m1-pp1v8', 'PP1V8_S0', 'PP1V8_S0', 1.8, 0.1, 'V', false, 'mba-m1-pp3v3'),
+          this._t('mba-m1-pp0v9', 'PP0V9_S0', 'PP0V9_S0', 0.9, 0.05, 'V', false, 'mba-m1-pp1v8'),
         ],
         created: '2026-04-18T00:00:00.000Z', lastRun: null, runCount: 0
       },
@@ -647,13 +651,13 @@ class TestSuite {
         boardModels: ['820-00951-A'],
         estimatedDuration: 360000,
         tests: [
-          this._t('imac17-12v',   '12V Standby',     'PP12V_G3H',    12.0, 0.5,  'V', true),
-          this._t('imac17-5v',    '5V Standby',      'PP5V_G3H',     5.0,  0.2,  'V', true,  'imac17-12v'),
-          this._t('imac17-3v42',  'PP3V42_G3H',      'PP3V42_G3H',   3.42, 0.1,  'V', true,  'imac17-5v'),
-          this._t('imac17-3v3s5', 'PP3V3_S5',        'PP3V3_S5',     3.3,  0.1,  'V', true,  'imac17-3v42'),
-          this._t('imac17-1v8',   'PP1V8_S0',        'PP1V8_S0',     1.8,  0.1,  'V', false, 'imac17-3v3s5'),
-          this._t('imac17-1v05',  'PP1V05_S0',       'PP1V05_S0',    1.05, 0.05, 'V', false, 'imac17-1v8'),
-          this._t('imac17-gpu',   'PPVCORE_GPU',     'PPVCORE_GPU',  1.0,  0.1,  'V', false, 'imac17-1v05'),
+          this._t('imac17-12v', '12V Standby', 'PP12V_G3H', 12.0, 0.5, 'V', true),
+          this._t('imac17-5v', '5V Standby', 'PP5V_G3H', 5.0, 0.2, 'V', true, 'imac17-12v'),
+          this._t('imac17-3v42', 'PP3V42_G3H', 'PP3V42_G3H', 3.42, 0.1, 'V', true, 'imac17-5v'),
+          this._t('imac17-3v3s5', 'PP3V3_S5', 'PP3V3_S5', 3.3, 0.1, 'V', true, 'imac17-3v42'),
+          this._t('imac17-1v8', 'PP1V8_S0', 'PP1V8_S0', 1.8, 0.1, 'V', false, 'imac17-3v3s5'),
+          this._t('imac17-1v05', 'PP1V05_S0', 'PP1V05_S0', 1.05, 0.05, 'V', false, 'imac17-1v8'),
+          this._t('imac17-gpu', 'PPVCORE_GPU', 'PPVCORE_GPU', 1.0, 0.1, 'V', false, 'imac17-1v05'),
         ],
         created: '2026-04-18T00:00:00.000Z', lastRun: null, runCount: 0
       },
@@ -666,11 +670,11 @@ class TestSuite {
         boardModels: ['820-00939-A'],
         estimatedDuration: 300000,
         tests: [
-          this._t('mm18-ppbus',   'PPBUS_G3H',    'PPBUS_G3H',    12.6, 0.5,  'V', true),
-          this._t('mm18-pp3v42',  'PP3V42_G3H',   'PP3V42_G3H',   3.42, 0.1,  'V', true,  'mm18-ppbus'),
-          this._t('mm18-pp3v3s5', 'PP3V3_S5',     'PP3V3_S5',     3.3,  0.1,  'V', true,  'mm18-pp3v42'),
-          this._t('mm18-pp1v8',   'PP1V8_S0',     'PP1V8_S0',     1.8,  0.1,  'V', false, 'mm18-pp3v3s5'),
-          this._t('mm18-pp1v05',  'PP1V05_S0',    'PP1V05_S0',    1.05, 0.05, 'V', false, 'mm18-pp1v8'),
+          this._t('mm18-ppbus', 'PPBUS_G3H', 'PPBUS_G3H', 12.6, 0.5, 'V', true),
+          this._t('mm18-pp3v42', 'PP3V42_G3H', 'PP3V42_G3H', 3.42, 0.1, 'V', true, 'mm18-ppbus'),
+          this._t('mm18-pp3v3s5', 'PP3V3_S5', 'PP3V3_S5', 3.3, 0.1, 'V', true, 'mm18-pp3v42'),
+          this._t('mm18-pp1v8', 'PP1V8_S0', 'PP1V8_S0', 1.8, 0.1, 'V', false, 'mm18-pp3v3s5'),
+          this._t('mm18-pp1v05', 'PP1V05_S0', 'PP1V05_S0', 1.05, 0.05, 'V', false, 'mm18-pp1v8'),
         ],
         created: '2026-04-18T00:00:00.000Z', lastRun: null, runCount: 0
       },
@@ -703,12 +707,12 @@ class TestSuite {
         boardModels: ['iPad Pro 11" 2021', 'iPad Pro 12.9" 2021'],
         estimatedDuration: 240000,
         tests: [
-          this._t('ipadm1-batt',  'BATT_SYS',           'BATT_SYS',         3.85, 0.4,  'V', true),
-          this._t('ipadm1-1v8',   'PP1V8_ALWAYS',       'PP1V8_ALWAYS',     1.8,  0.1,  'V', true,  'ipadm1-batt'),
-          this._t('ipadm1-3v0',   'PP3V0_NAND',         'PP3V0_NAND',       3.0,  0.1,  'V', true,  'ipadm1-1v8'),
-          this._t('ipadm1-lcd',   'LCD_VDD',            'LCD_VDD',          3.3,  0.1,  'V', false, 'ipadm1-3v0'),
-          this._t('ipadm1-bklt',  'LCD_VDDIO (boost)',  'LCD_BKLT',         20.0, 2.0,  'V', false, 'ipadm1-lcd'),
-          this._t('ipadm1-vbus',  'USB VBUS (charging)','USB_VBUS',         5.0,  0.3,  'V', false),
+          this._t('ipadm1-batt', 'BATT_SYS', 'BATT_SYS', 3.85, 0.4, 'V', true),
+          this._t('ipadm1-1v8', 'PP1V8_ALWAYS', 'PP1V8_ALWAYS', 1.8, 0.1, 'V', true, 'ipadm1-batt'),
+          this._t('ipadm1-3v0', 'PP3V0_NAND', 'PP3V0_NAND', 3.0, 0.1, 'V', true, 'ipadm1-1v8'),
+          this._t('ipadm1-lcd', 'LCD_VDD', 'LCD_VDD', 3.3, 0.1, 'V', false, 'ipadm1-3v0'),
+          this._t('ipadm1-bklt', 'LCD_VDDIO (boost)', 'LCD_BKLT', 20.0, 2.0, 'V', false, 'ipadm1-lcd'),
+          this._t('ipadm1-vbus', 'USB VBUS (charging)', 'USB_VBUS', 5.0, 0.3, 'V', false),
         ],
         created: '2026-04-18T00:00:00.000Z', lastRun: null, runCount: 0
       },
@@ -721,11 +725,11 @@ class TestSuite {
         boardModels: ['iPad Air 4th Gen 2020'],
         estimatedDuration: 200000,
         tests: [
-          this._t('air4-batt', 'BATT_SYS',       'BATT_SYS',       3.85, 0.4, 'V', true),
-          this._t('air4-1v8',  'PP1V8_ALWAYS',   'PP1V8_ALWAYS',   1.8,  0.1, 'V', true,  'air4-batt'),
-          this._t('air4-nand', 'PP3V0_NAND',     'PP3V0_NAND',     3.0,  0.1, 'V', true,  'air4-1v8'),
-          this._t('air4-lcd',  'LCD_VDD',        'LCD_VDD',        3.3,  0.1, 'V', false, 'air4-nand'),
-          this._t('air4-vbus', 'USB VBUS',       'USB_VBUS',       5.0,  0.3, 'V', false),
+          this._t('air4-batt', 'BATT_SYS', 'BATT_SYS', 3.85, 0.4, 'V', true),
+          this._t('air4-1v8', 'PP1V8_ALWAYS', 'PP1V8_ALWAYS', 1.8, 0.1, 'V', true, 'air4-batt'),
+          this._t('air4-nand', 'PP3V0_NAND', 'PP3V0_NAND', 3.0, 0.1, 'V', true, 'air4-1v8'),
+          this._t('air4-lcd', 'LCD_VDD', 'LCD_VDD', 3.3, 0.1, 'V', false, 'air4-nand'),
+          this._t('air4-vbus', 'USB VBUS', 'USB_VBUS', 5.0, 0.3, 'V', false),
         ],
         created: '2026-04-18T00:00:00.000Z', lastRun: null, runCount: 0
       },
@@ -740,7 +744,7 @@ class TestSuite {
     const id = 'ai-' + Date.now();
     const tests = (parsed.tests || []).map((t, i) => ({
       id: `${id}-t${i}`,
-      name: t.name || t.target || `Test ${i+1}`,
+      name: t.name || t.target || `Test ${i + 1}`,
       type: 'measurement',
       target: t.target || t.name || '',
       mode: 'DCV',

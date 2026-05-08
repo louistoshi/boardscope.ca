@@ -759,7 +759,7 @@ OPENROUTER_API_KEY=sk-or-...</code></pre>
     <h3>Connecting</h3>
     <ol>
       <li>Plug your meter's USB adapter into the computer</li>
-      <li>Click the <strong>⚡ METER</strong> button (header) or press <kbd>M</kbd> to open the meter window</li>
+      <li>Click the <strong>⚡ METER</strong> button (header), select <strong>TOOLS ➔ 🔌 Multimeter</strong> from the menu, or press <kbd>M</kbd> to open the meter window</li>
       <li>Click <strong>CONNECT</strong> — the browser's port picker appears</li>
       <li>Select your meter's COM/serial port and click Connect</li>
       <li>The status line shows <em>Connected</em> and live readings begin</li>
@@ -1059,6 +1059,14 @@ OPENROUTER_API_KEY=sk-or-...</code></pre>
     </ol>
     <h3>Contributing Measurements</h3>
     <p>After measuring a known-good board, export your measurements via <strong>OBD DATA → Export</strong> to generate an <code>.obdata</code> file that can be shared with the community.</p>
+    <h3>Fail-Safe Offline &amp; Redirect Protection</h3>
+    <p>In the event of local DNS issues, proxy redirects, or strict protocol restrictions (such as running over <code>file://</code> protocol directly), BoardScope incorporates a <strong>three-stage automatic failover system</strong>:</p>
+    <ul>
+      <li><strong>Relative Local Fetch:</strong> The app first requests OBD board lists or proxy files through local relative paths.</li>
+      <li><strong>Absolute Local Loopback:</strong> If the relative call is blocked, the app automatically reroutes requests to the local Electron/Express server at <code>http://127.0.0.1:8080</code>, which bypasses local file-protocol limits.</li>
+      <li><strong>Cloud Fallback:</strong> If both local options fail, BoardScope seamlessly falls back to querying the official cloud database on <code>https://boardscope.ca</code>.</li>
+    </ul>
+    <p>Additionally, the backend proxy automatically follows recursive HTTP 301/302 redirects, making downloads immune to any future server movements or protocol upgrades from OpenBoardData.</p>
   </div>
 
   <!-- COMPONENT NOTES -->

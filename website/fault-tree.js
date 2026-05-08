@@ -527,8 +527,8 @@ function searchFaultTrees(query) {
       const matchesSymptom = symptom.symptom.toLowerCase().includes(q);
       const matchingSteps = symptom.steps.filter(step =>
         step.text.toLowerCase().includes(q) ||
-        step.hint.toLowerCase().includes(q) ||
-        step.nets.some(n => n.toLowerCase().includes(q))
+        (step.hint || '').toLowerCase().includes(q) ||
+        (step.nets || []).some(n => n.toLowerCase().includes(q))
       );
 
       if (matchesSymptom || matchingSteps.length > 0) {
@@ -548,8 +548,8 @@ function searchFaultTrees(query) {
     const matchesSymptom = symptom.symptom.toLowerCase().includes(q);
     const matchingSteps = symptom.steps.filter(step =>
       step.text.toLowerCase().includes(q) ||
-      step.hint.toLowerCase().includes(q) ||
-      step.nets.some(n => n.toLowerCase().includes(q))
+      (step.hint || '').toLowerCase().includes(q) ||
+      (step.nets || []).some(n => n.toLowerCase().includes(q))
     );
 
     if (matchesSymptom || matchingSteps.length > 0) {

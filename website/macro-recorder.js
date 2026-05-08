@@ -27,26 +27,26 @@ class MacroRecorder {
     this.macros = this._loadMacros();
     this._listeners = {};
     this._actionIndex = 0;
-    
+
     // Built-in macros
     this._initBuiltinMacros();
   }
-  
+
   // ── EVENT BUS ──
   on(event, callback) {
     if (!this._listeners[event]) this._listeners[event] = [];
     this._listeners[event].push(callback);
   }
-  
+
   emit(event, data) {
     if (!this._listeners[event]) return;
     this._listeners[event].forEach(cb => cb(data));
   }
-  
+
   // ── RECORDING ──
   startRecording(name, description = '') {
     if (this.recording) return;
-    
+
     this.recording = true;
     this.actions = [];
     this.currentMacro = {
@@ -59,49 +59,49 @@ class MacroRecorder {
       lastRun: null,
       runCount: 0
     };
-    
+
     this.emit('recording-started', { name });
     console.log('[MacroRecorder] Recording started:', name);
   }
-  
+
   recordAction(type, params = {}) {
     if (!this.recording) return;
-    
+
     const action = {
       type: type,
       params: params,
       timestamp: Date.now()
     };
-    
+
     this.actions.push(action);
     console.log('[MacroRecorder] Action recorded:', action);
   }
-  
+
   stopRecording() {
     if (!this.recording) return;
-    
+
     this.recording = false;
     this.currentMacro.actions = this.actions;
     this.macros.push(this.currentMacro);
     this._saveMacros();
-    
+
     this.emit('recording-stopped', { macro: this.currentMacro });
     console.log('[MacroRecorder] Recording stopped. Actions:', this.actions.length);
-    
+
     const saved = this.currentMacro;
     this.currentMacro = null;
     this.actions = [];
-    
+
     return saved;
   }
-  
+
   cancelRecording() {
     this.recording = false;
     this.currentMacro = null;
     this.actions = [];
     console.log('[MacroRecorder] Recording cancelled');
   }
-  
+
   // ── PLAYBACK ──
   async playMacro(macroId) {
     const macro = this.macros.find(m => m.id === macroId);
@@ -109,54 +109,54 @@ class MacroRecorder {
       console.error('[MacroRecorder] Macro not found:', macroId);
       return { success: false, error: 'Macro not found' };
     }
-    
+
     if (this.playing) {
       console.warn('[MacroRecorder] Already playing a macro');
       return { success: false, error: 'Already playing' };
     }
-    
+
     this.playing = true;
     this._actionIndex = 0;
-    
+
     this.emit('playback-started', { macro });
     console.log('[MacroRecorder] Playing macro:', macro.name);
-    
+
     const results = [];
-    
+
     try {
       for (let i = 0; i < macro.actions.length; i++) {
         if (!this.playing) break; // User stopped playback
-        
+
         this._actionIndex = i;
         const action = macro.actions[i];
-        
+
         console.log(`[MacroRecorder] Executing action ${i + 1}/${macro.actions.length}:`, action.type);
-        
+
         const result = await this._executeAction(action);
         results.push(result);
-        
+
         this.emit('playback-progress', {
           action: action,
           index: i,
           total: macro.actions.length,
           result: result
         });
-        
+
         // Small delay between actions for stability
         await this._delay(action.params.wait || 300);
       }
-      
+
       // Update macro stats
       macro.lastRun = new Date().toISOString();
       macro.runCount++;
       this._saveMacros();
-      
+
       this.playing = false;
       this.emit('playback-completed', { macro, results });
       console.log('[MacroRecorder] Playback completed');
-      
+
       return { success: true, results };
-      
+
     } catch (error) {
       this.playing = false;
       this.emit('playback-error', { macro, error: error.message });
@@ -164,12 +164,12 @@ class MacroRecorder {
       return { success: false, error: error.message };
     }
   }
-  
+
   stopPlayback() {
     this.playing = false;
     console.log('[MacroRecorder] Playback stopped by user');
   }
-  
+
   async _executeAction(action) {
     switch (action.type) {
       case 'search':
@@ -195,20 +195,20 @@ class MacroRecorder {
         return { success: false, error: 'Unknown action type' };
     }
   }
-  
+
   // ── ACTION EXECUTORS ──
   async _actionSearch(params) {
     // Trigger search in BoardScope
     const searchInput = document.getElementById('comp-search');
     if (!searchInput) return { success: false, error: 'Search input not found' };
-    
+
     searchInput.value = params.query;
     searchInput.dispatchEvent(new Event('input', { bubbles: true }));
     searchInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
-    
+
     return { success: true, query: params.query };
   }
-  
+
   async _actionSelectComponent(params) {
     // Select component by reference
     // This would integrate with BoardScope's component selection system
@@ -218,7 +218,7 @@ class MacroRecorder {
     }
     return { success: false, error: 'Component selection not available' };
   }
-  
+
   async _actionClickPad(params) {
     // Click a specific pad/pin
     // This would integrate with BoardScope's pad click system
@@ -228,13 +228,13 @@ class MacroRecorder {
     }
     return { success: false, error: 'Pad click not available' };
   }
-  
+
   async _actionMeasure(params) {
     // Wait for meter reading
     if (!window.meter || !window.meter.connected) {
       return { success: false, error: 'Multimeter not connected' };
     }
-    
+
     // Wait for stable reading if requested
     if (params.waitForStable) {
       const timeout = params.timeout || 5000;
@@ -245,12 +245,12 @@ class MacroRecorder {
         return { success: false, error: 'Timeout waiting for stable reading' };
       }
     }
-    
+
     // Just return current reading
     const reading = window.meter.getLastReading();
     return { success: true, reading: reading };
   }
-  
+
   async _actionSaveMeasurement(params) {
     // Save measurement to current net
     // This would integrate with BoardScope's measurement system
@@ -260,7 +260,7 @@ class MacroRecorder {
     }
     return { success: false, error: 'Save measurement not available' };
   }
-  
+
   async _actionZoom(params) {
     // Zoom to component or fit view
     if (params.target === 'fit') {
@@ -273,7 +273,7 @@ class MacroRecorder {
     }
     return { success: true };
   }
-  
+
   async _actionPdfPage(params) {
     // Navigate to PDF page
     const pageInput = document.getElementById('pg-jump');
@@ -284,7 +284,7 @@ class MacroRecorder {
     }
     return { success: false, error: 'PDF navigation not available' };
   }
-  
+
   async _actionToggleSide(params) {
     // Toggle top/bottom side
     const button = params.side === 'top' ? document.getElementById('tog-t') : document.getElementById('tog-b');
@@ -294,47 +294,47 @@ class MacroRecorder {
     }
     return { success: false, error: 'Side toggle not available' };
   }
-  
+
   async _actionWait(params) {
     // Simple delay
     await this._delay(params.duration || 1000);
     return { success: true, duration: params.duration };
   }
-  
+
   async _waitForStableReading(timeout) {
     return new Promise((resolve) => {
       const startTime = Date.now();
-      
+
       const checkStable = () => {
         if (Date.now() - startTime > timeout) {
           resolve(null);
           return;
         }
-        
+
         if (window.meter && window.meter._stableReading) {
           resolve(window.meter._stableReading);
         } else {
           setTimeout(checkStable, 100);
         }
       };
-      
+
       checkStable();
     });
   }
-  
+
   _delay(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
-  
+
   // ── MACRO MANAGEMENT ──
   getMacros() {
     return this.macros;
   }
-  
+
   getMacro(macroId) {
     return this.macros.find(m => m.id === macroId);
   }
-  
+
   deleteMacro(macroId) {
     const index = this.macros.findIndex(m => m.id === macroId);
     if (index !== -1) {
@@ -344,7 +344,7 @@ class MacroRecorder {
     }
     return false;
   }
-  
+
   updateMacro(macroId, updates) {
     const macro = this.getMacro(macroId);
     if (macro) {
@@ -354,24 +354,24 @@ class MacroRecorder {
     }
     return false;
   }
-  
+
   exportMacro(macroId) {
     const macro = this.getMacro(macroId);
     if (!macro) return null;
-    
+
     const exported = JSON.stringify(macro, null, 2);
     const blob = new Blob([exported], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
-    
+
     const a = document.createElement('a');
     a.href = url;
     a.download = `${macro.name.replace(/\s+/g, '-')}.macro.json`;
     a.click();
-    
+
     URL.revokeObjectURL(url);
     return macro;
   }
-  
+
   importMacro(jsonString) {
     try {
       const macro = JSON.parse(jsonString);
@@ -385,7 +385,7 @@ class MacroRecorder {
       return null;
     }
   }
-  
+
   // ── STORAGE ──
   _loadMacros() {
     try {
@@ -396,7 +396,7 @@ class MacroRecorder {
       return [];
     }
   }
-  
+
   _saveMacros() {
     try {
       // Only save non-builtin macros
@@ -406,7 +406,7 @@ class MacroRecorder {
       console.error('[MacroRecorder] Save error:', error);
     }
   }
-  
+
   // ── BUILT-IN MACROS ──
   _initBuiltinMacros() {
     const builtins = [
@@ -420,22 +420,22 @@ class MacroRecorder {
           { type: 'measure', params: { mode: 'DCV', waitForStable: true, timeout: 5000 } },
           { type: 'save-measurement', params: { field: 'voltage' } },
           { type: 'wait', params: { duration: 300 } },
-          
+
           { type: 'search', params: { query: 'PP3V42_G3H', wait: 500 } },
           { type: 'measure', params: { mode: 'DCV', waitForStable: true, timeout: 5000 } },
           { type: 'save-measurement', params: { field: 'voltage' } },
           { type: 'wait', params: { duration: 300 } },
-          
+
           { type: 'search', params: { query: 'PP5V_G3H', wait: 500 } },
           { type: 'measure', params: { mode: 'DCV', waitForStable: true, timeout: 5000 } },
           { type: 'save-measurement', params: { field: 'voltage' } },
           { type: 'wait', params: { duration: 300 } },
-          
+
           { type: 'search', params: { query: 'PP3V3_S5', wait: 500 } },
           { type: 'measure', params: { mode: 'DCV', waitForStable: true, timeout: 5000 } },
           { type: 'save-measurement', params: { field: 'voltage' } },
           { type: 'wait', params: { duration: 300 } },
-          
+
           { type: 'search', params: { query: 'PP1V8_S0', wait: 500 } },
           { type: 'measure', params: { mode: 'DCV', waitForStable: true, timeout: 5000 } },
           { type: 'save-measurement', params: { field: 'voltage' } }
@@ -454,22 +454,22 @@ class MacroRecorder {
           { type: 'measure', params: { mode: 'DIODE', waitForStable: true, timeout: 5000 } },
           { type: 'save-measurement', params: { field: 'diode' } },
           { type: 'wait', params: { duration: 300 } },
-          
+
           { type: 'search', params: { query: 'USB_DP', wait: 500 } },
           { type: 'measure', params: { mode: 'DIODE', waitForStable: true, timeout: 5000 } },
           { type: 'save-measurement', params: { field: 'diode' } },
           { type: 'wait', params: { duration: 300 } },
-          
+
           { type: 'search', params: { query: 'USB_DN', wait: 500 } },
           { type: 'measure', params: { mode: 'DIODE', waitForStable: true, timeout: 5000 } },
           { type: 'save-measurement', params: { field: 'diode' } },
           { type: 'wait', params: { duration: 300 } },
-          
+
           { type: 'search', params: { query: 'USB_CC1', wait: 500 } },
           { type: 'measure', params: { mode: 'DIODE', waitForStable: true, timeout: 5000 } },
           { type: 'save-measurement', params: { field: 'diode' } },
           { type: 'wait', params: { duration: 300 } },
-          
+
           { type: 'search', params: { query: 'USB_CC2', wait: 500 } },
           { type: 'measure', params: { mode: 'DIODE', waitForStable: true, timeout: 5000 } },
           { type: 'save-measurement', params: { field: 'diode' } }
@@ -488,12 +488,12 @@ class MacroRecorder {
           { type: 'measure', params: { mode: 'DCV', waitForStable: true, timeout: 5000 } },
           { type: 'save-measurement', params: { field: 'voltage' } },
           { type: 'wait', params: { duration: 300 } },
-          
+
           { type: 'search', params: { query: 'LCD_BKLT', wait: 500 } },
           { type: 'measure', params: { mode: 'DCV', waitForStable: true, timeout: 5000 } },
           { type: 'save-measurement', params: { field: 'voltage' } },
           { type: 'wait', params: { duration: 300 } },
-          
+
           { type: 'search', params: { query: 'LVDS_CLK', wait: 500 } },
           { type: 'measure', params: { mode: 'DIODE', waitForStable: true, timeout: 5000 } },
           { type: 'save-measurement', params: { field: 'diode' } }
@@ -511,12 +511,12 @@ class MacroRecorder {
           { type: 'search', params: { query: 'AUDIO_CODEC', wait: 500 } },
           { type: 'select-component', params: { ref: 'U4900' } },
           { type: 'wait', params: { duration: 500 } },
-          
+
           { type: 'search', params: { query: 'SPK_L', wait: 500 } },
           { type: 'measure', params: { mode: 'OHM', waitForStable: true, timeout: 5000 } },
           { type: 'save-measurement', params: { field: 'resistance' } },
           { type: 'wait', params: { duration: 300 } },
-          
+
           { type: 'search', params: { query: 'SPK_R', wait: 500 } },
           { type: 'measure', params: { mode: 'OHM', waitForStable: true, timeout: 5000 } },
           { type: 'save-measurement', params: { field: 'resistance' } }
@@ -535,17 +535,17 @@ class MacroRecorder {
           { type: 'measure', params: { mode: 'DCV', waitForStable: true, timeout: 5000 } },
           { type: 'save-measurement', params: { field: 'voltage' } },
           { type: 'wait', params: { duration: 300 } },
-          
+
           { type: 'search', params: { query: 'CHGR_ACOK', wait: 500 } },
           { type: 'measure', params: { mode: 'DCV', waitForStable: true, timeout: 5000 } },
           { type: 'save-measurement', params: { field: 'voltage' } },
           { type: 'wait', params: { duration: 300 } },
-          
+
           { type: 'search', params: { query: 'CHGR_BATT', wait: 500 } },
           { type: 'measure', params: { mode: 'DCV', waitForStable: true, timeout: 5000 } },
           { type: 'save-measurement', params: { field: 'voltage' } },
           { type: 'wait', params: { duration: 300 } },
-          
+
           { type: 'search', params: { query: 'CHGR_EN', wait: 500 } },
           { type: 'measure', params: { mode: 'DCV', waitForStable: true, timeout: 5000 } },
           { type: 'save-measurement', params: { field: 'voltage' } }
@@ -555,7 +555,7 @@ class MacroRecorder {
         runCount: 0
       }
     ];
-    
+
     // Add built-in macros if not already present
     builtins.forEach(builtin => {
       if (!this.macros.find(m => m.id === builtin.id)) {
@@ -563,7 +563,7 @@ class MacroRecorder {
       }
     });
   }
-  
+
   // ── UTILITY ──
   getRecordingStatus() {
     return {
@@ -572,12 +572,14 @@ class MacroRecorder {
       macroName: this.currentMacro?.name
     };
   }
-  
+
   getPlaybackStatus() {
+    // Use the macro being played back, not currentMacro which may be null
+    const macro = this.macros.find(m => m.id === this._currentPlaybackId) || this.currentMacro;
     return {
       playing: this.playing,
       currentAction: this._actionIndex,
-      totalActions: this.currentMacro?.actions.length || 0
+      totalActions: macro?.actions?.length || 0
     };
   }
 }

@@ -1,26 +1,17 @@
-import sys
+import os
+from rembg import remove
 from PIL import Image
 
-def clean_background(input_path, output_path):
-    img = Image.open(input_path).convert("RGBA")
-    datas = img.getdata()
+assets_dir = "/Users/macbookair/boardscope beta/boardscope_5 2/assets/components_icons/"
 
-    new_data = []
-    # Simple threshold-based removal for the grid/white backgrounds
-    for item in datas:
-        # If it's very bright (white-ish) or matches the grid pattern, make it transparent
-        # The grid is usually around (200, 200, 200) or (255, 255, 255)
-        if item[0] > 220 and item[1] > 220 and item[2] > 220:
-            new_data.append((255, 255, 255, 0))
-        else:
-            new_data.append(item)
-
-    img.putdata(new_data)
-    img.save(output_path, "PNG")
-    print(f"Cleaned image saved to {output_path}")
-
-if __name__ == "__main__":
-    if len(sys.argv) < 3:
-        print("Usage: python3 clean_backgrounds.py <input> <output>")
-    else:
-        clean_background(sys.argv[1], sys.argv[2])
+for filename in os.listdir(assets_dir):
+    if filename.endswith(".png"):
+        img_path = os.path.join(assets_dir, filename)
+        print(f"Processing {filename}...")
+        try:
+            input_image = Image.open(img_path)
+            output_image = remove(input_image)
+            output_image.save(img_path)
+            print(f"Successfully processed {filename}")
+        except Exception as e:
+            print(f"Error processing {filename}: {e}")

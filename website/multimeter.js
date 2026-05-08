@@ -159,7 +159,7 @@ class Multimeter {
   _emit(event, data) {
     const fns = this._listeners[event] || [];
     for (const fn of fns) {
-      try { fn(data); } catch(_) {}
+      try { fn(data); } catch (_) { }
     }
   }
 
@@ -167,10 +167,10 @@ class Multimeter {
 
   // Protocol info for UI display
   static PROTOCOLS = {
-    auto:   { label: 'Auto-detect',       baud: 2400 },
+    auto: { label: 'Auto-detect', baud: 2400 },
     fs9721: { label: 'FS9721 (UNI-T / Mastech / Lilliput / Voltcraft)', baud: 2400 },
-    owon:   { label: 'OWON (OW16B / OW16C)',                             baud: 9600 },
-    metex:  { label: 'Metex / Voltcraft M-3860 / Conrad ME-32',          baud: 1200 },
+    owon: { label: 'OWON (OW16B / OW16C)', baud: 9600 },
+    metex: { label: 'Metex / Voltcraft M-3860 / Conrad ME-32', baud: 1200 },
   };
 
   setProtocol(name) {
@@ -229,12 +229,12 @@ class Multimeter {
   async disconnect() {
     this._running = false;
     if (this.reader) {
-      try { await this.reader.cancel(); } catch(_) {}
-      try { await this.reader.releaseLock(); } catch(_) {}
+      try { await this.reader.cancel(); } catch (_) { }
+      try { await this.reader.releaseLock(); } catch (_) { }
       this.reader = null;
     }
     if (this.port) {
-      try { await this.port.close(); } catch(_) {}
+      try { await this.port.close(); } catch (_) { }
       this.port = null;
     }
     this.connected = false;
@@ -275,7 +275,7 @@ class Multimeter {
       } catch (err) {
         if (this._running) this._emit('error', 'Read error: ' + err.message);
       } finally {
-        try { this.reader.releaseLock(); } catch(_) {}
+        try { this.reader.releaseLock(); } catch (_) { }
         this.reader = null;
       }
     }
@@ -283,6 +283,11 @@ class Multimeter {
   }
 
   _processBuffer() {
+    // Prevent unbounded buffer growth on malformed data
+    if (this._buffer.length > 1024) {
+      this._buffer = this._buffer.slice(-56); // Keep only last 4 frames
+    }
+
     const proto = this._detectedProtocol || this._protocol;
 
     // Auto-detect: try to identify protocol from buffered bytes
@@ -290,7 +295,7 @@ class Multimeter {
       if (this._tryDetectProtocol()) return; // re-enters with detected protocol
     }
 
-    if (proto === 'owon')  { this._processBufferOWON();  return; }
+    if (proto === 'owon') { this._processBufferOWON(); return; }
     if (proto === 'metex') { this._processBufferMetex(); return; }
 
     // Default / fs9721
@@ -405,7 +410,7 @@ class Multimeter {
     if (frame.length !== 11) return null;
     if (frame[10] !== 0x0D) return null;
 
-    const modeRaw  = frame[1];
+    const modeRaw = frame[1];
     const rangeRaw = frame[2];
 
     // Digits: 4 BCD bytes, each byte = two decimal digits
@@ -419,15 +424,15 @@ class Multimeter {
 
     const negative = (frame[7] & 0x08) !== 0;
     const overload = (frame[7] & 0x01) !== 0;
-    const dp       = rangeRaw & 0x07; // decimal places (0-4)
+    const dp = rangeRaw & 0x07; // decimal places (0-4)
 
     let value = overload ? Infinity : intVal / Math.pow(10, dp);
     if (negative && !overload) value = -value;
 
     const MODE_MAP = {
-      0x00: 'DCV',  0x01: 'ACV',  0x02: 'DCA',  0x03: 'ACA',
-      0x04: 'OHM',  0x05: 'DIODE', 0x06: 'CONT', 0x07: 'CAP',
-      0x08: 'FREQ', 0x09: 'DUTY', 0x0A: 'TEMP',  0x0B: 'mV',
+      0x00: 'DCV', 0x01: 'ACV', 0x02: 'DCA', 0x03: 'ACA',
+      0x04: 'OHM', 0x05: 'DIODE', 0x06: 'CONT', 0x07: 'CAP',
+      0x08: 'FREQ', 0x09: 'DUTY', 0x0A: 'TEMP', 0x0B: 'mV',
       0x0C: 'mA',
     };
     const UNIT_MAP = {
@@ -469,19 +474,19 @@ class Multimeter {
   _parseMetex(frame) {
     if (frame.length !== 14 || frame[13] !== 0x0D) return null;
     try {
-      const str     = String.fromCharCode(...frame.slice(0, 13)).trim();
+      const str = String.fromCharCode(...frame.slice(0, 13)).trim();
       // Format: "MODE NNNNNUNIT" e.g. "DCV  1.234 V  "
       const modeStr = str.slice(0, 4).trim();
-      const valStr  = str.slice(4, 9).trim();
+      const valStr = str.slice(4, 9).trim();
       const unitStr = str.slice(9, 13).trim();
 
       const MODE_MAP = {
         'DCV': 'DCV', 'ACV': 'ACV', 'DCM': 'DCA', 'ACM': 'ACA',
         'OHM': 'OHM', 'DIO': 'DIODE', 'CAP': 'CAP', 'FRQ': 'FREQ',
-        'mV':  'mV',  'mA':  'mA',   'uA':  'uA',
+        'mV': 'mV', 'mA': 'mA', 'uA': 'uA',
       };
       const mode = MODE_MAP[modeStr] || modeStr;
-      const ol   = valStr === 'OL' || valStr === ' OL ';
+      const ol = valStr === 'OL' || valStr === ' OL ';
       const value = ol ? Infinity : parseFloat(valStr);
       if (!ol && isNaN(value)) return null;
 
@@ -491,7 +496,7 @@ class Multimeter {
         display: ol ? 'OL' : this._formatDisplay(value, unitStr, mode),
         protocol: 'metex',
       };
-    } catch(_) { return null; }
+    } catch (_) { return null; }
   }
 
   /* ── Shared Reading Dispatch ───────────────────────────────────── */
@@ -504,7 +509,9 @@ class Multimeter {
       return;
     }
     if (this._relative && this._relativeRef !== null) {
-      calibrated.value  -= this._relativeRef;
+      // Create a copy before modifying to avoid mutating the original reading
+      calibrated = { ...calibrated };
+      calibrated.value -= this._relativeRef;
       calibrated.display = this._formatDisplay(calibrated.value, calibrated.unit, calibrated.mode);
       calibrated.relative = true;
     }
@@ -753,7 +760,7 @@ class Multimeter {
   exportCSV() {
     const header = 'Timestamp,Value,Display,Unit,Mode,Negative,OL,Stable\n';
     const rows = this._readingLog.map(r =>
-      `${r.timestamp},${r.value},"${r.display}",${r.unit},${r.mode},${r.negative},${r.ol},${r.stable}`
+      `${r.timestamp},${r.value},"${(r.display || '').replace(/"/g, '""')}",${r.unit},${r.mode},${r.negative},${r.ol},${r.stable}`
     ).join('\n');
     return header + rows;
   }

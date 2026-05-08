@@ -58,3 +58,6 @@ electron/out
 .claude/
 .continue/
 .copilot/
+
+# Readable source backups — never push unobfuscated code
+src-unobfuscated/

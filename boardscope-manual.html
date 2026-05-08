@@ -783,6 +783,15 @@ net:PP3 side:B — combine filters</code></pre>
 
 <h3>Local measurements</h3>
 <p>Record your own measurements using REPAIR ▾ → PROBE MODE or the net panel's RECORD button. Local measurements override OBD values and are saved to localStorage per board. Export as <code>.obdata</code> to share with other techs.</p>
+
+<h3>Fail-Safe Offline &amp; Redirect Protection</h3>
+<p>In the event of local DNS issues, proxy redirects, or strict protocol restrictions (such as running over <code>file://</code> protocol directly), BoardScope incorporates a <strong>three-stage automatic failover system</strong>:</p>
+<ul style="margin:8px 0 8px 20px;color:var(--text2);font-size:14px;line-height:2">
+  <li><strong>Relative Local Fetch:</strong> The app first requests OBD board lists or proxy files through local relative paths.</li>
+  <li><strong>Absolute Local Loopback:</strong> If the relative call is blocked, the app automatically reroutes requests to the local Electron/Express server at <code>http://127.0.0.1:8080</code>, which bypasses local file-protocol limits.</li>
+  <li><strong>Cloud Fallback:</strong> If both local options fail, BoardScope seamlessly falls back to querying the official cloud database on <code>https://boardscope.ca</code>.</li>
+</ul>
+<p>Additionally, the backend proxy automatically follows recursive HTTP 301/302 redirects, making downloads immune to any future server movements or protocol upgrades from OpenBoardData.</p>
 </div>
 
 <!-- ══ 13 AI SETUP ══ -->

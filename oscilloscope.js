@@ -28,24 +28,24 @@ class HantekDriver {
 
   // Voltage range codes (wValue for control transfer 0xE0/0xE1)
   static RANGE_CODE = {
-    5.0:  0x01,
-    2.5:  0x02,
-    1.0:  0x03,
-    0.5:  0x04,
-    0.2:  0x05,
-    0.1:  0x06,
+    5.0: 0x01,
+    2.5: 0x02,
+    1.0: 0x03,
+    0.5: 0x04,
+    0.2: 0x05,
+    0.1: 0x06,
   };
 
   // Sample rate codes for control transfer 0xE2
   static RATE_CODE = {
-    1e3:   0x01,
-    10e3:  0x02,
+    1e3: 0x01,
+    10e3: 0x02,
     100e3: 0x04,
     200e3: 0x08,
     500e3: 0x10,
-    1e6:   0x20,
-    2e6:   0x40,
-    4e6:   0x80,
+    1e6: 0x20,
+    2e6: 0x40,
+    4e6: 0x80,
   };
 
   // Closest valid sample rate
@@ -66,7 +66,7 @@ class HantekDriver {
 
   async configure(device, sampleRate, voltageScale) {
     const rateActual = HantekDriver.nearestRate(sampleRate);
-    const rateCode   = HantekDriver.RATE_CODE[rateActual];
+    const rateCode = HantekDriver.RATE_CODE[rateActual];
 
     const ch1Range = HantekDriver._nearestRange(voltageScale[0] * 5);
     const ch2Range = HantekDriver._nearestRange(voltageScale[1] * 5);
@@ -110,7 +110,7 @@ class HantekDriver {
     // Data encoding: unsigned byte, 0x80 = 0V, scaled ±1 around mid
     if (channelEnabled[0] && channelEnabled[1]) {
       for (let i = 0; i < numSamples; i++) {
-        ch1[i] = ((raw[i * 2]     - 128) / 128.0);
+        ch1[i] = ((raw[i * 2] - 128) / 128.0);
         ch2[i] = ((raw[i * 2 + 1] - 128) / 128.0);
       }
     } else if (channelEnabled[0]) {
@@ -144,11 +144,11 @@ class SCPIDriver {
   ];
 
   constructor() {
-    this.port   = null;
+    this.port = null;
     this.reader = null;
     this.writer = null;
-    this._buf   = '';
-    this.model  = 'SCPI';
+    this._buf = '';
+    this.model = 'SCPI';
   }
 
   static serialFilters() {
@@ -158,7 +158,12 @@ class SCPIDriver {
 
   async connect() {
     if (!('serial' in navigator)) throw new Error('WebSerial not supported. Use Chrome or Edge.');
-    this.port = await navigator.serial.requestPort({ filters: SCPIDriver.serialFilters() });
+    try {
+      this.port = await navigator.serial.requestPort({ filters: SCPIDriver.serialFilters() });
+    } catch {
+      // Fallback: no filters if browser doesn't support them
+      this.port = await navigator.serial.requestPort();
+    }
     await this.port.open({ baudRate: 115200, dataBits: 8, stopBits: 1, parity: 'none' });
     this.writer = this.port.writable.getWriter();
     this._startReader();
@@ -167,19 +172,19 @@ class SCPIDriver {
     try {
       const idn = await this.query('*IDN?');
       this.model = idn.trim();
-    } catch(_) { this.model = 'SCPI Scope'; }
+    } catch (_) { this.model = 'SCPI Scope'; }
 
     return this.model;
   }
 
   async disconnect() {
     if (this.reader) {
-      try { await this.reader.cancel(); } catch(_) {}
-      try { this.reader.releaseLock(); } catch(_) {}
+      try { await this.reader.cancel(); } catch (_) { }
+      try { this.reader.releaseLock(); } catch (_) { }
       this.reader = null;
     }
-    if (this.writer) { try { this.writer.releaseLock(); } catch(_) {} this.writer = null; }
-    if (this.port)   { try { await this.port.close(); } catch(_) {} this.port = null; }
+    if (this.writer) { try { this.writer.releaseLock(); } catch (_) { } this.writer = null; }
+    if (this.port) { try { await this.port.close(); } catch (_) { } this.port = null; }
   }
 
   async write(cmd) {
@@ -208,9 +213,9 @@ class SCPIDriver {
 
   async configure(sampleRate, numPoints, channelEnabled) {
     if (channelEnabled[0]) await this.write(':CHAN1:DISP ON');
-    else                   await this.write(':CHAN1:DISP OFF');
+    else await this.write(':CHAN1:DISP OFF');
     if (channelEnabled[1]) await this.write(':CHAN2:DISP ON');
-    else                   await this.write(':CHAN2:DISP OFF');
+    else await this.write(':CHAN2:DISP OFF');
 
     await this.write(`:ACQ:SAMP ${sampleRate}`);
     await this.write(`:WAV:POIN ${numPoints}`);
@@ -235,8 +240,8 @@ class SCPIDriver {
           if (done) break;
           this._buf += dec.decode(value);
         }
-      } catch(_) {}
-      try { this.reader.releaseLock(); } catch(_) {}
+      } catch (_) { }
+      try { this.reader.releaseLock(); } catch (_) { }
     };
     go();
   }
@@ -252,9 +257,9 @@ class OwonMeterProtocol {
   static parse(frame) {
     if (frame.length !== 11) return null;
 
-    const modeRaw  = frame[1];
+    const modeRaw = frame[1];
     const rangeRaw = frame[2];
-    const flags    = frame[3];
+    const flags = frame[3];
 
     // Digits: BCD in bytes 4–7, sign in byte 8
     let value = 0;
@@ -265,8 +270,8 @@ class OwonMeterProtocol {
       value = value * 100 + hi * 10 + lo;
     }
 
-    const negative   = (frame[8] & 0x08) !== 0;
-    const overload   = (frame[8] & 0x01) !== 0;
+    const negative = (frame[8] & 0x08) !== 0;
+    const overload = (frame[8] & 0x01) !== 0;
     const dpPosition = (rangeRaw & 0x07);  // 0=none, 1=x.xxx, 2=xx.xx, 3=xxx.x
 
     if (!overload && dpPosition > 0) {
@@ -275,9 +280,9 @@ class OwonMeterProtocol {
     if (negative) value = -value;
 
     const MODE_MAP = {
-      0x00: 'DCV',  0x01: 'ACV',  0x02: 'DCA',  0x03: 'ACA',
-      0x04: 'OHM',  0x05: 'DIODE', 0x06: 'CONT', 0x07: 'CAP',
-      0x08: 'FREQ', 0x09: 'DUTY', 0x0A: 'TEMP',  0x0B: 'mV',
+      0x00: 'DCV', 0x01: 'ACV', 0x02: 'DCA', 0x03: 'ACA',
+      0x04: 'OHM', 0x05: 'DIODE', 0x06: 'CONT', 0x07: 'CAP',
+      0x08: 'FREQ', 0x09: 'DUTY', 0x0A: 'TEMP', 0x0B: 'mV',
     };
     const UNIT_MAP = {
       'DCV': 'V', 'ACV': 'V', 'mV': 'mV',
@@ -289,8 +294,10 @@ class OwonMeterProtocol {
     const mode = MODE_MAP[modeRaw] || 'DCV';
     const unit = UNIT_MAP[mode] || '';
 
-    return { value, mode, unit, ol: overload, negative, timestamp: Date.now(), stable: false,
-             display: overload ? 'OL' : `${value.toFixed(dpPosition > 0 ? dpPosition : 0)} ${unit}` };
+    return {
+      value, mode, unit, ol: overload, negative, timestamp: Date.now(), stable: false,
+      display: overload ? 'OL' : `${value.toFixed(dpPosition > 0 ? dpPosition : 0)} ${unit}`
+    };
   }
 }
 
@@ -298,34 +305,34 @@ class OwonMeterProtocol {
 class Oscilloscope {
   constructor() {
     // Connection state
-    this.device      = null;    // WebUSB device (Hantek)
-    this._scpi       = null;    // SCPIDriver (OWON/Rigol)
-    this._driver     = null;    // 'hantek' | 'scpi' | null
-    this.connected   = false;
-    this.capturing   = false;
-    this.demoMode    = false;   // true when no real hardware — shows animated waveform
+    this.device = null;    // WebUSB device (Hantek)
+    this._scpi = null;    // SCPIDriver (OWON/Rigol)
+    this._driver = null;    // 'hantek' | 'scpi' | null
+    this.connected = false;
+    this.capturing = false;
+    this.demoMode = false;   // true when no real hardware — shows animated waveform
 
     // Channel settings
-    this.sampleRate      = 1e6;          // Sa/s
-    this.channels        = 2;
-    this.channelEnabled  = [true, true];
-    this.voltageScale    = [1.0, 1.0];   // V/div
-    this.voltageOffset   = [0, 0];
-    this.timebase        = 1e-3;         // s/div
-    this.triggerChannel  = 0;
-    this.triggerLevel    = 0;
-    this.triggerEdge     = 'RISING';
-    this.triggerMode     = 'AUTO';
+    this.sampleRate = 1e6;          // Sa/s
+    this.channels = 2;
+    this.channelEnabled = [true, true];
+    this.voltageScale = [1.0, 1.0];   // V/div
+    this.voltageOffset = [0, 0];
+    this.timebase = 1e-3;         // s/div
+    this.triggerChannel = 0;
+    this.triggerLevel = 0;
+    this.triggerEdge = 'RISING';
+    this.triggerMode = 'AUTO';
 
     // Data
     this.waveformData = [new Float32Array(0), new Float32Array(0)];
-    this.maxSamples   = 10000;
+    this.maxSamples = 10000;
 
     // Protocol decoder
-    this.decoderEnabled  = false;
+    this.decoderEnabled = false;
     this.decoderProtocol = null;   // 'I2C' | 'SPI' | 'UART'
-    this.decoderConfig   = { sclChannel: 1, sdaChannel: 0, baudRate: 9600, clockEdge: 'RISING' };
-    this.decodedData     = [];
+    this.decoderConfig = { sclChannel: 1, sdaChannel: 0, baudRate: 9600, clockEdge: 'RISING' };
+    this.decodedData = [];
 
     // Measurements
     this.measurements = {
@@ -350,11 +357,11 @@ class Oscilloscope {
         await dev.selectConfiguration(1);
         await dev.claimInterface(0);
 
-        this.device  = dev;
+        this.device = dev;
         this._driver = 'hantek';
         this._hantek = new HantekDriver();
         this.connected = true;
-        this.demoMode  = false;
+        this.demoMode = false;
         this.emit('connected', { device: dev.productName, driver: 'hantek' });
         console.log('[Scope] Hantek connected:', dev.productName);
         return true;
@@ -373,7 +380,7 @@ class Oscilloscope {
         const model = await this._scpi.connect();
         this._driver = 'scpi';
         this.connected = true;
-        this.demoMode  = false;
+        this.demoMode = false;
         this.emit('connected', { device: model, driver: 'scpi' });
         console.log('[Scope] SCPI connected:', model);
         return true;
@@ -392,8 +399,8 @@ class Oscilloscope {
 
   async connectDemo() {
     this.connected = true;
-    this.demoMode  = true;
-    this._driver   = 'demo';
+    this.demoMode = true;
+    this._driver = 'demo';
     this.emit('connected', { device: 'Demo Mode', driver: 'demo' });
     return true;
   }
@@ -402,7 +409,7 @@ class Oscilloscope {
     this.capturing = false;
 
     if (this._driver === 'hantek' && this.device) {
-      try { await this.device.close(); } catch(_) {}
+      try { await this.device.close(); } catch (_) { }
       this.device = null;
     }
     if (this._driver === 'scpi' && this._scpi) {
@@ -410,16 +417,16 @@ class Oscilloscope {
       this._scpi = null;
     }
 
-    this._driver   = null;
+    this._driver = null;
     this.connected = false;
-    this.demoMode  = false;
+    this.demoMode = false;
     this.emit('disconnected');
   }
 
   // ── CAPTURE ───────────────────────────────────────────────────────────
   async capture(duration = 0.01) {
     if (!this.connected) { console.error('[Scope] Not connected'); return null; }
-    if (this.capturing)  { console.warn('[Scope] Already capturing'); return null; }
+    if (this.capturing) { console.warn('[Scope] Already capturing'); return null; }
 
     this.capturing = true;
     const numSamples = Math.min(Math.floor(this.sampleRate * duration), this.maxSamples);
@@ -429,7 +436,7 @@ class Oscilloscope {
 
       if (this._driver === 'hantek') {
         const actualRate = await this._hantek.configure(this.device, this.sampleRate, this.voltageScale);
-        this.sampleRate  = actualRate;
+        this.sampleRate = actualRate;
         const raw = await this._hantek.capture(this.device, numSamples, this.channelEnabled);
         // Scale raw normalised values to volts
         ch1 = raw.ch1.map(v => v * this.voltageScale[0] * 5 + this.voltageOffset[0]);
@@ -456,7 +463,7 @@ class Oscilloscope {
       this.capturing = false;
 
       const waveform = {
-        timestamp:  Date.now(),
+        timestamp: Date.now(),
         sampleRate: this.sampleRate,
         numSamples,
         duration,
@@ -505,10 +512,10 @@ class Oscilloscope {
         const v = data[i];
         if (v < min) min = v;
         if (v > max) max = v;
-        sum   += v;
+        sum += v;
         sumSq += v * v;
       }
-      m.vpp  = max - min;
+      m.vpp = max - min;
       m.vrms = Math.sqrt(sumSq / data.length);
       m.vavg = sum / data.length;
 
@@ -518,16 +525,16 @@ class Oscilloscope {
       for (let i = 1; i < data.length; i++) {
         if (data[i - 1] < mid && data[i] >= mid) crossings++;
       }
-      const dur    = data.length / this.sampleRate;
-      m.frequency  = crossings > 0 ? crossings / dur : 0;
-      m.period     = m.frequency > 0 ? 1 / m.frequency : 0;
+      const dur = data.length / this.sampleRate;
+      m.frequency = crossings > 0 ? crossings / dur : 0;
+      m.period = m.frequency > 0 ? 1 / m.frequency : 0;
 
       // Duty cycle
       const highCount = data.filter(v => v >= mid).length;
       m.dutyCycle = (highCount / data.length) * 100;
 
       // Rise / fall time
-      m.riseTime = this._edgeTime(data, true,  min, max);
+      m.riseTime = this._edgeTime(data, true, min, max);
       m.fallTime = this._edgeTime(data, false, min, max);
     }
   }
@@ -549,13 +556,13 @@ class Oscilloscope {
 
   // ── PROTOCOL DECODERS ────────────────────────────────────────────────
   enableDecoder(protocol, config = {}) {
-    this.decoderEnabled  = true;
+    this.decoderEnabled = true;
     this.decoderProtocol = protocol;
     Object.assign(this.decoderConfig, config);
   }
 
   disableDecoder() {
-    this.decoderEnabled  = false;
+    this.decoderEnabled = false;
     this.decoderProtocol = null;
     this.decodedData = [];
   }
@@ -564,11 +571,11 @@ class Oscilloscope {
     this.decodedData = [];
     try {
       switch (this.decoderProtocol) {
-        case 'I2C':  this._decodeI2C();  break;
-        case 'SPI':  this._decodeSPI();  break;
+        case 'I2C': this._decodeI2C(); break;
+        case 'SPI': this._decodeSPI(); break;
         case 'UART': this._decodeUART(); break;
       }
-    } catch(e) { console.warn('[Scope] Decoder error:', e); }
+    } catch (e) { console.warn('[Scope] Decoder error:', e); }
     if (this.decodedData.length) {
       this.emit('decoded', { protocol: this.decoderProtocol, data: this.decodedData });
     }
@@ -623,9 +630,9 @@ class Oscilloscope {
 
   _decodeSPI() {
     // CH0 = MOSI, CH1 = SCK
-    const cfg  = this.decoderConfig;
+    const cfg = this.decoderConfig;
     const mosi = this.waveformData[0];
-    const sck  = this.waveformData[1];
+    const sck = this.waveformData[1];
     if (!mosi || !sck || mosi.length < 10) return;
 
     const MID = 0;
@@ -636,8 +643,8 @@ class Oscilloscope {
     let lastSCK = high(sck[0]);
 
     for (let i = 1; i < sck.length; i++) {
-      const curSCK  = high(sck[i]);
-      const sample  = rising ? (!lastSCK && curSCK) : (lastSCK && !curSCK);
+      const curSCK = high(sck[i]);
+      const sample = rising ? (!lastSCK && curSCK) : (lastSCK && !curSCK);
       if (sample) {
         byteVal = (byteVal << 1) | (high(mosi[i]) ? 1 : 0);
         bitCount++;
@@ -655,7 +662,7 @@ class Oscilloscope {
     const data = this.waveformData[0];
     if (!data || data.length < 10) return;
 
-    const cfg      = this.decoderConfig;
+    const cfg = this.decoderConfig;
     const baudRate = cfg.baudRate || 9600;
     const samplesPerBit = Math.round(this.sampleRate / baudRate);
     const MID = 0;
@@ -696,7 +703,7 @@ class Oscilloscope {
       case 'CSV': this._exportCSV(); break;
       case 'PNG': this._exportPNG(); break;
       case 'VCD': this._exportVCD(); break;
-      case 'SR':  this._exportSR();  break;
+      case 'SR': this._exportSR(); break;
       default: console.warn('[Scope] Unknown format:', format);
     }
   }
@@ -748,13 +755,13 @@ class Oscilloscope {
       // Use browser's built-in CompressionStream to create ZIP (Chrome 80+)
       // We build a minimal ZIP manually for maximum compatibility
       const zip = this._buildZip({
-        'version':  new TextEncoder().encode('2'),
+        'version': new TextEncoder().encode('2'),
         'metadata': new TextEncoder().encode(meta),
         'analog-1-1': new Uint8Array(ch1Buf.buffer),
         'analog-1-2': new Uint8Array(ch2Buf.buffer),
       });
       this._downloadBytes(zip, `capture-${Date.now()}.sr`, 'application/zip');
-    } catch(e) {
+    } catch (e) {
       console.warn('[Scope] SR export: ZIP build failed, falling back to CSV');
       this._exportCSV();
     }
@@ -775,17 +782,17 @@ class Oscilloscope {
       const lhSize = 30 + nameBytes.length;
       const lh = new Uint8Array(lhSize);
       const lhv = new DataView(lh.buffer);
-      lhv.setUint32(0,  0x04034b50, true);  // signature
-      lhv.setUint16(4,  20,         true);  // version needed
-      lhv.setUint16(6,  0,          true);  // flags
-      lhv.setUint16(8,  0,          true);  // compression: store
-      lhv.setUint16(10, 0,          true);  // mod time
-      lhv.setUint16(12, 0,          true);  // mod date
-      lhv.setUint32(14, crc,        true);  // crc32
-      lhv.setUint32(18, data.length,true);  // compressed size
-      lhv.setUint32(22, data.length,true);  // uncompressed size
+      lhv.setUint32(0, 0x04034b50, true);  // signature
+      lhv.setUint16(4, 20, true);  // version needed
+      lhv.setUint16(6, 0, true);  // flags
+      lhv.setUint16(8, 0, true);  // compression: store
+      lhv.setUint16(10, 0, true);  // mod time
+      lhv.setUint16(12, 0, true);  // mod date
+      lhv.setUint32(14, crc, true);  // crc32
+      lhv.setUint32(18, data.length, true);  // compressed size
+      lhv.setUint32(22, data.length, true);  // uncompressed size
       lhv.setUint16(26, nameBytes.length, true); // filename length
-      lhv.setUint16(28, 0,          true);  // extra length
+      lhv.setUint16(28, 0, true);  // extra length
       lh.set(nameBytes, 30);
 
       parts.push(lh);
@@ -794,23 +801,23 @@ class Oscilloscope {
       // Central directory entry
       const cd = new Uint8Array(46 + nameBytes.length);
       const cdv = new DataView(cd.buffer);
-      cdv.setUint32(0,  0x02014b50, true);  // signature
-      cdv.setUint16(4,  20,         true);  // version made by
-      cdv.setUint16(6,  20,         true);  // version needed
-      cdv.setUint16(8,  0,          true);  // flags
-      cdv.setUint16(10, 0,          true);  // compression
-      cdv.setUint16(12, 0,          true);  // mod time
-      cdv.setUint16(14, 0,          true);  // mod date
-      cdv.setUint32(16, crc,        true);  // crc32
-      cdv.setUint32(20, data.length,true);  // compressed size
-      cdv.setUint32(24, data.length,true);  // uncompressed size
+      cdv.setUint32(0, 0x02014b50, true);  // signature
+      cdv.setUint16(4, 20, true);  // version made by
+      cdv.setUint16(6, 20, true);  // version needed
+      cdv.setUint16(8, 0, true);  // flags
+      cdv.setUint16(10, 0, true);  // compression
+      cdv.setUint16(12, 0, true);  // mod time
+      cdv.setUint16(14, 0, true);  // mod date
+      cdv.setUint32(16, crc, true);  // crc32
+      cdv.setUint32(20, data.length, true);  // compressed size
+      cdv.setUint32(24, data.length, true);  // uncompressed size
       cdv.setUint16(28, nameBytes.length, true);
-      cdv.setUint16(30, 0,          true);  // extra length
-      cdv.setUint16(32, 0,          true);  // comment length
-      cdv.setUint16(34, 0,          true);  // disk number start
-      cdv.setUint16(36, 0,          true);  // int file attrs
-      cdv.setUint32(38, 0,          true);  // ext file attrs
-      cdv.setUint32(42, offset,     true);  // local header offset
+      cdv.setUint16(30, 0, true);  // extra length
+      cdv.setUint16(32, 0, true);  // comment length
+      cdv.setUint16(34, 0, true);  // disk number start
+      cdv.setUint16(36, 0, true);  // int file attrs
+      cdv.setUint32(38, 0, true);  // ext file attrs
+      cdv.setUint32(42, offset, true);  // local header offset
       cd.set(nameBytes, 46);
       centralDir.push(cd);
 
@@ -818,34 +825,34 @@ class Oscilloscope {
     }
 
     const cdStart = offset;
-    const cdData  = this._concat(centralDir);
+    const cdData = this._concat(centralDir);
 
     // End of central directory
     const eocd = new Uint8Array(22);
     const ev = new DataView(eocd.buffer);
-    ev.setUint32(0,  0x06054b50,        true); // signature
-    ev.setUint16(4,  0,                 true); // disk number
-    ev.setUint16(6,  0,                 true); // disk with start
-    ev.setUint16(8,  centralDir.length, true); // entries on disk
+    ev.setUint32(0, 0x06054b50, true); // signature
+    ev.setUint16(4, 0, true); // disk number
+    ev.setUint16(6, 0, true); // disk with start
+    ev.setUint16(8, centralDir.length, true); // entries on disk
     ev.setUint16(10, centralDir.length, true); // total entries
-    ev.setUint32(12, cdData.length,     true); // central dir size
-    ev.setUint32(16, cdStart,           true); // central dir offset
-    ev.setUint16(20, 0,                 true); // comment length
+    ev.setUint32(12, cdData.length, true); // central dir size
+    ev.setUint32(16, cdStart, true); // central dir offset
+    ev.setUint16(20, 0, true); // comment length
 
     return this._concat([...parts, cdData, eocd]);
   }
 
   _concat(arrays) {
     const total = arrays.reduce((s, a) => s + a.length, 0);
-    const out   = new Uint8Array(total);
-    let offset  = 0;
+    const out = new Uint8Array(total);
+    let offset = 0;
     for (const a of arrays) { out.set(a, offset); offset += a.length; }
     return out;
   }
 
   _crc32(data) {
     let crc = 0xFFFFFFFF;
-    const table = HantekDriver._crc32Table || (HantekDriver._crc32Table = (() => {
+    const table = Oscilloscope._crc32Table || (Oscilloscope._crc32Table = (() => {
       const t = new Uint32Array(256);
       for (let i = 0; i < 256; i++) {
         let c = i;
@@ -873,16 +880,16 @@ class Oscilloscope {
 
   _download(text, filename, type) {
     const blob = new Blob([text], { type });
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
     a.href = url; a.download = filename; a.click();
     URL.revokeObjectURL(url);
   }
 
   _downloadBytes(bytes, filename, type) {
     const blob = new Blob([bytes], { type });
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
     a.href = url; a.download = filename; a.click();
     URL.revokeObjectURL(url);
   }
@@ -895,7 +902,7 @@ class Oscilloscope {
     // Grid
     ctx.strokeStyle = '#1e2230'; ctx.lineWidth = 1;
     for (let i = 0; i <= 10; i++) { const x = (i / 10) * width; ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, height); ctx.stroke(); }
-    for (let i = 0; i <= 8;  i++) { const y = (i / 8)  * height; ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(width, y); ctx.stroke(); }
+    for (let i = 0; i <= 8; i++) { const y = (i / 8) * height; ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(width, y); ctx.stroke(); }
     // Centre line
     ctx.strokeStyle = '#2e3348'; ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(0, height / 2); ctx.lineTo(width, height / 2); ctx.stroke();
@@ -941,9 +948,9 @@ class Oscilloscope {
 
   // ── SETTINGS ──────────────────────────────────────────────────────────
   setChannelEnabled(ch, enabled) { this.channelEnabled[ch] = enabled; }
-  setVoltageScale(ch, scale)     { this.voltageScale[ch] = scale; }
-  setTimebase(tb)                { this.timebase = tb; }
-  setSampleRate(rate)            { this.sampleRate = rate; }
+  setVoltageScale(ch, scale) { this.voltageScale[ch] = scale; }
+  setTimebase(tb) { this.timebase = tb; }
+  setSampleRate(rate) { this.sampleRate = rate; }
   setTrigger(ch, level, edge, mode) {
     this.triggerChannel = ch; this.triggerLevel = level;
     this.triggerEdge = edge; this.triggerMode = mode;
@@ -960,7 +967,7 @@ class Oscilloscope {
     this._listeners[event] = this._listeners[event].filter(f => f !== cb);
   }
   emit(event, data) {
-    (this._listeners[event] || []).forEach(cb => { try { cb(data); } catch(_) {} });
+    (this._listeners[event] || []).forEach(cb => { try { cb(data); } catch (_) { } });
   }
 
   getStatus() {
@@ -979,8 +986,8 @@ class Oscilloscope {
 // Available globally for multimeter.js to use if needed
 if (typeof window !== 'undefined') {
   window.OwonMeterProtocol = OwonMeterProtocol;
-  window.Oscilloscope      = Oscilloscope;
-  window.SCPIDriver        = SCPIDriver;
+  window.Oscilloscope = Oscilloscope;
+  window.SCPIDriver = SCPIDriver;
 }
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = { Oscilloscope, HantekDriver, SCPIDriver, OwonMeterProtocol };

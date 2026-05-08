@@ -2,42 +2,62 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://boardscope.ca/</loc>
-    <lastmod>2026-04-27</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <priority>1.00</priority>
   </url>
   <url>
-    <loc>https://boardscope.ca/index.html</loc>
-    <lastmod>2026-04-27</lastmod>
-    <priority>0.80</priority>
+    <loc>https://boardscope.ca/boardview-software.html</loc>
+    <lastmod>2026-05-07</lastmod>
+    <priority>0.95</priority>
   </url>
   <url>
-    <loc>https://boardscope.ca/boardview-software.html</loc>
-    <lastmod>2026-04-27</lastmod>
+    <loc>https://boardscope.ca/boardview-vs-flexbv.html</loc>
+    <lastmod>2026-05-07</lastmod>
     <priority>0.90</priority>
   </url>
   <url>
     <loc>https://boardscope.ca/pcb-repair-software.html</loc>
-    <lastmod>2026-04-27</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <priority>0.90</priority>
   </url>
   <url>
+    <loc>https://boardscope.ca/blog/how-to-read-brd-files.html</loc>
+    <lastmod>2026-05-07</lastmod>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://boardscope.ca/blog/flexbv-vs-boardscope.html</loc>
+    <lastmod>2026-05-07</lastmod>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://boardscope.ca/blog/pcb-net-tracing.html</loc>
+    <lastmod>2026-05-07</lastmod>
+    <priority>0.80</priority>
+  </url>
+  <url>
+    <loc>https://boardscope.ca/blog/ai-board-diagnosis.html</loc>
+    <lastmod>2026-05-07</lastmod>
+    <priority>0.80</priority>
+  </url>
+  <url>
+    <loc>https://boardscope.ca/blog/hardware-integration.html</loc>
+    <lastmod>2026-05-07</lastmod>
+    <priority>0.75</priority>
+  </url>
+  <url>
     <loc>https://boardscope.ca/pricing.html</loc>
-    <lastmod>2026-04-27</lastmod>
+    <lastmod>2026-05-07</lastmod>
+    <priority>0.70</priority>
+  </url>
+  <url>
+    <loc>https://boardscope.ca/comparison.html</loc>
+    <lastmod>2026-05-07</lastmod>
     <priority>0.70</priority>
   </url>
   <url>
     <loc>https://boardscope.ca/manual.html</loc>
-    <lastmod>2026-04-27</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <priority>0.60</priority>
-  </url>
-  <url>
-    <loc>https://boardscope.ca/comparison.html</loc>
-    <lastmod>2026-04-27</lastmod>
-    <priority>0.50</priority>
-  </url>
-  <url>
-    <loc>https://boardscope.ca/boardview-vs-flexbv.html</loc>
-    <lastmod>2026-04-27</lastmod>
-    <priority>0.85</priority>
   </url>
 </urlset>
