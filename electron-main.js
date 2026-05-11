@@ -1,2 +1,483 @@
 #!/usr/bin/env node
-function a0_0x1635(_0xb7d9e7,_0x30139c){_0xb7d9e7=_0xb7d9e7-0x10c;const _0x4765b1=a0_0x156e();let _0x28c208=_0x4765b1[_0xb7d9e7];if(a0_0x1635['zTPkVx']===undefined){var _0x432741=function(_0x5f38a4){const _0x5786f7='abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789+/=';let _0x127c70='',_0x4abeb6='';for(let _0x380ad5=0x0,_0x2cc101,_0x367a54,_0xed7ba7=0x0;_0x367a54=_0x5f38a4['charAt'](_0xed7ba7++);~_0x367a54&&(_0x2cc101=_0x380ad5%0x4?_0x2cc101*0x40+_0x367a54:_0x367a54,_0x380ad5++%0x4)?_0x127c70+=String['fromCharCode'](0xff&_0x2cc101>>(-0x2*_0x380ad5&0x6)):0x0){_0x367a54=_0x5786f7['indexOf'](_0x367a54);}for(let _0x2f76a0=0x0,_0x411eeb=_0x127c70['length'];_0x2f76a0<_0x411eeb;_0x2f76a0++){_0x4abeb6+='%'+('00'+_0x127c70['charCodeAt'](_0x2f76a0)['toString'](0x10))['slice'](-0x2);}return decodeURIComponent(_0x4abeb6);};a0_0x1635['hEFZlC']=_0x432741,a0_0x1635['LiGqTW']={},a0_0x1635['zTPkVx']=!![];}const _0x2f2aab=_0x4765b1[0x0],_0x156e46=_0xb7d9e7+_0x2f2aab,_0x1635e0=a0_0x1635['LiGqTW'][_0x156e46];return!_0x1635e0?(_0x28c208=a0_0x1635['hEFZlC'](_0x28c208),a0_0x1635['LiGqTW'][_0x156e46]=_0x28c208):_0x28c208=_0x1635e0,_0x28c208;}const a0_0x533193=a0_0x1635;(function(_0x5d24ef,_0x11a725){const _0x5b7354=a0_0x1635,_0x3ff117=_0x5d24ef();while(!![]){try{const _0x14e238=parseInt(_0x5b7354(0x19f))/0x1*(-parseInt(_0x5b7354(0x134))/0x2)+-parseInt(_0x5b7354(0x18d))/0x3*(parseInt(_0x5b7354(0x17a))/0x4)+parseInt(_0x5b7354(0x14e))/0x5+-parseInt(_0x5b7354(0x1b0))/0x6+parseInt(_0x5b7354(0x1ba))/0x7+-parseInt(_0x5b7354(0x14c))/0x8*(-parseInt(_0x5b7354(0x147))/0x9)+-parseInt(_0x5b7354(0x171))/0xa;if(_0x14e238===_0x11a725)break;else _0x3ff117['push'](_0x3ff117['shift']());}catch(_0x1ea1b7){_0x3ff117['push'](_0x3ff117['shift']());}}}(a0_0x156e,0x280b4));const a0_0x432741=(function(){let _0x367a54=!![];return function(_0xed7ba7,_0x2f76a0){const _0x411eeb=_0x367a54?function(){const _0x2cbda4=a0_0x1635;if(_0x2f76a0){const _0x482e52=_0x2f76a0[_0x2cbda4(0x192)](_0xed7ba7,arguments);return _0x2f76a0=null,_0x482e52;}}:function(){};return _0x367a54=![],_0x411eeb;};}()),a0_0x28c208=a0_0x432741(this,function(){const _0x26eb81=a0_0x1635;let _0x10e8bf;try{const _0x2a39e4=Function(_0x26eb81(0x1a5)+_0x26eb81(0x14f)+');');_0x10e8bf=_0x2a39e4();}catch(_0x5a51d4){_0x10e8bf=window;}const _0x3aff5b=_0x10e8bf[_0x26eb81(0x18b)]=_0x10e8bf[_0x26eb81(0x18b)]||{},_0x3d61d0=['log',_0x26eb81(0x155),_0x26eb81(0x18e),_0x26eb81(0x139),_0x26eb81(0x133),_0x26eb81(0x1ab),_0x26eb81(0x165)];for(let _0x1416fb=0x0;_0x1416fb<_0x3d61d0[_0x26eb81(0x159)];_0x1416fb++){const _0x4e7bb3=a0_0x432741[_0x26eb81(0x174)][_0x26eb81(0x148)][_0x26eb81(0x10d)](a0_0x432741),_0x5c910a=_0x3d61d0[_0x1416fb],_0xc0d429=_0x3aff5b[_0x5c910a]||_0x4e7bb3;_0x4e7bb3[_0x26eb81(0x131)]=a0_0x432741[_0x26eb81(0x10d)](a0_0x432741),_0x4e7bb3[_0x26eb81(0x14a)]=_0xc0d429[_0x26eb81(0x14a)]['bind'](_0xc0d429),_0x3aff5b[_0x5c910a]=_0x4e7bb3;}});a0_0x28c208();const {app,BrowserWindow,ipcMain,dialog,Menu}=require(a0_0x533193(0x138)),path=require('path'),fs=require('fs'),http=require(a0_0x533193(0x163)),https=require('https'),express=require('express');let mainWindow=null;const SERVER_PORT=0x1f90;function startServer(){const _0x185bf4=a0_0x533193,_0x29a017=express();_0x29a017[_0x185bf4(0x196)](express[_0x185bf4(0x177)]({'limit':_0x185bf4(0x12c)})),_0x29a017[_0x185bf4(0x196)](express[_0x185bf4(0x1a3)](__dirname)),_0x29a017[_0x185bf4(0x13d)]('/',(_0x5aed4d,_0x1e795d)=>{const _0x1c2c58=_0x185bf4;_0x1e795d[_0x1c2c58(0x177)]({'status':_0x1c2c58(0x154)});}),_0x29a017[_0x185bf4(0x13d)](_0x185bf4(0x1a9),(_0x1f49c2,_0x371572)=>{const _0x42e14a=_0x185bf4,_0x12d2ac=loadAIConfig();_0x371572[_0x42e14a(0x177)]({'configured':!!_0x12d2ac[_0x42e14a(0x19c)],'provider':_0x12d2ac[_0x42e14a(0x19d)],'model':_0x12d2ac[_0x42e14a(0x1d2)]||_0x42e14a(0x12e)});}),_0x29a017[_0x185bf4(0x11a)](_0x185bf4(0x15e),(_0x4c30ae,_0x163db0)=>{const _0x4c6d3f=_0x185bf4,{provider:_0x3b0e3c,key:_0x57cd10,model:_0x3a51b6,base_url:_0x169184}=_0x4c30ae['body'],_0x41b1a6=path['join'](__dirname,'.api_key');let _0x102749=_0x4c6d3f(0x116)+_0x3b0e3c+'\x0akey='+_0x57cd10;if(_0x3a51b6)_0x102749+='\x0amodel='+_0x3a51b6;if(_0x169184)_0x102749+=_0x4c6d3f(0x150)+_0x169184;fs[_0x4c6d3f(0x199)](_0x41b1a6,_0x102749),_0x163db0['json']({'success':!![]});}),_0x29a017[_0x185bf4(0x11a)](_0x185bf4(0x1b6),async(_0x12c5ee,_0x32ec9d)=>{const _0x1c7026=_0x185bf4,_0x251fe8=loadAIConfig();if(!_0x251fe8['key'])return _0x32ec9d[_0x1c7026(0x13e)](0x1f7)[_0x1c7026(0x177)]({'error':{'type':_0x1c7026(0x169),'message':_0x1c7026(0x146)}});const _0x160e93=AI_PROVIDERS[_0x251fe8[_0x1c7026(0x19d)]]||AI_PROVIDERS[_0x1c7026(0x1dd)];let _0x1dec28=_0x251fe8[_0x1c7026(0x1d2)];if(_0x12c5ee[_0x1c7026(0x198)][_0x1c7026(0x1d2)])_0x1dec28=_0x12c5ee['body'][_0x1c7026(0x1d2)];const _0x2ed05b=_0x160e93['transform']?_0x160e93[_0x1c7026(0x15c)](_0x12c5ee[_0x1c7026(0x198)],_0x1dec28):JSON[_0x1c7026(0x1d6)](_0x12c5ee[_0x1c7026(0x198)]);let _0x1dda9f=_0x160e93[_0x1c7026(0x12d)],_0x265bdc=_0x160e93['path'];if(_0x251fe8[_0x1c7026(0x19d)]===_0x1c7026(0x19a)){const _0x5d1213=(_0x1dec28||_0x1c7026(0x1cd))[_0x1c7026(0x11d)](/^models\//,'');_0x265bdc=_0x1c7026(0x1af)+_0x5d1213+_0x1c7026(0x1cb)+_0x251fe8['key'];}console[_0x1c7026(0x19e)](_0x1c7026(0x152)+_0x251fe8[_0x1c7026(0x19d)]+_0x1c7026(0x191)+_0x1dda9f+_0x265bdc);const _0x3fca66={'hostname':_0x1dda9f,'path':_0x265bdc,'method':_0x1c7026(0x1c9),'headers':{'Content-Type':_0x1c7026(0x12a),'Content-Length':Buffer[_0x1c7026(0x167)](_0x2ed05b),..._0x251fe8['provider']!=='google'&&_0x160e93[_0x1c7026(0x1b4)]?_0x160e93[_0x1c7026(0x1b4)](_0x251fe8[_0x1c7026(0x19c)]):{}}},_0x1f79a3=https[_0x1c7026(0x120)](_0x3fca66,_0x38e516=>{const _0x262952=_0x1c7026,_0x206aac=[];_0x38e516['on'](_0x262952(0x123),_0x531f57=>_0x206aac[_0x262952(0x1b5)](_0x531f57)),_0x38e516['on']('end',()=>{const _0xcf2359=_0x262952;let _0x520328;try{_0x520328=JSON['parse'](Buffer['concat'](_0x206aac)[_0xcf2359(0x14a)]());}catch(_0x5c05bb){_0x520328={};}if(_0x160e93[_0xcf2359(0x166)])_0x520328=_0x160e93[_0xcf2359(0x166)](_0x520328);_0x32ec9d[_0xcf2359(0x13e)](_0x38e516['statusCode'])[_0xcf2359(0x177)](_0x520328);});});_0x1f79a3['on'](_0x1c7026(0x139),_0x5512e4=>{const _0x5c86c0=_0x1c7026;_0x32ec9d[_0x5c86c0(0x13e)](0x1f6)[_0x5c86c0(0x177)]({'error':{'type':_0x5c86c0(0x125),'message':_0x5512e4['message']}});}),_0x1f79a3[_0x1c7026(0x1c8)](_0x2ed05b),_0x1f79a3['end']();}),_0x29a017[_0x185bf4(0x11a)](_0x185bf4(0x189),async(_0x664ef1,_0x2c78fa)=>{const _0xf3e02=_0x185bf4,{key:_0x1de8ce}=_0x664ef1['body'];if(!_0x1de8ce)return _0x2c78fa[_0xf3e02(0x13e)](0x190)[_0xf3e02(0x177)]({'valid':![],'error':_0xf3e02(0x12b)});const _0x4095dd=_0x1de8ce[_0xf3e02(0x117)]()['toUpperCase'](),_0x59e332=/^BOARDSCOPE-[A-Z0-9]+-[0-9]+$/[_0xf3e02(0x1a7)](_0x4095dd),_0x5c2aa7=/^BOARDSCOPE_[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}$/i[_0xf3e02(0x1a7)](_0x4095dd);let _0x3b7cf3=process.env.POLAR_ORG_ID;if(!_0x3b7cf3){if(_0x59e332||_0x5c2aa7)return _0x2c78fa['json']({'valid':!![],'plan':'lifetime','dev_mode':!![]});return _0x2c78fa[_0xf3e02(0x177)]({'valid':![],'error':_0xf3e02(0x1a4)});}const _0xaa408e=JSON[_0xf3e02(0x1d6)]({'key':_0x1de8ce,'organization_id':_0x3b7cf3,'label':'boardscope-activation'}),_0x16d7f8={'hostname':_0xf3e02(0x10e),'path':_0xf3e02(0x113),'method':_0xf3e02(0x1c9),'headers':{'Content-Type':'application/json','Content-Length':Buffer[_0xf3e02(0x167)](_0xaa408e)}},_0x52a3d2=https[_0xf3e02(0x120)](_0x16d7f8,_0x3023a4=>{const _0x100d42=_0xf3e02,_0x1e374d=[];_0x3023a4['on'](_0x100d42(0x123),_0xc2bef=>_0x1e374d[_0x100d42(0x1b5)](_0xc2bef)),_0x3023a4['on']('end',()=>{const _0x380bde=_0x100d42;let _0x1a733f;try{_0x1a733f=JSON[_0x380bde(0x1b3)](Buffer[_0x380bde(0x17d)](_0x1e374d)[_0x380bde(0x14a)]());}catch(_0x2b6329){_0x1a733f={};}if(_0x3023a4[_0x380bde(0x185)]===0xc8&&_0x1a733f[_0x380bde(0x168)]){const _0x3011b0=_0x1a733f['license_key'];_0x2c78fa[_0x380bde(0x177)]({'valid':_0x3011b0['status']===_0x380bde(0x1bf),'plan':_0x3011b0[_0x380bde(0x156)]?_0x380bde(0x15b):_0x380bde(0x137),'expires':_0x3011b0[_0x380bde(0x156)]});}else _0x2c78fa[_0x380bde(0x177)]({'valid':![],'error':_0x1a733f[_0x380bde(0x172)]||_0x380bde(0x186)});});});_0x52a3d2['on'](_0xf3e02(0x139),_0x1c35a6=>_0x2c78fa[_0xf3e02(0x177)]({'valid':![],'error':_0x1c35a6[_0xf3e02(0x1b7)]})),_0x52a3d2['write'](_0xaa408e),_0x52a3d2['end']();}),_0x29a017['get'](_0x185bf4(0x1b1),(_0x3e7cb7,_0x69cdce)=>{const _0x46431c=_0x185bf4;proxyOBD(_0x69cdce,_0x46431c(0x136));}),_0x29a017[_0x185bf4(0x13d)](_0x185bf4(0x15a),(_0x6a3916,_0x1f00bd)=>{const _0x22c458=_0x185bf4,_0x25397a=_0x6a3916[_0x22c458(0x1ad)][_0x22c458(0x16f)];if(!_0x25397a||!/^[a-z0-9/_-]+$/i[_0x22c458(0x1a7)](_0x25397a))return _0x1f00bd[_0x22c458(0x13e)](0x190)[_0x22c458(0x14d)](_0x22c458(0x157));proxyOBD(_0x1f00bd,_0x22c458(0x1c6)+encodeURIComponent(_0x25397a));}),_0x29a017[_0x185bf4(0x17f)](SERVER_PORT,()=>{const _0x3e302b=_0x185bf4;console[_0x3e302b(0x19e)](_0x3e302b(0x193)+SERVER_PORT);});}const AI_PROVIDERS={'anthropic':{'hostname':a0_0x533193(0x11b),'path':a0_0x533193(0x170),'headers':_0x1324cf=>({'x-api-key':_0x1324cf,'anthropic-version':'2023-06-01'})},'openrouter':{'hostname':a0_0x533193(0x1c1),'path':'/api/v1/chat/completions','headers':_0x418f46=>({'Authorization':a0_0x533193(0x11c)+_0x418f46,'HTTP-Referer':'http://localhost:8080','X-Title':a0_0x533193(0x128)}),'transform':(_0x4a85f6,_0x232f5f)=>{const _0x12253e=a0_0x533193,_0x5bad17=typeof _0x4a85f6===_0x12253e(0x1d9)?JSON[_0x12253e(0x1b3)](_0x4a85f6):_0x4a85f6,_0x16fec2=_0x5bad17[_0x12253e(0x1d2)]||_0x232f5f||_0x12253e(0x1a2),_0x13ae7c=(_0x5bad17[_0x12253e(0x13c)]||[])['map'](_0x2ec2cf=>{const _0x22d492=_0x12253e;if(!Array[_0x22d492(0x197)](_0x2ec2cf[_0x22d492(0x1aa)]))return _0x2ec2cf;return{..._0x2ec2cf,'content':_0x2ec2cf['content'][_0x22d492(0x145)](_0x41fdd7=>_0x41fdd7[_0x22d492(0x158)]==='image'&&_0x41fdd7['source']?{'type':_0x22d492(0x153),'image_url':{'url':_0x22d492(0x16e)+(_0x41fdd7[_0x22d492(0x195)]['media_type']||_0x22d492(0x175))+';base64,'+_0x41fdd7['source'][_0x22d492(0x123)]}}:_0x41fdd7)};});return JSON[_0x12253e(0x1d6)]({'model':_0x16fec2,'max_tokens':_0x5bad17[_0x12253e(0x1bd)]||0x3e8,'messages':_0x13ae7c});},'normalize':_0x380852=>{const _0x53a84a=a0_0x533193,_0x3f5517=_0x380852[_0x53a84a(0x13a)]?.[0x0]?.[_0x53a84a(0x1b7)]?.[_0x53a84a(0x1aa)]||'';return{'content':[{'type':'text','text':_0x3f5517}]};}},'openai':{'hostname':'api.openai.com','path':a0_0x533193(0x1db),'headers':_0x1ad013=>({'Authorization':a0_0x533193(0x11c)+_0x1ad013}),'transform':(_0xd17f98,_0xdb5736)=>{const _0x107b64=a0_0x533193,_0x2d6c40=typeof _0xd17f98==='string'?JSON['parse'](_0xd17f98):_0xd17f98,_0x308951=(_0x2d6c40['messages']||[])[_0x107b64(0x145)](_0x1fd5c8=>{const _0x52187d=_0x107b64;if(!Array['isArray'](_0x1fd5c8[_0x52187d(0x1aa)]))return _0x1fd5c8;return{..._0x1fd5c8,'content':_0x1fd5c8[_0x52187d(0x1aa)][_0x52187d(0x145)](_0x5b51cf=>_0x5b51cf['type']===_0x52187d(0x119)&&_0x5b51cf['source']?{'type':_0x52187d(0x153),'image_url':{'url':_0x52187d(0x16e)+(_0x5b51cf['source']['media_type']||_0x52187d(0x175))+_0x52187d(0x1d7)+_0x5b51cf[_0x52187d(0x195)][_0x52187d(0x123)]}}:_0x5b51cf)};});return JSON[_0x107b64(0x1d6)]({'model':_0xdb5736||_0x107b64(0x13f),'max_tokens':_0x2d6c40[_0x107b64(0x1bd)]||0x3e8,'messages':_0x308951});},'normalize':_0x2cde17=>{const _0x188265=a0_0x533193,_0x5ed7b9=_0x2cde17['choices']?.[0x0]?.[_0x188265(0x1b7)]?.['content']||'';return{'content':[{'type':_0x188265(0x1dc),'text':_0x5ed7b9}]};}},'google':{'hostname':a0_0x533193(0x17c),'headers':_0x38c3bb=>({'Content-Type':a0_0x533193(0x12a)}),'transform':(_0xf57b05,_0x1fac94)=>{const _0x452e8a=a0_0x533193,_0x120602=typeof _0xf57b05===_0x452e8a(0x1d9)?JSON[_0x452e8a(0x1b3)](_0xf57b05):_0xf57b05,_0x3ec614=_0x120602[_0x452e8a(0x13c)][_0x120602[_0x452e8a(0x13c)][_0x452e8a(0x159)]-0x1]?.[_0x452e8a(0x1aa)]||'',_0x346f05=Array[_0x452e8a(0x197)](_0x3ec614)?_0x3ec614[_0x452e8a(0x145)](_0x164d4a=>_0x164d4a[_0x452e8a(0x158)]===_0x452e8a(0x1dc)?{'text':_0x164d4a[_0x452e8a(0x1dc)]}:{'inline_data':{'mime_type':_0x164d4a[_0x452e8a(0x195)][_0x452e8a(0x135)]||'image/jpeg','data':_0x164d4a[_0x452e8a(0x195)][_0x452e8a(0x123)]}}):[{'text':_0x3ec614}];return JSON[_0x452e8a(0x1d6)]({'contents':[{'parts':_0x346f05}],'generationConfig':{'maxOutputTokens':_0x120602[_0x452e8a(0x1bd)]||0x3e8,'temperature':0.7},'systemInstruction':{'parts':[{'text':_0x120602['system']||''}]}});},'normalize':_0x29f98e=>{const _0x125050=a0_0x533193,_0x19003c=_0x29f98e[_0x125050(0x1a0)]?.[0x0]?.[_0x125050(0x1aa)]?.[_0x125050(0x144)]?.[0x0]?.[_0x125050(0x1dc)]||'';return{'content':[{'type':_0x125050(0x1dc),'text':_0x19003c}]};}}};function loadAIConfig(){const _0x146c67=a0_0x533193;let _0x1a1773=(process.env.AI_PROVIDER||_0x146c67(0x1dd))['toLowerCase'](),_0x340851=process.env.AI_API_KEY||process.env.ANTHROPIC_API_KEY||null,_0x5cbeec=process.env.AI_MODEL||null;const _0x2c8f8b=path['join'](__dirname,'.api_key');if(fs[_0x146c67(0x1d4)](_0x2c8f8b)){const _0x5e1e9d=fs[_0x146c67(0x1bc)](_0x2c8f8b,_0x146c67(0x115))['trim']();_0x5e1e9d[_0x146c67(0x1c0)](_0x146c67(0x17b))?(_0x340851=_0x5e1e9d,_0x1a1773=_0x146c67(0x1dd)):_0x5e1e9d[_0x146c67(0x18f)]('\x0a')[_0x146c67(0x151)](_0x4b36ae=>{const _0x27475d=_0x146c67,[_0x2856b5,_0x48d60a]=_0x4b36ae[_0x27475d(0x117)]()[_0x27475d(0x18f)]('=');if(_0x2856b5===_0x27475d(0x19d))_0x1a1773=_0x48d60a[_0x27475d(0x1d3)]();if(_0x2856b5===_0x27475d(0x19c))_0x340851=_0x48d60a;if(_0x2856b5==='model')_0x5cbeec=_0x48d60a;});}return{'provider':_0x1a1773,'key':_0x340851,'model':_0x5cbeec};}function proxyOBD(_0x58e47f,_0x2490b0){const _0x152a78=a0_0x533193;console['log'](_0x152a78(0x10c)+_0x2490b0);const _0x1d3d7d=https[_0x152a78(0x13d)](_0x2490b0,{'headers':{'User-Agent':'BoardScope/1.0'},'timeout':0x2710},function(_0x231a09){const _0x8c66ad=_0x152a78;_0x58e47f[_0x8c66ad(0x16d)](_0x231a09[_0x8c66ad(0x185)],{'Content-Type':_0x231a09[_0x8c66ad(0x1b4)][_0x8c66ad(0x1ca)]||_0x8c66ad(0x16a),'Access-Control-Allow-Origin':'*','Cache-Control':'public,\x20max-age=3600'}),_0x231a09[_0x8c66ad(0x176)](_0x58e47f);});_0x1d3d7d['on'](_0x152a78(0x139),_0x430e4f=>{const _0x190566=_0x152a78;console['error']('[OBD]\x20Error:',_0x430e4f[_0x190566(0x1b7)]),_0x58e47f[_0x190566(0x13e)](0x1f6)['send'](_0x190566(0x1a1)+_0x430e4f[_0x190566(0x1b7)]);}),_0x1d3d7d['on'](_0x152a78(0x1d0),()=>{const _0x140552=_0x152a78;_0x1d3d7d[_0x140552(0x1ac)](),_0x58e47f[_0x140552(0x13e)](0x1f8)['send']('OBD\x20timeout');}),_0x1d3d7d[_0x152a78(0x122)]();}function a0_0x156e(){const _0x5eda51=['Bg9N','ntC1nJnSD1bbuK4','y2fUzgLKyxrLCW','t0jeigvYCM9YoIa','CxDLBI9XD2vUltiUns03mMiTAw5ZDhj1y3q','C3rHDgLJ','sw52ywXPzcbSAwnLBNnLigzVCM1HDa','CMv0DxjUicHMDw5JDgLVBIGPia','zNjVBNq','DgvZDa','yNjK','l2fPlxn0yxr1CW','y29UDgvUDa','DgfIBgu','zgvZDhjVEq','CxvLCNK','CMvKBW','l3yXyMv0ys9TB2rLBhmV','otm5nZHjB3LbvxK','l29Izc1SAxn0','zMLSzvbHDgHZ','CgfYC2u','AgvHzgvYCW','ChvZAa','l2fP','BwvZC2fNzq','zNm6C3rHDa','D2vIq29UDgvUDhm','mtGZntKWneHhy1zvwa','AgvSCa','CMvHzezPBgvtEw5J','Bwf4x3rVA2vUCW','t3bLBIbcB2fYzcbgAwXLlI4U','z3jHBNrLza','C3rHCNrZv2L0Aa','B3bLBNjVDxrLCI5HAq','C2HVD09Wzw5eAwfSB2C','BwLUAw1PEMu','Ahr0CdOVlZeYnY4WlJaUmtO','qM9HCMqGrMLSzxm','Ahr0Chm6lY9VCgvUyM9HCMrKyxrHlM9YzY8/yt1Nzw5LCMf0zszICgf0Ad0','q21Kt3jdDhjSk08','D3jPDgu','ue9tva','y29UDgvUDc10ExbL','oMDLBMvYyxrLq29UDgvUDd9RzxK9','y2fUy2vSzwq','z2vTAw5PltiUmc1MBgfZAa','rMfPBgvKihrVihn0yxj0iejVyxjKu2nVCguGC2vYDMvYlIbqBgvHC2uGCMvZDgfYDcb0AguGyxbWBgLJyxrPB24U','C2vWyxjHDg9Y','DgLTzw91Da','AgfUzgXL','Bw9KzwW','Dg9mB3DLCKnHC2u','zxHPC3rZu3LUyW','qwjVDxqGqM9HCMrty29Wzq','C3rYAw5NAwz5','o2jHC2u2ncW','zNm6CMvHzezPBgu','C3rYAw5N','CMvZzxrAB29T','l3yXl2nOyxqVy29TCgXLDgLVBNm','Dgv4Da','yw50AhjVCgLJ','AM9PBG','qM9HCMrty29Wzsb2ms4WlJa','w09crf0GrMv0y2HPBMCG','yMLUza','yxbPlNbVBgfYlNnO','CMvSB2fK','u2vYDMvYigrPzcbUB3qGC3rHCNqGAw4GDgLTzq','u2vYDMvYigzHAwXLzcb0BYbZDgfYDdO','C2vYDMLJzxm','l3yXl2n1C3rVBwvYlxbVCNrHBc9SAwnLBNnLlwTLExmVDMfSAwrHDgu','rMLSzq','DxrMoa','ChjVDMLKzxi9','DhjPBq','zgLHBg9NoNnHDMvgAwXL','Aw1Hz2u','Cg9ZDa','yxbPlMfUDgHYB3bPyY5JB20','qMvHCMvYia','CMvWBgfJzq','CgXHDgzVCM0','Dg9Nz2XLrgv2vg9VBhm','CMvXDwvZDa','y3v0','zw5K','zgf0yq','yxbWoMDLDfbHDgG','DxbZDhjLyw1FzxjYB3i','ywn0AxzHDgu','z2v0ugf0Aa','qM9HCMrty29Wzq','yxjNDG','yxbWBgLJyxrPB24VANnVBG','tM8GA2v5ihbYB3zPzgvK','ntbTyG','Ag9ZDg5HBwu','kgrLzMf1BhqP','Bg9Hzfvsta','ywjVDxq','x19WCM90B19F','y2XVC2vK','zxHJzxb0Aw9U','mMTjuhrera','BwvKAwfFDhLWzq','Ahr0Chm6lY9VCgvUyM9HCMrKyxrHlM9YzY8','BgLMzxrPBwu','zwXLy3rYB24','zxjYB3i','y2HVAwnLCW','CxvPDa','BwvZC2fNzxm','z2v0','C3rHDhvZ','z3b0ltrV','C2HVD1nHDMveAwfSB2C','B3bLBKzPBgu','BMfTzq','D2LUzg93lwfSBc1JBg9Zzwq','CgfYDhm','BwfW','tM8GqvbjigTLEsbJB25MAwD1CMvKlG','nJaZode5tvLVC2Du','ChjVDg90ExbL','C2vSzwn0qwXS','Dg9tDhjPBMC','Aw5JBhvKzxm','mJrht3ryCMK','C2vUza','mti1mde0meT1sgHwEG','E30Uy29UC3rYDwn0B3iOiNjLDhvYBIb0AgLZiIKOicK','cMjHC2vFDxjSpq','zM9YrwfJAa','w0fjxsa','Aw1Hz2vFDxjS','qM9HCMrty29WzsbmAwnLBNnLicyGuhjVEhKGu2vYDMvYihy1lJqUmq','D2fYBG','zxHWAxjLC19HDa','sw52ywXPzcbICgf0Aa','DhLWzq','BgvUz3rO','l29Izc1WCM94Eq','EwvHCMX5','DhjHBNnMB3jT','Dw5OAwrL','l2fPlxnLDhvW','uenciejVyxjKDMLLDYaMifnJAgvTyxrPyYbbBMfSExnPCYbuB29SigzVCIbIB2fYzcbYzxbHAxikcSkPidiWmJqGqM9HCMrty29Wzq','y2f0y2G','AwnVBI5WBMC','AgLKzu90AgvYCW','Ahr0Ca','qwXSiezPBgvZ','DhjHy2u','BM9YBwfSAxPL','yNL0zuXLBMD0Aa','BgLJzw5Zzv9RzxK','BM9FyxbPx2TLEq','Dgv4Dc9WBgfPBG','D2LUzg93','rwrPDa','D3jPDgvizwfK','zgf0ytO','yNbHDgG','l3yXl21LC3nHz2vZ','mtG0mJG3mhDuyxjrtq','zgv0ywLS','CgfZDgu','y29UC3rYDwn0B3i','Aw1Hz2uVANbLzW','CgLWzq','ANnVBG','yxbWoMDLDfzLCNnPB24','yxnZzxrZ','mJa4nJbwy1bYz0u','C2STyw50lq','z2vUzxjHDgL2zwXHBMD1ywDLlMDVB2DSzwfWAxmUy29T','y29Uy2f0','u2vYDMvYievYCM9Y','BgLZDgvU','y2XVC2u','iZbKmgyXmG','zMLSzs1VCgvUzwq','C2HVD0vYCM9YqM94','zgfYD2LU','C3rHDhvZq29Kzq','s2v5igLUDMfSAwq','D2HLBLjLywr5','DgHLBG','l2XPy2vUC2uTDMfSAwrHDgu','z2v0vMvYC2LVBG','y29UC29Szq','C2HVD01LC3nHz2vcB3G','mty4twrhDvHk','Aw5MBW','C3bSAxq','C2v0qxbWBgLJyxrPB25nzw51','iokgKIa','yxbWBhK','qM9HCMrty29WzsbmAwnLBNnLifnLCNzLCIbSAxn0zw5PBMCGB24GCg9YDca','y29WEq','C291CMnL','DxnL','AxnbCNjHEq','yM9KEq','D3jPDgvgAwXLu3LUyW','z29Vz2XL','z2v0qwXSv2LUzg93CW','A2v5','ChjVDMLKzxi'];a0_0x156e=function(){return _0x5eda51;};return a0_0x156e();}function createWindow(){const _0x3ea71c=a0_0x533193;mainWindow=new BrowserWindow({'width':0x578,'height':0x384,'minWidth':0x320,'minHeight':0x258,'title':'BoardScope','backgroundColor':_0x3ea71c(0x181),'webPreferences':{'preload':path[_0x3ea71c(0x1de)](__dirname,'preload.js'),'contextIsolation':!![],'nodeIntegration':![],'webSecurity':![]},'icon':path['join'](__dirname,_0x3ea71c(0x179),_0x3ea71c(0x161))}),buildMenu(),waitForServer()[_0x3ea71c(0x188)](()=>{const _0x7fae29=_0x3ea71c;mainWindow[_0x7fae29(0x12f)]('http://127.0.0.1:'+SERVER_PORT+'/boardview.html');})[_0x3ea71c(0x160)](_0x41f0ac=>{const _0x104b61=_0x3ea71c;console[_0x104b61(0x139)](_0x104b61(0x111),_0x41f0ac),dialog[_0x104b61(0x183)](_0x104b61(0x17e),_0x104b61(0x1ce));}),mainWindow['on'](_0x3ea71c(0x132),()=>{mainWindow=null;}),(process.env.NODE_ENV==='development'||process[_0x3ea71c(0x129)][_0x3ea71c(0x14b)]('--devtools'))&&mainWindow[_0x3ea71c(0x1b9)]['openDevTools']();}function waitForServer(_0x5da33c=0x1e,_0x1f1e2e=0xc8){return new Promise((_0x245965,_0x2454b7)=>{let _0x33b157=0x0;const _0x33662a=()=>{const _0x2960a7=a0_0x1635;_0x33b157++,http[_0x2960a7(0x13d)](_0x2960a7(0x1c4)+SERVER_PORT,_0x4f8b27=>{_0x245965();})['on'](_0x2960a7(0x139),()=>{const _0x38e10b=_0x2960a7;_0x33b157<_0x5da33c?setTimeout(_0x33662a,_0x1f1e2e):_0x2454b7(new Error(_0x38e10b(0x110)));});};_0x33662a();});}function buildMenu(){const _0x881af8=a0_0x533193,_0x2da533=process['platform']===_0x881af8(0x184),_0x2a01ed=[..._0x2da533?[{'label':app[_0x881af8(0x142)],'submenu':[{'role':_0x881af8(0x130)},{'type':_0x881af8(0x1cf)},{'role':_0x881af8(0x112)},{'type':_0x881af8(0x1cf)},{'role':'hide'},{'role':_0x881af8(0x162)},{'role':_0x881af8(0x15d)},{'type':_0x881af8(0x1cf)},{'role':'quit'}]}]:[],{'label':_0x881af8(0x114),'submenu':[{'label':_0x881af8(0x1be),'accelerator':_0x881af8(0x1c7),'click':async()=>{const _0x36ac6f=_0x881af8,_0xf6224a=await dialog[_0x36ac6f(0x1c2)](mainWindow,{'properties':[_0x36ac6f(0x141)],'filters':[{'name':_0x36ac6f(0x1c5),'extensions':[_0x36ac6f(0x1a8),'pdf']},{'name':_0x36ac6f(0x164),'extensions':['*']}]});!_0xf6224a[_0x36ac6f(0x1cc)]&&_0xf6224a[_0x36ac6f(0x1b2)][_0x36ac6f(0x159)]>0x0&&mainWindow[_0x36ac6f(0x1b9)][_0x36ac6f(0x14d)](_0x36ac6f(0x182),_0xf6224a['filePaths'][0x0]);}},{'type':'separator'},{'role':'close'}]},{'label':_0x881af8(0x16c),'submenu':[{'role':'undo'},{'role':_0x881af8(0x1ae)},{'type':_0x881af8(0x1cf)},{'role':_0x881af8(0x121)},{'role':_0x881af8(0x194)},{'role':_0x881af8(0x173)},{'role':_0x881af8(0x149)}]},{'label':'View','submenu':[{'role':_0x881af8(0x10f)},{'role':'forceReload'},{'role':_0x881af8(0x11f)},{'type':_0x881af8(0x1cf)},{'role':_0x881af8(0x1da)},{'role':'zoomIn'},{'role':'zoomOut'},{'type':'separator'},{'role':'togglefullscreen'}]},{'label':'Window','submenu':[{'role':_0x881af8(0x1c3)},{'role':'zoom'},..._0x2da533?[{'type':_0x881af8(0x1cf)},{'role':_0x881af8(0x1a6)},{'type':_0x881af8(0x1cf)},{'role':_0x881af8(0x16b)}]:[{'role':_0x881af8(0x180)}]]},{'role':_0x881af8(0x1bb),'submenu':[{'label':'About\x20BoardScope','click':()=>{const _0x1ff8a7=_0x881af8;dialog[_0x1ff8a7(0x18c)](mainWindow,{'type':_0x1ff8a7(0x18e),'title':_0x1ff8a7(0x1d5),'message':_0x1ff8a7(0x1df),'detail':_0x1ff8a7(0x15f),'buttons':['OK']});}}]}],_0x4e23b0=Menu['buildFromTemplate'](_0x2a01ed);Menu[_0x881af8(0x190)](_0x4e23b0);}ipcMain[a0_0x533193(0x1d1)]('dialog:openFile',async(_0x14a8dc,_0x508513)=>{const _0x8e447a=a0_0x533193,_0x174331=await dialog[_0x8e447a(0x1c2)](mainWindow,_0x508513);return _0x174331;}),ipcMain['handle'](a0_0x533193(0x118),async(_0x5ba308,_0x3f3660)=>{const _0x3b0a5a=a0_0x533193,_0x207e38=await dialog[_0x3b0a5a(0x140)](mainWindow,_0x3f3660);return _0x207e38;}),ipcMain[a0_0x533193(0x1d1)](a0_0x533193(0x1d8),async(_0x22b058,_0x111e10)=>{const _0xfbbee6=a0_0x533193;return fs[_0xfbbee6(0x1bc)](_0x111e10,_0xfbbee6(0x115));}),ipcMain[a0_0x533193(0x1d1)](a0_0x533193(0x1b8),async(_0x53aca8,_0x14e3ac)=>{return fs['statSync'](_0x14e3ac);}),ipcMain[a0_0x533193(0x1d1)](a0_0x533193(0x124),async(_0xfef510,_0x4a1b8c)=>{const _0x3744e8=a0_0x533193;return app[_0x3744e8(0x127)](_0x4a1b8c);}),ipcMain[a0_0x533193(0x1d1)](a0_0x533193(0x178),async()=>{const _0x14e1ea=a0_0x533193;return app[_0x14e1ea(0x18a)]();}),app[a0_0x533193(0x187)]()[a0_0x533193(0x188)](()=>{startServer(),createWindow();}),app['on'](a0_0x533193(0x143),()=>{const _0x377dcd=a0_0x533193;process[_0x377dcd(0x11e)]!==_0x377dcd(0x184)&&app[_0x377dcd(0x13b)]();}),app['on'](a0_0x533193(0x126),()=>{const _0xf26d00=a0_0x533193;BrowserWindow[_0xf26d00(0x19b)]()['length']===0x0&&app['whenReady']()[_0xf26d00(0x188)](createWindow);}),app['on']('open-file',(_0x1d7ad4,_0x1a3adf)=>{const _0x3b0b26=a0_0x533193;_0x1d7ad4['preventDefault'](),mainWindow&&mainWindow[_0x3b0b26(0x1b9)][_0x3b0b26(0x14d)](_0x3b0b26(0x182),_0x1a3adf);}),app['on']('will-quit',()=>{});
+/**
+ * BoardScope Electron Main Process
+ * This file creates the native desktop window and manages the embedded server.
+ */
+
+const { app, BrowserWindow, ipcMain, dialog, Menu } = require('electron');
+const path = require('path');
+const fs = require('fs');
+const http = require('http');
+const https = require('https');
+const express = require('express');
+
+// Keep a global reference of the window object to prevent garbage collection
+let mainWindow = null;
+const SERVER_PORT = 8080;
+
+// ── START LICENSE & PROXY SERVER ────────────────────────────────
+function startServer() {
+  const expressApp = express();
+  expressApp.use(express.json({ limit: '50mb' }));
+
+  // Serve static files (boardview.html, multimeter.js, etc.)
+  expressApp.use(express.static(__dirname));
+
+  expressApp.get('/', (req, res) => {
+    res.json({ status: 'BoardScope License & Proxy Server v5.4.1' });
+  });
+
+  // AI Status
+  expressApp.get('/ai-status', (req, res) => {
+    const cfg = loadAIConfig();
+    res.json({ configured: !!cfg.key, provider: cfg.provider, model: cfg.model || '(default)' });
+  });
+
+  // AI Setup
+  expressApp.post('/ai-setup', (req, res) => {
+    const { provider, key, model, base_url } = req.body;
+    const configPath = path.join(__dirname, '.api_key');
+    let content = `provider=${provider}\nkey=${key}`;
+    if (model) content += `\nmodel=${model}`;
+    if (base_url) content += `\nbase_url=${base_url}`;
+    fs.writeFileSync(configPath, content);
+    res.json({ success: true });
+  });
+
+  // AI Proxy
+  expressApp.post('/ai', async (req, res) => {
+    const cfg = loadAIConfig();
+    if (!cfg.key) {
+      return res.status(503).json({ error: { type: 'no_api_key', message: 'No API key configured.' } });
+    }
+
+    const providerDef = AI_PROVIDERS[cfg.provider] || AI_PROVIDERS.anthropic;
+    let reqModel = cfg.model;
+    if (req.body.model) reqModel = req.body.model;
+
+    const outBody = providerDef.transform ? providerDef.transform(req.body, reqModel) : JSON.stringify(req.body);
+
+    let hostname = providerDef.hostname;
+    let apiPath = providerDef.path;
+    if (cfg.provider === 'google') {
+      const model = (reqModel || 'gemini-2.0-flash').replace(/^models\//, '');
+      apiPath = `/v1beta/models/${model}:generateContent?key=${cfg.key}`;
+    }
+
+    console.log(`[AI] ${cfg.provider} → ${hostname}${apiPath}`);
+
+    const options = {
+      hostname,
+      path: apiPath,
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(outBody),
+        ...(cfg.provider !== 'google' && providerDef.headers ? providerDef.headers(cfg.key) : {}),
+      }
+    };
+
+    const upstream = https.request(options, upRes => {
+      const chunks = [];
+      upRes.on('data', c => chunks.push(c));
+      upRes.on('end', () => {
+        let data;
+        try { data = JSON.parse(Buffer.concat(chunks).toString()); } catch(_) { data = {}; }
+        if (providerDef.normalize) data = providerDef.normalize(data);
+        res.status(upRes.statusCode).json(data);
+      });
+    });
+
+    upstream.on('error', err => {
+      res.status(502).json({ error: { type: 'upstream_error', message: err.message } });
+    });
+
+    upstream.write(outBody);
+    upstream.end();
+  });
+
+  // License Validation
+  expressApp.post('/license-validate', async (req, res) => {
+    const { key } = req.body;
+    if (!key) return res.status(400).json({ valid: false, error: 'No key provided' });
+
+    const k = key.trim().toUpperCase();
+    const isPolarSerial = /^BOARDSCOPE-[A-Z0-9]+-[0-9]+$/.test(k);
+    const isPolarUUID = /^BOARDSCOPE_[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}$/i.test(k);
+
+    let orgId = process.env.POLAR_ORG_ID;
+    if (!orgId) {
+      if (isPolarSerial || isPolarUUID) return res.json({ valid: true, plan: 'lifetime', dev_mode: true });
+      return res.json({ valid: false, error: 'Invalid license format' });
+    }
+
+    const body = JSON.stringify({ key, organization_id: orgId, label: 'boardscope-activation' });
+    const options = {
+      hostname: 'api.polar.sh',
+      path: '/v1/customer-portal/license-keys/validate',
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) }
+    };
+
+    const up = https.request(options, upRes => {
+      const chunks = [];
+      upRes.on('data', c => chunks.push(c));
+      upRes.on('end', () => {
+        let data;
+        try { data = JSON.parse(Buffer.concat(chunks).toString()); } catch(_) { data = {}; }
+        if (upRes.statusCode === 200 && data.license_key) {
+          const lk = data.license_key;
+          res.json({ valid: lk.status === 'granted', plan: lk.expires_at ? 'yearly' : 'lifetime', expires: lk.expires_at });
+        } else {
+          res.json({ valid: false, error: data.detail || 'Key invalid' });
+        }
+      });
+    });
+    up.on('error', err => res.json({ valid: false, error: err.message }));
+    up.write(body);
+    up.end();
+  });
+
+  // OBD Proxy Routes
+  expressApp.get('/obd-list', (req, res) => {
+    proxyOBD(res, 'https://openboarddata.org/');
+  });
+
+  expressApp.get('/obd-proxy', (req, res) => {
+    const bpath = req.query.bpath;
+    if (!bpath || !/^[a-z0-9/_-]+$/i.test(bpath)) {
+      return res.status(400).send('Invalid bpath');
+    }
+    proxyOBD(res, `https://openboarddata.org/?a=generate&bpath=${encodeURIComponent(bpath)}`);
+  });
+
+  expressApp.listen(SERVER_PORT, () => {
+    console.log(`BoardScope License Server listening on port ${SERVER_PORT}`);
+  });
+}
+
+// ── AI PROVIDER HELPERS ──────────────────────────────────────────
+const AI_PROVIDERS = {
+  anthropic: {
+    hostname: 'api.anthropic.com',
+    path: '/v1/messages',
+    headers: (key) => ({ 'x-api-key': key, 'anthropic-version': '2023-06-01' }),
+  },
+  openrouter: {
+    hostname: 'openrouter.ai',
+    path: '/api/v1/chat/completions',
+    headers: (key) => ({ 'Authorization': `Bearer ${key}`, 'HTTP-Referer': 'http://localhost:8080', 'X-Title': 'BoardScope' }),
+    transform: (body, model) => {
+      const parsed = typeof body === 'string' ? JSON.parse(body) : body;
+      const useModel = parsed.model || model || 'qwen/qwen-2.5-72b-instruct';
+      const messages = (parsed.messages || []).map(msg => {
+        if (!Array.isArray(msg.content)) return msg;
+        return { ...msg, content: msg.content.map(block => (block.type === 'image' && block.source) ? { type: 'image_url', image_url: { url: `data:${block.source.media_type || 'image/jpeg'};base64,${block.source.data}` } } : block) };
+      });
+      return JSON.stringify({ model: useModel, max_tokens: parsed.max_tokens || 1000, messages });
+    },
+    normalize: (data) => {
+      const text = data.choices?.[0]?.message?.content || '';
+      return { content: [{ type: 'text', text }] };
+    }
+  },
+  openai: {
+    hostname: 'api.openai.com',
+    path: '/v1/chat/completions',
+    headers: (key) => ({ 'Authorization': `Bearer ${key}` }),
+    transform: (body, model) => {
+      const parsed = typeof body === 'string' ? JSON.parse(body) : body;
+      const messages = (parsed.messages || []).map(msg => {
+        if (!Array.isArray(msg.content)) return msg;
+        return { ...msg, content: msg.content.map(block => (block.type === 'image' && block.source) ? { type: 'image_url', image_url: { url: `data:${block.source.media_type || 'image/jpeg'};base64,${block.source.data}` } } : block) };
+      });
+      return JSON.stringify({ model: model || 'gpt-4o', max_tokens: parsed.max_tokens || 1000, messages });
+    },
+    normalize: (data) => {
+      const text = data.choices?.[0]?.message?.content || '';
+      return { content: [{ type: 'text', text }] };
+    }
+  },
+  google: {
+    hostname: 'generativelanguage.googleapis.com',
+    headers: (key) => ({ 'Content-Type': 'application/json' }),
+    transform: (body, model) => {
+      const parsed = typeof body === 'string' ? JSON.parse(body) : body;
+      const userMessage = parsed.messages[parsed.messages.length - 1]?.content || '';
+      const parts = Array.isArray(userMessage) ? userMessage.map(block => block.type === 'text' ? { text: block.text } : { inline_data: { mime_type: block.source.media_type || 'image/jpeg', data: block.source.data } }) : [{ text: userMessage }];
+      return JSON.stringify({ contents: [{ parts }], generationConfig: { maxOutputTokens: parsed.max_tokens || 1000, temperature: 0.7 }, systemInstruction: { parts: [{ text: parsed.system || '' }] } });
+    },
+    normalize: (data) => {
+      const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      return { content: [{ type: 'text', text }] };
+    }
+  }
+};
+
+function loadAIConfig() {
+  let provider = (process.env.AI_PROVIDER || 'anthropic').toLowerCase();
+  let key = process.env.AI_API_KEY || process.env.ANTHROPIC_API_KEY || null;
+  let model = process.env.AI_MODEL || null;
+  const keyFile = path.join(__dirname, '.api_key');
+  if (fs.existsSync(keyFile)) {
+    const content = fs.readFileSync(keyFile, 'utf8').trim();
+    if (content.startsWith('sk-ant-')) { key = content; provider = 'anthropic'; }
+    else {
+      content.split('\n').forEach(line => {
+        const [k, v] = line.trim().split('=');
+        if (k === 'provider') provider = v.toLowerCase();
+        if (k === 'key') key = v;
+        if (k === 'model') model = v;
+      });
+    }
+  }
+  return { provider, key, model };
+}
+
+/**
+ * Proxy request to OpenBoardData.org
+ */
+function proxyOBD(res, targetUrl) {
+  console.log('[OBD] Fetching ' + targetUrl);
+  const request = https.get(targetUrl, { 
+    headers: { 'User-Agent': 'BoardScope/1.0' },
+    timeout: 10000 
+  }, function(upstream) {
+    res.writeHead(upstream.statusCode, {
+      'Content-Type': upstream.headers['content-type'] || 'text/plain',
+      'Access-Control-Allow-Origin': '*',
+      'Cache-Control': 'public, max-age=3600',
+    });
+    upstream.pipe(res);
+  });
+  request.on('error', (err) => {
+    console.error('[OBD] Error:', err.message);
+    res.status(502).send('OBD error: ' + err.message);
+  });
+  request.on('timeout', () => {
+    request.destroy();
+    res.status(504).send('OBD timeout');
+  });
+  request.end();
+}
+
+// ── CREATE WINDOW ──────────────────────────────────────────────────
+function createWindow() {
+  mainWindow = new BrowserWindow({
+    width: 1400,
+    height: 900,
+    minWidth: 800,
+    minHeight: 600,
+    title: 'BoardScope',
+    backgroundColor: '#0d0f12',
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+      webSecurity: false,
+    },
+    icon: path.join(__dirname, 'assets', 'icon.png'),
+  });
+
+  buildMenu();
+
+  waitForServer().then(() => {
+    mainWindow.loadURL(`http://127.0.0.1:${SERVER_PORT}/boardview.html`);
+  }).catch(err => {
+    console.error('Server failed to start:', err);
+    dialog.showErrorBox('Server Error', 'Failed to start BoardScope server. Please restart the application.');
+  });
+
+  mainWindow.on('closed', () => {
+    mainWindow = null;
+  });
+
+  // Open DevTools in development mode
+  if (process.env.NODE_ENV === 'development' || process.argv.includes('--devtools')) {
+    mainWindow.webContents.openDevTools();
+  }
+}
+
+// ── WAIT FOR SERVER ────────────────────────────────────────────────
+function waitForServer(maxAttempts = 30, interval = 200) {
+  return new Promise((resolve, reject) => {
+    let attempts = 0;
+    const check = () => {
+      attempts++;
+      http.get(`http://127.0.0.1:${SERVER_PORT}`, (res) => {
+        resolve();
+      }).on('error', () => {
+        if (attempts < maxAttempts) {
+          setTimeout(check, interval);
+        } else {
+          reject(new Error('Server did not start in time'));
+        }
+      });
+    };
+    check();
+  });
+}
+
+// ── BUILD MENU ─────────────────────────────────────────────────────
+function buildMenu() {
+  const isMac = process.platform === 'darwin';
+
+  const template = [
+    ...(isMac ? [{
+      label: app.name,
+      submenu: [
+        { role: 'about' },
+        { type: 'separator' },
+        { role: 'services' },
+        { type: 'separator' },
+        { role: 'hide' },
+        { role: 'hideOthers' },
+        { role: 'unhide' },
+        { type: 'separator' },
+        { role: 'quit' }
+      ]
+    }] : []),
+    {
+      label: 'File',
+      submenu: [
+        {
+          label: 'Open Board File...',
+          accelerator: 'CmdOrCtrl+O',
+          click: async () => {
+            const result = await dialog.showOpenDialog(mainWindow, {
+              properties: ['openFile'],
+              filters: [
+                { name: 'Board Files', extensions: ['brd', 'pdf'] },
+                { name: 'All Files', extensions: ['*'] }
+              ]
+            });
+            if (!result.canceled && result.filePaths.length > 0) {
+              mainWindow.webContents.send('file-opened', result.filePaths[0]);
+            }
+          }
+        },
+        { type: 'separator' },
+        { role: 'close' }
+      ]
+    },
+    {
+      label: 'Edit',
+      submenu: [
+        { role: 'undo' },
+        { role: 'redo' },
+        { type: 'separator' },
+        { role: 'cut' },
+        { role: 'copy' },
+        { role: 'paste' },
+        { role: 'selectAll' }
+      ]
+    },
+    {
+      label: 'View',
+      submenu: [
+        { role: 'reload' },
+        { role: 'forceReload' },
+        { role: 'toggleDevTools' },
+        { type: 'separator' },
+        { role: 'resetZoom' },
+        { role: 'zoomIn' },
+        { role: 'zoomOut' },
+        { type: 'separator' },
+        { role: 'togglefullscreen' }
+      ]
+    },
+    {
+      label: 'Window',
+      submenu: [
+        { role: 'minimize' },
+        { role: 'zoom' },
+        ...(isMac ? [
+          { type: 'separator' },
+          { role: 'front' },
+          { type: 'separator' },
+          { role: 'window' }
+        ] : [
+          { role: 'close' }
+        ])
+      ]
+    },
+    {
+      role: 'help',
+      submenu: [
+        {
+          label: 'About BoardScope',
+          click: () => {
+            dialog.showMessageBox(mainWindow, {
+              type: 'info',
+              title: 'About BoardScope',
+              message: 'BoardScope v1.0.0',
+              detail: 'PCB Boardview & Schematic Analysis Tool for board repair\n\n© 2024 BoardScope',
+              buttons: ['OK']
+            });
+          }
+        }
+      ]
+    }
+  ];
+
+  const menu = Menu.buildFromTemplate(template);
+  Menu.setApplicationMenu(menu);
+}
+
+// ── IPC HANDLERS ───────────────────────────────────────────────────
+ipcMain.handle('dialog:openFile', async (event, options) => {
+  const result = await dialog.showOpenDialog(mainWindow, options);
+  return result;
+});
+
+ipcMain.handle('dialog:saveFile', async (event, options) => {
+  const result = await dialog.showSaveDialog(mainWindow, options);
+  return result;
+});
+
+ipcMain.handle('fs:readFile', async (event, filePath) => {
+  return fs.readFileSync(filePath, 'utf8');
+});
+
+ipcMain.handle('fs:stat', async (event, filePath) => {
+  return fs.statSync(filePath);
+});
+
+ipcMain.handle('app:getPath', async (event, name) => {
+  return app.getPath(name);
+});
+
+ipcMain.handle('app:getVersion', async () => {
+  return app.getVersion();
+});
+
+// ── APP LIFECYCLE ──────────────────────────────────────────────────
+app.whenReady().then(() => {
+  startServer();
+  createWindow();
+});
+
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') {
+    app.quit();
+  }
+});
+
+app.on('activate', () => {
+  if (BrowserWindow.getAllWindows().length === 0) {
+    app.whenReady().then(createWindow);
+  }
+});
+
+// Handle file associations (open .brd files by double-clicking)
+app.on('open-file', (event, filePath) => {
+  event.preventDefault();
+  if (mainWindow) {
+    mainWindow.webContents.send('file-opened', filePath);
+  }
+});
+
+// Quit and cleanup
+app.on('will-quit', () => {
+  // Server runs in-process, no cleanup needed
+});

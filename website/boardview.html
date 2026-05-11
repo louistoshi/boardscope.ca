@@ -8786,8 +8786,8 @@
           <li id="tog-templates">📄 Repair Templates</li>
           <li class="mac-sep"></li>
           <li
-            onclick="if(G.boardId) { window.open(`https://repair.wiki/index.php?search=${encodeURIComponent(G.boardId)}`, '_blank') } else { alert('Please load a board first') }">
-            🔍 Search Repair Wiki</li>
+            onclick="if(G.boardId) { window.open(`https://www.ifixit.com/Search?query=${encodeURIComponent(G.boardId)}`, '_blank') } else { alert('Please load a board first') }">
+            🔍 Search iFixit</li>
           <li
             onclick="if(G.boardId) { window.open(`https://www.google.com/search?q=site:badcaps.net+${encodeURIComponent(G.boardId)}`, '_blank') } else { alert('Please load a board first') }">
             💬 Search Badcaps Forum</li>
@@ -10219,6 +10219,15 @@
         style="border:none;background:none;width:30px;height:30px;cursor:pointer;padding:0">
       <button id="sp-reset-color"
         style="background:var(--bg3);border:1px solid var(--border2);color:var(--text);font-family:var(--mono);font-size:9px;padding:4px 8px;border-radius:var(--r);cursor:pointer;margin-left:8px">Reset</button>
+      <button id="sp-rainbow-toggle"
+        style="background:var(--bg3);border:1px solid var(--border2);color:var(--text);font-family:var(--mono);font-size:9px;padding:4px 8px;border-radius:var(--r);cursor:pointer;margin-left:6px;transition:all 0.3s">🌈</button>
+    </div>
+    <div class="sp-row" id="sp-rainbow-speed-row" style="display:none">
+      <span class="sp-label">Speed</span>
+      <span style="font-size:9px;color:var(--text3);margin-right:6px">Slow</span>
+      <input type="range" id="sp-rainbow-speed" min="1" max="20" value="3"
+        style="flex:1;accent-color:var(--accent);cursor:pointer">
+      <span style="font-size:9px;color:var(--text3);margin-left:6px">Fast</span>
     </div>
     <div class="sp-section">🤖 AI DIAGNOSIS</div>
     <div class="sp-row">
@@ -10386,6 +10395,17 @@
     </div>
 
     <button class="sp-reset" id="sp-reset">RESET TO DEFAULTS</button>
+
+    <div class="sp-section">📦 APP VERSION</div>
+    <div class="sp-row">
+      <span class="sp-label">Installed</span>
+      <span id="sp-version" style="font-family:var(--mono);font-size:10px;color:var(--text3)">—</span>
+    </div>
+    <div class="sp-row">
+      <span class="sp-label"></span>
+      <button id="sp-check-update" style="flex:1;background:var(--bg3);border:1px solid var(--border2);color:var(--text);font-family:var(--mono);font-size:10px;padding:6px;border-radius:4px;cursor:pointer">CHECK FOR UPDATE</button>
+    </div>
+    <div id="sp-update-status" style="font-size:9px;color:var(--text3);padding:4px 14px;min-height:20px"></div>
   </div>
 
   <!-- Custom fast tooltip -->
@@ -15378,8 +15398,14 @@
 
         const escapedId = searchId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-        let hrefRegex = new RegExp(`href="([^"]*${escapedId}[^"]*)"`, 'i');
+        // Try bpath= query param first (handles unquoted hrefs like href=?a=generate&bpath=laptops/apple/820-xxx)
+        let hrefRegex = new RegExp(`bpath=([a-z0-9/_-]*${escapedId}[a-z0-9/_-]*)`, 'i');
         let hrefMatch = listText.match(hrefRegex);
+
+        if (!hrefMatch) {
+          hrefRegex = new RegExp(`href="([^"]*${escapedId}[^"]*)"`, 'i');
+          hrefMatch = listText.match(hrefRegex);
+        }
 
         if (!hrefMatch) {
           hrefRegex = new RegExp(`href='([^']*${escapedId}[^']*)'`, 'i');
@@ -15463,9 +15489,11 @@
         drawBRD();
         setStatus(`OBD: LOADED ${bpath} — ${G.obd.netData.size} NETS, ${G.obd.compData.size} COMPONENTS`);
       } catch (e) {
-        document.getElementById('obd-status').textContent = 'FETCH ERROR';
-        setStatus(`OBD: ${e.message}`); // Show actual error
+        G.obd = null; // ensure retry works on next click
+        document.getElementById('obd-status').textContent = 'FETCH ERROR — click OBD button to retry';
+        setStatus(`OBD: ${e.message}`);
         dbg('[OBD] Fetch error:', e);
+        renderOBDPanel();
       }
     }
 
@@ -15552,11 +15580,13 @@
       G.obd = { netData, compData, sequences };
 
       // Update workflow state when OBD is loaded
-      WorkflowState.odbLoaded = true;
-      WorkflowState.markStepDone('load-obd');
-      if (WorkflowState.completedPhases.has('SETUP') === false && WorkflowState.boardLoaded) {
-        WorkflowState.markPhaseCompleted('SETUP');
-        WorkflowState.setPhase('DIAGNOSE');
+      if (typeof WorkflowState !== 'undefined') {
+        WorkflowState.odbLoaded = true;
+        WorkflowState.markStepDone('load-obd');
+        if (WorkflowState.completedPhases.has('SETUP') === false && WorkflowState.boardLoaded) {
+          WorkflowState.markPhaseCompleted('SETUP');
+          WorkflowState.setPhase('DIAGNOSE');
+        }
       }
     }
 
@@ -15655,19 +15685,21 @@
 
     // OBD toggle button
     document.getElementById('tog-obd').addEventListener('click', async () => {
-      if (G.obd) {
-        // Toggle panel open/close
+      const obdHasData = G.obd && (G.obd.netData.size || G.obd.compData.size || G.obd.sequences.length);
+      if (obdHasData) {
+        // Toggle panel open/close only when data is actually loaded
         const p = document.getElementById('obd-panel');
         p.classList.toggle('open');
         document.getElementById('tog-obd').classList.toggle('on', p.classList.contains('open'));
         return;
       }
       // Open panel; auto-fetch if board loaded, else show browser
+      G.obd = null; // reset empty/failed state so fetch always retries
       document.getElementById('obd-panel').classList.add('open');
       document.getElementById('tog-obd').classList.add('on');
       if (!G.boardId) {
         renderOBDPanel();
-        setStatus('OBD: SELECT A BOARD FROM THE DATABASE');
+        setStatus('OBD: LOAD A BOARD FILE FIRST, THEN CLICK OBD TO FETCH DATA');
         return;
       }
       await autoFetchOBD(G.boardId);
@@ -19161,16 +19193,6 @@ self.addEventListener('fetch', e => {
         });
       }
 
-      // 4. Repair Wiki
-      if (useRoss) {
-        results.push({
-          title: `Repair Wiki: "${q}"`,
-          meta: 'Community repair knowledge · repair.wiki',
-          source: 'ross', icon: '📚',
-          url: `https://repair.wiki/index.php?search=${encodeURIComponent(q)}`
-        });
-      }
-
       // 4.5. Badcaps Forum
       if (useBadcaps) {
         results.push({
@@ -21820,7 +21842,7 @@ Rules: 6-10 rails in power-on order. "net" is the exact schematic net name. "tol
 
     // Save settings
     document.getElementById('sp-ai-save').addEventListener('click', async () => {
-      const key = aiKey.value.trim();
+      const key = aiKey.value.trim() || localStorage.getItem('bs_ai_key') || '';
       if (!key) {
         aiStatus.textContent = '⚠ Please enter an API key';
         aiStatus.style.color = 'var(--amber)';
@@ -21842,7 +21864,7 @@ Rules: 6-10 rails in power-on order. "net" is the exact schematic net name. "tol
 
         // Also save to server's .api_key file for server-side AI proxy
         try {
-          await fetch('/ai-config', {
+          await fetch('/ai-setup', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -22041,6 +22063,48 @@ Rules: 6-10 rails in power-on order. "net" is the exact schematic net name. "tol
         applyCustomColor(null);
       }
 
+      // 5. Rainbow Mode
+      const RAINBOW_KEY = 'boardscope_rainbow';
+      const RAINBOW_SPEED_KEY = 'boardscope_rainbow_speed';
+      let _rainbowRaf = null;
+      let _rainbowHue = 0;
+
+      function rainbowTick() {
+        const speed = parseFloat(document.getElementById('sp-rainbow-speed')?.value || 3) * 0.05;
+        _rainbowHue = (_rainbowHue + speed) % 360;
+        const color = `hsl(${_rainbowHue}, 100%, 60%)`;
+        document.body.style.setProperty('--accent', color, 'important');
+        document.body.style.setProperty('--hl', color, 'important');
+        document.body.style.setProperty('--border', `hsl(${_rainbowHue}, 100%, 60%, 0.2)`, 'important');
+        document.body.style.setProperty('--border2', `hsl(${_rainbowHue}, 100%, 60%, 0.4)`, 'important');
+        const picker = document.getElementById('sp-accent-picker');
+        if (picker) {
+          const r = Math.round(Math.sin((_rainbowHue) * Math.PI / 180) * 127 + 128);
+          const g = Math.round(Math.sin((_rainbowHue + 120) * Math.PI / 180) * 127 + 128);
+          const b = Math.round(Math.sin((_rainbowHue + 240) * Math.PI / 180) * 127 + 128);
+          picker.value = '#' + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('');
+        }
+        _rainbowRaf = requestAnimationFrame(rainbowTick);
+      }
+
+      function setRainbow(on) {
+        const btn = document.getElementById('sp-rainbow-toggle');
+        const speedRow = document.getElementById('sp-rainbow-speed-row');
+        if (on) {
+          localStorage.setItem(RAINBOW_KEY, '1');
+          localStorage.removeItem(CUSTOM_COLOR_KEY);
+          if (!_rainbowRaf) rainbowTick();
+          if (btn) btn.style.cssText += ';box-shadow:0 0 8px var(--accent);border-color:var(--accent)';
+          if (speedRow) speedRow.style.display = 'flex';
+        } else {
+          localStorage.removeItem(RAINBOW_KEY);
+          if (_rainbowRaf) { cancelAnimationFrame(_rainbowRaf); _rainbowRaf = null; }
+          resetCustomColor();
+          if (btn) btn.style.boxShadow = '';
+          if (speedRow) speedRow.style.display = 'none';
+        }
+      }
+
       // 4. Event Listeners
       window.addEventListener('DOMContentLoaded', () => {
         // Initial State
@@ -22122,7 +22186,21 @@ Rules: 6-10 rails in power-on order. "net" is the exact schematic net name. "tol
         }
 
         const rst = document.getElementById('sp-reset-color');
-        if (rst) rst.onclick = resetCustomColor;
+        if (rst) rst.onclick = () => { setRainbow(false); resetCustomColor(); };
+
+        const rainbowBtn = document.getElementById('sp-rainbow-toggle');
+        if (rainbowBtn) {
+          rainbowBtn.onclick = () => setRainbow(!_rainbowRaf);
+        }
+
+        const speedSlider = document.getElementById('sp-rainbow-speed');
+        if (speedSlider) {
+          const savedSpeed = localStorage.getItem(RAINBOW_SPEED_KEY);
+          if (savedSpeed) speedSlider.value = savedSpeed;
+          speedSlider.oninput = () => localStorage.setItem(RAINBOW_SPEED_KEY, speedSlider.value);
+        }
+
+        if (localStorage.getItem(RAINBOW_KEY) === '1') setRainbow(true);
       });
 
       // Global exports for external access if needed
@@ -22144,6 +22222,44 @@ Rules: 6-10 rails in power-on order. "net" is the exact schematic net name. "tol
         p.classList.remove('open');
       }
     });
+
+    // ── UPDATE CHECK ──
+    (function () {
+      if (window.electronAPI?.getAppVersion) {
+        window.electronAPI.getAppVersion().then(v => {
+          const el = document.getElementById('sp-version');
+          if (el) el.textContent = v;
+        });
+      }
+
+      document.getElementById('sp-check-update').addEventListener('click', async () => {
+        const btn = document.getElementById('sp-check-update');
+        const status = document.getElementById('sp-update-status');
+        const verEl = document.getElementById('sp-version');
+        btn.textContent = 'CHECKING…';
+        btn.disabled = true;
+        status.textContent = '';
+        try {
+          const resp = await fetch('https://api.github.com/repos/louistoshi/boardscope.ca/releases/latest');
+          if (!resp.ok) throw new Error('GitHub API returned ' + resp.status);
+          const data = await resp.json();
+          const latest = data.tag_name.replace(/^v/, '');
+          const current = verEl ? verEl.textContent : '0';
+          if (latest === current) {
+            status.style.color = 'var(--accent)';
+            status.textContent = '✓ You are up to date';
+          } else {
+            status.style.color = 'var(--text)';
+            status.innerHTML = `⬆ v${latest} available — <a href="https://github.com/louistoshi/boardscope.ca/releases/tag/${latest}" target="_blank" style="color:var(--accent);text-decoration:underline">Download</a>`;
+          }
+        } catch (e) {
+          status.style.color = 'var(--text3)';
+          status.textContent = 'Could not check — check your connection';
+        }
+        btn.textContent = 'CHECK FOR UPDATE';
+        btn.disabled = false;
+      });
+    })();
 
     // ── SETTINGS PANEL DRAG ──
     (function () {
