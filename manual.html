@@ -474,12 +474,20 @@ OPENROUTER_API_KEY=sk-or-...</code></pre>
     <table>
       <tr><th>Format</th><th>Extension</th><th>Description</th></tr>
       <tr><td>.brd</td><td>Apple binary BRD</td><td>Most common boardview format from repair communities</td></tr>
-      <tr><td>.bvr</td><td>Text boardview</td><td>Plain-text boardview (FZ/BVR dialect)</td></tr>
-      <tr><td>.brd2</td><td>BRD2</td><td>Extended BRD variant</td></tr>
-      <tr><td>.cad</td><td>CAD</td><td>CAD boardview export</td></tr>
-      <tr><td>.fz</td><td>FlexBV</td><td>FlexBV-compatible format</td></tr>
+      <tr><td>.pcb / .xzz</td><td>XZZ (XinZhiZao)</td><td>Encrypted boardview (incl. decrypted variants)</td></tr>
+      <tr><td>.bvr / .brd2 / .bdv</td><td>Text boardview</td><td>BVRAW, BoardViewer/BRD2, and BDV plain-text boardviews</td></tr>
+      <tr><td>.cad</td><td>CAD / GenCAD</td><td>Agilent CSV exports and GenCAD interchange files</td></tr>
+      <tr><td>.kicad_pcb</td><td>KiCad PCB</td><td>Full layout with footprints, pads, nets and board outline</td></tr>
+      <tr><td>.kicad_sch / .sch</td><td>KiCad / Eagle schematic</td><td>Flat sheet layout — searchable parts and pins</td></tr>
+      <tr><td>.brd (XML)</td><td>Eagle board</td><td>Eagle v6+ XML layout with signals and outline</td></tr>
+      <tr><td>.dsn</td><td>Specctra</td><td>Placement, pins and nets</td></tr>
+      <tr><td>.fz / .cae</td><td>ASUS FZ / ASRock CAE</td><td>Encrypted boardview (RC6 key auto-fetched from public mirrors)</td></tr>
+      <tr><td>.356 / .ipc / .net</td><td>IPC-D-356</td><td>Fabrication netlist with parts, pins and nets</td></tr>
+      <tr><td>.gbr / .gko</td><td>Gerber RS-274X</td><td>Copper artwork shown as trace underlay (no parts/nets by design)</td></tr>
+      <tr><td>.tgz</td><td>ODB++</td><td>Manufacturing archive (components, netlist, profile)</td></tr>
       <tr><td>.csv / .txt</td><td>CSV / Text</td><td>Component list in tabular form</td></tr>
       <tr><td>.pdf</td><td>PDF</td><td>Multi-page schematic, service manual, or datasheet</td></tr>
+      <tr><td>Not supported</td><td>.bdv (FlexBV proprietary binary), ODB++ directories, Allegro binary</td><td>Detection shows a clear message</td></tr>
     </table>
     <h3>How to Load</h3>
     <div class="feature-row"><div class="feature-icon">📂</div><div class="feature-text"><strong>+ PDF button</strong> — opens a file picker for schematic PDFs (left pane)</div></div>

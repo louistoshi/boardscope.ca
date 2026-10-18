@@ -46,6 +46,7 @@
   <script src="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
   <script src="multimeter.js?v=3"></script>
   <script src="xzz-parser.js?v=1"></script>
+  <script src="board-parsers.js?v=1"></script>
   <!-- v6.0 New Features -->
   <script src="macro-recorder.js?v=6"></script>
   <script src="component-library.js?v=6"></script>
@@ -8674,7 +8675,7 @@
 
   <!-- HIDDEN INPUTS MOVED OUT OF HEADER -->
   <input type="file" id="pdf-in" accept=".pdf" style="display:none">
-  <input type="file" id="brd-in" accept=".bvr,.brd,.brd2,.bdv,.cad,.pcb,.xzz,.csv,.txt" style="display:none">
+  <input type="file" id="brd-in" accept=".bvr,.brd,.brd2,.pcb,.xzz,.bdv,.cad,.kicad_pcb,.kicad_sch,.sch,.dsn,.fz,.cae,.356,.ipc,.gbr,.gko,.tgz,.csv,.txt" style="display:none">
   <!-- HIDDEN SESSION IMPORT -->
   <input type="file" id="session-import-in" accept=".boardscope,.json" style="display:none">
 
@@ -8835,7 +8836,7 @@
       <label class="hbtn" id="pdf-lbl" for="pdf-in">+ PDF</label>
       <input type="file" id="pdf-in" accept=".pdf">
       <label class="hbtn" id="brd-lbl" for="brd-in">+ BRD / BVR / XZZ</label>
-      <input type="file" id="brd-in" accept=".bvr,.brd,.brd2,.bdv,.cad,.pcb,.xzz,.csv,.txt">
+      <input type="file" id="brd-in" accept=".bvr,.brd,.brd2,.pcb,.xzz,.bdv,.cad,.kicad_pcb,.kicad_sch,.sch,.dsn,.fz,.cae,.356,.ipc,.gbr,.gko,.tgz,.csv,.txt">
       <div class="layout-btns" title="Layout mode">
         <button class="lbtn" id="lbtn-pdf" title="PDF only">PDF</button>
         <button class="lbtn active" id="lbtn-dual" title="Dual view">DUAL</button>
@@ -8888,7 +8889,7 @@
   <div id="board-tabs">
     <div id="board-tab-list"></div>
     <button id="board-tab-add" title="Open another board in a new tab">&#43;</button>
-    <input type="file" id="board-tab-in" accept=".bvr,.brd,.brd2,.bdv,.cad,.pcb,.xzz,.csv,.txt" style="display:none">
+    <input type="file" id="board-tab-in" accept=".bvr,.brd,.brd2,.pcb,.xzz,.bdv,.cad,.kicad_pcb,.kicad_sch,.sch,.dsn,.fz,.cae,.356,.ipc,.gbr,.gko,.tgz,.csv,.txt" style="display:none">
   </div>
 
   <!-- Repair Phase Strip (circuit-trace workflow guide) -->
@@ -9490,7 +9491,7 @@
               </div>
               <div id="cmp-toolbar">
                 <button id="cmp-load-btn">&#128193; LOAD DONOR BRD</button>
-                <input type="file" id="cmp-file-in" accept=".bvr,.brd,.brd2,.bdv,.pcb,.xzz" style="display:none">
+                <input type="file" id="cmp-file-in" accept=".bvr,.brd,.brd2,.pcb,.xzz,.bdv,.cad,.kicad_pcb,.dsn,.fz,.356" style="display:none">
                 <span id="cmp-fname">No donor loaded</span>
                 <div id="cmp-filter-row">
                   <button class="cmp-ftog on" id="cmp-f-all">ALL</button>
@@ -11270,6 +11271,7 @@
       }
 
       // Parse new board (caller runs parseBoardBytes so XZZ/binary formats work)
+      if (parsed.fzAsync || parsed.odbppAsync) { setStatus('FZ/ODB++ — open with + BRD (main view) instead of a tab'); return; }
       const { comps, outline } = parsed;
       if (!comps.length) { setStatus('NO PARTS FOUND IN NEW TAB FILE'); return; }
 
@@ -12355,13 +12357,79 @@
         dbg('[BoardLoad] Detected Apple binary BRD format,', fileName);
         return parseBinaryBRD(bytes);
       }
+      // Extended formats (KiCad, Eagle, Specctra, GenCAD, BDV, IPC-356, Gerber, FZ, ODB++)
+      if (typeof BoardParsers !== 'undefined') {
+        const text = new TextDecoder().decode(bytes);
+        const ext = (fileName || '').split('.').pop().toLowerCase();
+        const kind = BoardParsers.detect(text, bytes, fileName);
+        if (kind === 'fz') return { fzAsync: true, bytes, fileName };
+        if (kind === 'odbpp') return { odbppAsync: true, bytes, fileName };
+        if (kind) {
+          try {
+            const result = BoardParsers.parse(text, bytes, fileName);
+            if (result) {
+              if (result.error) return result;
+              dbg('[BoardLoad] Parsed', kind, fileName, result.comps.length, 'comps');
+              return result;
+            }
+          } catch (err) {
+            dbg('[BoardLoad]', kind, 'parser threw:', err);
+            // fall through to text formats
+          }
+        }
+      }
       // Text formats: BVRAW / FlexBV / BRD2 / CAD CSV / classic
       dbg('[BoardLoad] Trying as text format,', fileName);
       return parseBVR(new TextDecoder().decode(bytes));
     }
 
-    function loadBoardBytes(bytes, fileName) {
-      const result = parseBoardBytes(bytes, fileName);
+    // FZ RC6 key is never bundled (same posture as OpenBoardView): cached in
+    // localStorage, auto-fetched from the public mirrors, parity-validated.
+    async function fzGetKey() {
+      const cached = localStorage.getItem('boardscope-fz-key');
+      if (cached) {
+        const w = BoardParsers.fzParseKeyHex(cached);
+        if (w && BoardParsers.fzCheckKey(w)) return w;
+      }
+      const mirrors = [
+        'https://raw.githubusercontent.com/cryptonek/illegal-numbers/main/FZkey.md',
+        'https://raw.githubusercontent.com/yliu-d/illegal-numbers/main/FZkey.md',
+      ];
+      for (const url of mirrors) {
+        try {
+          const res = await fetch(url, { cache: 'no-store' });
+          if (!res.ok) continue;
+          const w = BoardParsers.fzParseKeyHex(await res.text());
+          if (w && BoardParsers.fzCheckKey(w)) {
+            localStorage.setItem('boardscope-fz-key', JSON.stringify(w));
+            return w;
+          }
+        } catch (err) { dbg('[FZ] key mirror failed:', url, err); }
+      }
+      return null;
+    }
+
+    async function loadBoardBytes(bytes, fileName) {
+      let result = parseBoardBytes(bytes, fileName);
+      if (result.fzAsync) {
+        setStatus('PARSING ASUS FZ…');
+        const key = await fzGetKey();
+        result = await BoardParsers.fzParse(bytes, key);
+        if (result.error === 'FZ_KEY_REQUIRED') { setStatus('FZ KEY UNAVAILABLE — cannot decrypt (check internet connection)'); return false; }
+      }
+      if (result.odbppAsync) {
+        setStatus('PARSING ODB++ ARCHIVE…');
+        result = await BoardParsers.odbpp(bytes);
+      }
+      // Gerber: copper artwork has no parts — show as trace underlay via outline
+      if (result.copper && !result.comps.length) {
+        result.copperOnly = true;
+        const pts = [];
+        for (const seg of result.copper) pts.push({ x: seg.x1, y: seg.y1 }, { x: seg.x2, y: seg.y2 });
+        if (!pts.length) for (const pad of (result.pads || [])) pts.push({ x: pad.x, y: pad.y });
+        result.outline = pts;
+        G.copper = result.copper;
+      }
       if (result.error) { setStatus(result.error); return false; }
       loadBrdResult(result, fileName);
       return true;
@@ -12390,9 +12458,10 @@
         dbg('[loadBrdResult] First comp:', comps[0]);
         dbg('[loadBrdResult] Bounds before computeBounds:', G.bounds);
       }
-      if (!comps.length) { setStatus('NO PARTS FOUND — check file format'); return; }
+      if (!comps.length && !result.copperOnly) { setStatus('NO PARTS FOUND — check file format'); return; }
 
       G.comps = comps; G.outline = outline;
+      G.copper = result.copper || null;
       G.highlighted = null; G.searchMatches = [];
       voltMapCache.clear();
       computeBounds();
@@ -21526,7 +21595,9 @@ Rules: 6-10 rails in power-on order. "net" is the exact schematic net name. "tol
               autoLayout();
             };
             fr.readAsArrayBuffer(file);
-          } else if (['bvr', 'brd', 'brd2', 'bdv', 'cad', 'pcb', 'xzz', 'csv', 'txt'].includes(ext)) {
+          } else if (['bvr', 'brd', 'brd2', 'bdv', 'cad', 'pcb', 'xzz', 'csv', 'txt',
+                      'kicad_pcb', 'kicad_sch', 'sch', 'dsn', 'fz', 'cae',
+                      '356', 'ipc', 'gbr', 'gko', 'gbl', 'gtl', 'tgz', 'tar', 'gz', 'net'].includes(ext)) {
             document.getElementById('brd-fname').textContent = file.name;
             document.getElementById('brd-lbl').classList.add('on');
             const fr = new FileReader();
@@ -21535,10 +21606,10 @@ Rules: 6-10 rails in power-on order. "net" is the exact schematic net name. "tol
               loadBoardBytes(new Uint8Array(ev.target.result), file.name);
             };
             fr.readAsArrayBuffer(file);
-          } else if (ext === 'fz' || ext === 'fzz') {
-            setStatus('FRITZING ' + ext.toUpperCase() + ' NOT SUPPORTED — export as CSV or open the Fritzing board view PDF');
+          } else if (ext === 'fzz') {
+            setStatus('FRITZING ARCHIVE (.fzz) NOT SUPPORTED — open the .fz boardview or export as CSV');
           } else {
-            setStatus('UNSUPPORTED FILE TYPE (.' + ext + ') — drop a board file (.brd .pcb .bvr .csv) or schematic PDF');
+            setStatus('UNSUPPORTED FILE TYPE (.' + ext + ') — drop a board file (.brd .pcb .kicad_pcb .sch .fz .gbr) or schematic PDF');
           }
         }
       }); // end drop IIFE

@@ -347,7 +347,10 @@ function buildMenu() {
             const result = await dialog.showOpenDialog(mainWindow, {
               properties: ['openFile'],
               filters: [
-                { name: 'Board Files', extensions: ['brd', 'pcb', 'xzz', 'pdf'] },
+                { name: 'Board & Schematic Files', extensions: ['brd', 'pcb', 'brd2', 'bvr', 'bdv', 'cad', 'xzz', 'kicad_pcb', 'kicad_sch', 'sch', 'dsn', 'fz', 'cae', '356', 'ipc', 'gbr', 'gko', 'tgz', 'csv', 'txt', 'pdf'] },
+                { name: 'Board View Files', extensions: ['brd', 'pcb', 'brd2', 'bvr', 'bdv', 'cad', 'xzz', 'fz'] },
+                { name: 'CAD / EDA Files', extensions: ['kicad_pcb', 'kicad_sch', 'sch', 'dsn', 'gbr', 'gko', 'tgz', '356', 'ipc'] },
+                { name: 'Schematics (PDF)', extensions: ['pdf'] },
                 { name: 'All Files', extensions: ['*'] }
               ]
             });

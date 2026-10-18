@@ -21,7 +21,7 @@
     "build:secure:all": "npm run obfuscate && bash scripts/build-secure.sh --win --mac --linux --publish never",
     "build:mas": "electron-builder --mac mas --publish never",
     "release": "bash scripts/release.sh",
-    "website:sync": "cp boardview.html xzz-parser.js version.json multimeter.js macro-recorder.js component-library.js test-suite.js collaboration.js oscilloscope.js fault-tree.js sw.js manifest.json website/ && cp -R assets data website/"
+    "website:sync": "cp boardview.html xzz-parser.js board-parsers.js version.json multimeter.js macro-recorder.js component-library.js test-suite.js collaboration.js oscilloscope.js fault-tree.js sw.js manifest.json website/ && cp -R assets data website/"
   },
   "build": {
     "appId": "com.boardscope.app",
@@ -44,6 +44,7 @@
       "test-suite.js",
       "component-library.js",
       "xzz-parser.js",
+      "board-parsers.js",
       "collaboration.js",
       "fault-tree.js",
       "multimeter.js",
