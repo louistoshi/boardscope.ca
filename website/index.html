@@ -76,6 +76,29 @@
   }
 
   /* ── NAV ── */
+  .announce {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 101;
+    min-height: 40px; display: flex; align-items: center; justify-content: center; gap: 9px;
+    padding: 6px 44px 6px 16px;
+    background: linear-gradient(90deg, #07271f, #0a2c47);
+    border-bottom: 1px solid var(--border);
+    font-size: 13px; color: var(--text); text-align: center;
+  }
+  .announce-tag {
+    background: var(--accent); color: #04110d; font-weight: 800;
+    font-size: 10px; letter-spacing: 1.2px; padding: 2px 7px; border-radius: 3px;
+    flex-shrink: 0;
+  }
+  .announce a { color: var(--accent); font-weight: 600; text-decoration: none; white-space: nowrap; }
+  .announce a:hover { text-decoration: underline; }
+  .announce-close {
+    position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+    background: none; border: none; color: var(--text2); font-size: 17px;
+    cursor: pointer; line-height: 1; padding: 4px;
+  }
+  .announce-close:hover { color: var(--text); }
+  body.has-announce nav { top: 40px; }
+
   nav {
     position: fixed; top: 0; left: 0; right: 0; z-index: 100;
     display: flex; align-items: center; justify-content: space-between;
@@ -354,6 +377,14 @@
 </style>
 </head>
 <body>
+
+<!-- ── ANNOUNCEMENT ── -->
+<div class="announce" id="announce">
+  <span class="announce-tag">NEW</span>
+  <span>BoardScope now opens <strong>XinZhiZao (XZZ)&nbsp;.pcb</strong> boardview files</span>
+  <a href="boardview.html">Open one now →</a>
+  <button class="announce-close" onclick="dismissAnnounce()" aria-label="Dismiss">&times;</button>
+</div>
 
 <!-- ── NAV ── -->
 <nav>
@@ -689,6 +720,17 @@
       ? 'rgba(11,13,15,0.95)'
       : 'rgba(11,13,15,0.7)';
   }, { passive: true });
+</script>
+<script>
+  (function () {
+    var b = document.getElementById('announce');
+    if (!b) return;
+    document.body.classList.add('has-announce');
+    window.dismissAnnounce = function () {
+      b.remove();
+      document.body.classList.remove('has-announce');
+    };
+  })();
 </script>
 </body>
 </html>

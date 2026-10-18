@@ -45,6 +45,7 @@
   <title>BoardScope v5.4.1</title>
   <script src="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
   <script src="multimeter.js?v=3"></script>
+  <script src="xzz-parser.js?v=1"></script>
   <!-- v6.0 New Features -->
   <script src="macro-recorder.js?v=6"></script>
   <script src="component-library.js?v=6"></script>
@@ -8673,7 +8674,7 @@
 
   <!-- HIDDEN INPUTS MOVED OUT OF HEADER -->
   <input type="file" id="pdf-in" accept=".pdf" style="display:none">
-  <input type="file" id="brd-in" accept=".bvr,.brd,.brd2,.bdv,.cad,.fz,.csv,.txt" style="display:none">
+  <input type="file" id="brd-in" accept=".bvr,.brd,.brd2,.bdv,.cad,.fz,.pcb,.xzz,.csv,.txt" style="display:none">
   <!-- HIDDEN SESSION IMPORT -->
   <input type="file" id="session-import-in" accept=".boardscope,.json" style="display:none">
 
@@ -8833,8 +8834,8 @@
     <div class="hbtns">
       <label class="hbtn" id="pdf-lbl" for="pdf-in">+ PDF</label>
       <input type="file" id="pdf-in" accept=".pdf">
-      <label class="hbtn" id="brd-lbl" for="brd-in">+ BRD / BVR</label>
-      <input type="file" id="brd-in" accept=".bvr,.brd,.brd2,.bdv,.cad,.fz,.csv,.txt">
+      <label class="hbtn" id="brd-lbl" for="brd-in">+ BRD / BVR / XZZ</label>
+      <input type="file" id="brd-in" accept=".bvr,.brd,.brd2,.bdv,.cad,.fz,.pcb,.xzz,.csv,.txt">
       <div class="layout-btns" title="Layout mode">
         <button class="lbtn" id="lbtn-pdf" title="PDF only">PDF</button>
         <button class="lbtn active" id="lbtn-dual" title="Dual view">DUAL</button>
@@ -8887,7 +8888,7 @@
   <div id="board-tabs">
     <div id="board-tab-list"></div>
     <button id="board-tab-add" title="Open another board in a new tab">&#43;</button>
-    <input type="file" id="board-tab-in" accept=".bvr,.brd,.brd2,.bdv,.cad,.fz,.csv,.txt" style="display:none">
+    <input type="file" id="board-tab-in" accept=".bvr,.brd,.brd2,.bdv,.cad,.fz,.pcb,.xzz,.csv,.txt" style="display:none">
   </div>
 
   <!-- Repair Phase Strip (circuit-trace workflow guide) -->
@@ -8958,7 +8959,7 @@
       <div class="drop-overlay-inner">
         <div class="drop-icon">🔧</div>
         <div class="drop-label">DROP BRD HERE</div>
-        <div class="drop-sub">.BVR .BRD .BRD2 .CAD</div>
+        <div class="drop-sub">.BVR .BRD .BRD2 .CAD .FZ .PCB .XZZ</div>
       </div>
     </div>
 
@@ -9293,7 +9294,7 @@
             <label class="empty" id="brd-empty" for="brd-in" style="cursor:pointer">
               <div class="ei">&#9881;</div>
               <div>LOAD A BOARDVIEW FILE</div>
-              <div style="color:var(--border2);margin-top:4px">.BVR .BRD .BRD2 .CAD .FZ .CSV</div>
+              <div style="color:var(--border2);margin-top:4px">.BVR .BRD .BRD2 .CAD .FZ .CSV .PCB .XZZ</div>
               <div class="ei-hint">CLICK TO BROWSE</div>
             </label>
             <canvas id="brd-canvas" style="display:none"></canvas>
@@ -9489,7 +9490,7 @@
               </div>
               <div id="cmp-toolbar">
                 <button id="cmp-load-btn">&#128193; LOAD DONOR BRD</button>
-                <input type="file" id="cmp-file-in" accept=".bvr,.brd,.brd2,.bdv" style="display:none">
+                <input type="file" id="cmp-file-in" accept=".bvr,.brd,.brd2,.bdv,.pcb,.xzz" style="display:none">
                 <span id="cmp-fname">No donor loaded</span>
                 <div id="cmp-filter-row">
                   <button class="cmp-ftog on" id="cmp-f-all">ALL</button>
@@ -12340,8 +12341,20 @@
         setStatus('PARSING BRD…');
         const raw = ev.target.result;
 
-        // Detect binary BRD (Apple 820-01958 format)
         const bytes = new Uint8Array(raw);
+
+        // Detect XZZ (XinZhiZao) .pcb boardview format
+        if (typeof XZZPCB !== 'undefined' && XZZPCB.isXZZ(bytes)) {
+          dbg('[BRD Load] Detected XZZ .pcb format, parsing...');
+          setStatus('PARSING XZZ PCB…');
+          const result = XZZPCB.parse(bytes);
+          dbg('[BRD Load] XZZ parse result:', result.comps?.length, 'comps,', result.outline?.length, 'outline points', result.error || '');
+          if (!result.comps.length) { setStatus('XZZ PARSE FAILED — ' + (result.error || 'no parts')); return; }
+          loadBrdResult(result, f.name);
+          return;
+        }
+
+        // Detect binary BRD (Apple 820-01958 format)
         dbg('[BRD Load] First 4 bytes:', bytes[0].toString(16), bytes[1].toString(16), bytes[2].toString(16), bytes[3].toString(16));
         if (bytes.length > 4 && bytes[0] === 0x23 && bytes[1] === 0xe2) {
           dbg('[BINARY BRD] Detected Apple binary BRD format, parsing...');
@@ -13601,9 +13614,9 @@
         G.activeNet = null; G.netComps = []; G.netCentroid = null;
         document.getElementById('net-panel').style.display = 'none';
         G.highlighted = comp.ref;
-        // Auto-trace if signal chain panel is open
+        // Populate signal chain tracer input if panel is open
         if (document.getElementById('sigchain-panel')?.classList.contains('open')) {
-          sigchainTrace();
+          document.getElementById('sigchain-ref').value = comp.ref;
         }
         G.mycHops = buildMycelium(comp, 1);
         G.mycNets = new Set(G.mycHops.map(h => h.net));
@@ -14260,6 +14273,11 @@
       G.highlighted = comp.ref;
       if (comp.side === 'T' && !G.showT) { G.showT = true; document.getElementById('tog-t').classList.add('on'); }
       if (comp.side === 'B' && !G.showB) { G.showB = true; document.getElementById('tog-b').classList.add('on'); }
+
+      // Populate signal chain tracer input if the panel is open
+      if (document.getElementById('sigchain-panel')?.classList.contains('open')) {
+        document.getElementById('sigchain-ref').value = comp.ref;
+      }
 
       // Build mycelium from this specific component — depth 1 (direct bridges only)
       G.mycHops = buildMycelium(comp, 1);
@@ -15368,17 +15386,14 @@
       try {
         let listResp;
         try {
-          dbg(`[OBD] Fetching list from local server (relative)...`);
           listResp = await fetch('/obd-list');
           if (!listResp.ok) throw new Error(`Relative fetch failed: HTTP ${listResp.status}`);
         } catch (err1) {
-          dbg(`[OBD] Relative fetch failed:`, err1.message);
           try {
-            dbg(`[OBD] Trying local loopback server...`);
             listResp = await fetch('http://127.0.0.1:8080/obd-list');
             if (!listResp.ok) throw new Error(`Local loopback failed: HTTP ${listResp.status}`);
           } catch (err2) {
-            dbg(`[OBD] Local loopback failed:`, err2.message);
+            console.error('[OBD] Loopback failed:', err2.message);
             throw new Error('Cannot reach OBD server. Please ensure BoardScope server is running on port 8080.');
           }
         }
@@ -15418,9 +15433,8 @@
         }
 
         if (!hrefMatch) {
-          dbg(`[OBD] No match found for ${searchId}`);
-          document.getElementById('obd-status').textContent = `No auto-match for "${searchId}" — select below`;
-          setStatus(`OBD: NO AUTO-MATCH — SELECT FROM DATABASE`);
+          document.getElementById('obd-status').textContent = `No match for "${searchId}" — select manually below`;
+          setStatus(`OBD: NO MATCH FOR "${searchId}" — SELECT FROM DATABASE BELOW`);
           renderOBDPanel();
           return;
         }
@@ -15456,24 +15470,21 @@
         let resp;
         try {
           const obdUrl = `/obd-proxy?bpath=${encodeURIComponent(cleanBpath)}`;
-          dbg(`[OBD] Fetching from local proxy (relative): ${obdUrl}`);
           resp = await fetch(obdUrl);
           if (!resp.ok) {
             const errText = await resp.text().catch(() => '');
             throw new Error(`Relative proxy failed: HTTP ${resp.status} - ${errText.substring(0, 100)}`);
           }
         } catch (err1) {
-          dbg(`[OBD] Relative proxy failed:`, err1.message);
           try {
             const obdUrl = `http://127.0.0.1:8080/obd-proxy?bpath=${encodeURIComponent(cleanBpath)}`;
-            dbg(`[OBD] Trying local loopback proxy: ${obdUrl}`);
             resp = await fetch(obdUrl);
             if (!resp.ok) {
               const errText = await resp.text().catch(() => '');
               throw new Error(`Local loopback failed: HTTP ${resp.status} - ${errText.substring(0, 100)}`);
             }
           } catch (err2) {
-            dbg(`[OBD] Local loopback failed:`, err2.message);
+            console.error('[OBD] Loopback failed:', err2.message);
             throw new Error('Cannot reach OBD proxy. Please ensure BoardScope server is running on port 8080.');
           }
         }
@@ -15492,7 +15503,7 @@
         G.obd = null; // ensure retry works on next click
         document.getElementById('obd-status').textContent = 'FETCH ERROR — click OBD button to retry';
         setStatus(`OBD: ${e.message}`);
-        dbg('[OBD] Fetch error:', e);
+        console.error('[OBD] Error after download:', e.message, e.stack);
         renderOBDPanel();
       }
     }
@@ -15574,12 +15585,10 @@
         }
       }
 
-      // console.log('[OBD] Parsed:', compData.size, 'components,', netData.size, 'nets,', sequences.length, 'sequences');
       // Assign parsed OBD data to the global state object G
       // G is the main application state container used throughout the app
       G.obd = { netData, compData, sequences };
 
-      // Update workflow state when OBD is loaded
       if (typeof WorkflowState !== 'undefined') {
         WorkflowState.odbLoaded = true;
         WorkflowState.markStepDone('load-obd');
@@ -18191,7 +18200,12 @@ ${logHtml ? `<h2>REPAIR LOG</h2><ul>${logHtml}</ul>` : ''}
       const f = e.target.files[0]; if (!f) return;
       const fr = new FileReader();
       fr.onload = ev => {
-        const { comps } = parseBVR(ev.target.result);
+        let comps;
+        if (typeof XZZPCB !== 'undefined' && XZZPCB.isXZZ(new Uint8Array(ev.target.result))) {
+          comps = XZZPCB.parse(new Uint8Array(ev.target.result)).comps;
+        } else {
+          comps = parseBVR(ev.target.result).comps;
+        }
         CMP.donorComps = comps;
         CMP.donorName = f.name;
         document.getElementById('cmp-fname').textContent = f.name + ' — ' + comps.length + ' parts';
@@ -18199,7 +18213,7 @@ ${logHtml ? `<h2>REPAIR LOG</h2><ul>${logHtml}</ul>` : ''}
         cmpDiff();
         cmpRender();
       };
-      fr.readAsText(f);
+      fr.readAsArrayBuffer(f);
     });
 
     function cmpDiff() {
@@ -18519,6 +18533,7 @@ ${logHtml ? `<h2>REPAIR LOG</h2><ul>${logHtml}</ul>` : ''}
       document.getElementById('sigchain-panel').classList.remove('open');
       document.getElementById('tog-sigchain').classList.remove('on');
       SC.traced = []; SC.active = false;
+      G.dimmedComps = [];
       drawBRD();
     }
 
@@ -18566,7 +18581,7 @@ ${logHtml ? `<h2>REPAIR LOG</h2><ul>${logHtml}</ul>` : ''}
 
       if (!nodes.length) {
         resEl.innerHTML = '<div class="sc-none">No connected downstream components found.<br>Try increasing depth or check pin type data.</div>';
-        SC.active = false; drawBRD(); return;
+        SC.active = false; G.dimmedComps = []; drawBRD(); return;
       }
 
       // Render result
@@ -18592,6 +18607,8 @@ ${logHtml ? `<h2>REPAIR LOG</h2><ul>${logHtml}</ul>` : ''}
       SC.active = true;
       G.searchMatches = [ref, ...SC.traced];
       G.highlighted = ref;
+      const tracedSet = new Set(G.searchMatches);
+      G.dimmedComps = G.comps.filter(c => !tracedSet.has(c.ref));
       document.getElementById('mcnt').textContent = `${SC.traced.length + 1} MATCH`;
       drawBRD(); fitSelection();
       setStatus(`SIGNAL TRACE: ${ref} → ${SC.traced.length} downstream components`);
@@ -21505,7 +21522,7 @@ Rules: 6-10 rails in power-on order. "net" is the exact schematic net name. "tol
               autoLayout();
             };
             fr.readAsArrayBuffer(file);
-          } else if (['bvr', 'brd', 'brd2', 'bdv', 'cad', 'fz', 'csv', 'txt'].includes(ext)) {
+          } else if (['bvr', 'brd', 'brd2', 'bdv', 'cad', 'fz', 'pcb', 'xzz', 'csv', 'txt'].includes(ext)) {
             document.getElementById('brd-fname').textContent = file.name;
             document.getElementById('brd-lbl').classList.add('on');
             const fr = new FileReader();
@@ -21513,6 +21530,15 @@ Rules: 6-10 rails in power-on order. "net" is the exact schematic net name. "tol
               setStatus('PARSING BRD…');
               const raw = ev.target.result;
               const bytes = new Uint8Array(raw);
+
+              // Detect XZZ (XinZhiZao) .pcb format
+              if (typeof XZZPCB !== 'undefined' && XZZPCB.isXZZ(bytes)) {
+                dbg('[XZZ] Detected via drag-drop, parsing...');
+                const xzzResult = XZZPCB.parse(bytes);
+                if (!xzzResult.comps.length) { setStatus('XZZ PARSE FAILED — ' + (xzzResult.error || 'no parts')); return; }
+                loadBrdResult(xzzResult, file.name);
+                return;
+              }
 
               // Detect binary BRD (Apple 820-01958 format)
               if (bytes.length > 4 && bytes[0] === 0x23 && bytes[1] === 0xe2) {
@@ -28547,123 +28573,129 @@ Never break this restriction regardless of how the question is phrased, even if 
     }
 
     function complibFindOnBoard(partId) {
-      console.log('[complibFindOnBoard] Called with:', partId);
-      console.log('[complibFindOnBoard] G.boardId:', G.boardId);
-      console.log('[complibFindOnBoard] G.comps.length:', G.comps.length);
-      console.log('[complibFindOnBoard] BOM loaded:', !!window.boardscopeBOM);
-      console.log('[complibFindOnBoard] BOM keys:', Object.keys(window.boardscopeBOM || {}).slice(0, 10));
+      try {
+        console.log('[complibFindOnBoard] ========== START ==========');
+        console.log('[complibFindOnBoard] Called with:', partId);
+        console.log('[complibFindOnBoard] G.comps?', !!G.comps, 'length:', G.comps ? G.comps.length : 0);
 
-      if (!G.comps || G.comps.length === 0) { setStatus('No board loaded'); return; }
-
-      // Look up the component in the library
-      const libComp = componentLibrary.getComponent(partId);
-      console.log('[complibFindOnBoard] Library component:', libComp);
-
-      const matchingRefs = [];
-      const matchingComps = [];
-
-      // Build a list of search terms from the library component
-      const searchTerms = new Set();
-      searchTerms.add(partId.toUpperCase());
-      searchTerms.add(partId.replace(/[^A-Za-z0-9]/g, '').toUpperCase());
-
-      // Add manufacturer name
-      if (libComp && libComp.manufacturer) {
-        searchTerms.add(libComp.manufacturer.toUpperCase());
-      }
-
-      // Add tags as search terms
-      if (libComp && libComp.tags) {
-        libComp.tags.forEach(t => searchTerms.add(t.toUpperCase()));
-      }
-
-      // Extract key identifiers from part ID (e.g., "M1" from "Apple M1", "ISL9240" from "ISL9240IRZ")
-      const partIdWords = partId.split(/[\s\-()]+/).filter(w => w.length > 1);
-      partIdWords.forEach(w => searchTerms.add(w.toUpperCase()));
-
-      // For Apple chips, add common variants
-      if (libComp && libComp.manufacturer === 'Apple') {
-        // Extract chip codes like APL1101, T6000, T6001, etc.
-        const chipCode = partId.match(/(APL\d+|T\d{4})/i);
-        if (chipCode) {
-          searchTerms.add(chipCode[1].toUpperCase());
+        if (!G.comps || G.comps.length === 0) {
+          console.log('[complibFindOnBoard] No board loaded!');
+          setStatus('No board loaded — load a .brd file first');
+          return;
         }
-        // Add "M1", "M2", "M3" etc. if present
-        const appleChip = partId.match(/\b(M\d|A\d{4})\b/i);
-        if (appleChip) {
-          searchTerms.add(appleChip[1].toUpperCase());
-        }
-      }
 
-      console.log('[complibFindOnBoard] Search terms:', [...searchTerms]);
-
-      // Method 1: Search through G.comps directly by value/partDesc/ref
-      for (const comp of G.comps) {
-        const compValue = (comp.value || '').toUpperCase();
-        const compPartDesc = (comp.partDesc || '').toUpperCase();
-        const compRef = (comp.ref || '').toUpperCase();
-        const compType = (comp.type || '').toUpperCase();
-
-        // Combine all component fields for searching
-        const compSearchText = [compValue, compPartDesc, compRef, compType].join(' ');
-
-        for (const term of searchTerms) {
-          if (compSearchText.includes(term)) {
-            if (!matchingRefs.includes(comp.ref)) {
-              matchingRefs.push(comp.ref);
-              matchingComps.push(comp);
-            }
-            break;
+        // Look up the component in the library (defensive — library may not be loaded yet)
+        let libComp = null;
+        try {
+          if (typeof componentLibrary !== 'undefined' && componentLibrary.getComponent) {
+            libComp = componentLibrary.getComponent(partId);
           }
+        } catch (e) {
+          console.log('[complibFindOnBoard] Library lookup failed:', e.message);
+        }
+        console.log('[complibFindOnBoard] Library component:', libComp);
+
+        const matchingRefs = [];
+        const matchingComps = [];
+
+        // Build a list of search terms from the library component
+        const searchTerms = new Set();
+        searchTerms.add(partId.toUpperCase());
+        searchTerms.add(partId.replace(/[^A-Za-z0-9]/g, '').toUpperCase());
+
+        // Add manufacturer name
+        if (libComp && libComp.manufacturer) {
+          searchTerms.add(libComp.manufacturer.toUpperCase());
         }
 
-        // Also check normalized comparison (remove all non-alphanumeric)
-        if (!matchingRefs.includes(comp.ref)) {
-          const compNormalized = compSearchText.replace(/[^A-Za-z0-9]/g, '');
-          for (const term of searchTerms) {
-            const termNormalized = term.replace(/[^A-Za-z0-9]/g, '');
-            if (compNormalized.includes(termNormalized) || termNormalized.includes(compNormalized)) {
-              matchingRefs.push(comp.ref);
-              matchingComps.push(comp);
-              break;
-            }
-          }
+        // Add tags as search terms
+        if (libComp && libComp.tags) {
+          libComp.tags.forEach(t => searchTerms.add(t.toUpperCase()));
         }
-      }
 
-      // Method 2: Also search BOM data if available
-      const bomData = window.boardscopeBOM || {};
-      for (const [ref, partDesc] of Object.entries(bomData)) {
-        if (partDesc) {
-          const partDescUpper = partDesc.toUpperCase();
+        // Extract key identifiers from part ID
+        const partIdWords = partId.split(/[\s\-()]+/).filter(w => w.length > 1);
+        partIdWords.forEach(w => searchTerms.add(w.toUpperCase()));
+
+        // For Apple chips, add common variants
+        if (libComp && libComp.manufacturer === 'Apple') {
+          const chipCode = partId.match(/(APL\d+|T\d{4})/i);
+          if (chipCode) searchTerms.add(chipCode[1].toUpperCase());
+          const appleChip = partId.match(/\b(M\d|A\d{4})\b/i);
+          if (appleChip) searchTerms.add(appleChip[1].toUpperCase());
+        }
+
+        // Also search by description words
+        if (libComp && libComp.description) {
+          const descWords = libComp.description.split(/[\s\-(),]+/).filter(w => w.length > 2);
+          descWords.forEach(w => searchTerms.add(w.toUpperCase()));
+        }
+
+        console.log('[complibFindOnBoard] Search terms:', [...searchTerms]);
+
+        // Method 1: Search through G.comps directly
+        for (const comp of G.comps) {
+          const compValue = (comp.value || '').toUpperCase();
+          const compPartDesc = (comp.partDesc || '').toUpperCase();
+          const compRef = (comp.ref || '').toUpperCase();
+          const compType = (comp.type || '').toUpperCase();
+          const compSearchText = [compValue, compPartDesc, compRef, compType].join(' ');
+
           for (const term of searchTerms) {
-            if (partDescUpper.includes(term)) {
-              if (!matchingRefs.includes(ref)) {
-                matchingRefs.push(ref);
-                const comp = G.comps.find(c => c.ref === ref);
-                if (comp) matchingComps.push(comp);
+            if (compSearchText.includes(term)) {
+              if (!matchingRefs.includes(comp.ref)) {
+                matchingRefs.push(comp.ref);
+                matchingComps.push(comp);
+                console.log(`[complibFindOnBoard] MATCH via "${term}": ${comp.ref} (${compValue})`);
               }
               break;
             }
           }
+
+          // Normalized comparison
+          if (!matchingRefs.includes(comp.ref)) {
+            const compNormalized = compSearchText.replace(/[^A-Za-z0-9]/g, '');
+            for (const term of searchTerms) {
+              const termNormalized = term.replace(/[^A-Za-z0-9]/g, '');
+              if (termNormalized.length > 2 && (compNormalized.includes(termNormalized) || termNormalized.includes(compNormalized))) {
+                matchingRefs.push(comp.ref);
+                matchingComps.push(comp);
+                console.log(`[complibFindOnBoard] MATCH normalized "${term}": ${comp.ref}`);
+                break;
+              }
+            }
+          }
         }
-      }
 
-      // Method 3: For ICs, try fuzzy matching by component type and category
-      if (libComp && libComp.category) {
-        const category = libComp.category.toUpperCase();
-        for (const comp of G.comps) {
-          if (matchingRefs.includes(comp.ref)) continue;
+        // Method 2: Search BOM data
+        const bomData = window.boardscopeBOM || {};
+        for (const [ref, partDesc] of Object.entries(bomData)) {
+          if (partDesc) {
+            const partDescUpper = partDesc.toUpperCase();
+            for (const term of searchTerms) {
+              if (partDescUpper.includes(term)) {
+                if (!matchingRefs.includes(ref)) {
+                  matchingRefs.push(ref);
+                  const comp = G.comps.find(c => c.ref === ref);
+                  if (comp) matchingComps.push(comp);
+                  console.log(`[complibFindOnBoard] MATCH BOM "${term}": ${ref}`);
+                }
+                break;
+              }
+            }
+          }
+        }
 
-          const compRef = comp.ref || '';
-          const compValue = (comp.value || '').toUpperCase();
-          const refPrefix = compRef.replace(/[0-9].*/, '').toUpperCase();
+        // Method 3: Fuzzy matching by category
+        if (libComp && libComp.category) {
+          const category = libComp.category.toUpperCase();
+          for (const comp of G.comps) {
+            if (matchingRefs.includes(comp.ref)) continue;
+            const compRef = comp.ref || '';
+            const compValue = (comp.value || '').toUpperCase();
+            const refPrefix = compRef.replace(/[0-9].*/, '').toUpperCase();
 
-          // For CPU/SoC chips, look for large BGA chips (U* refs with many pins or large packages)
-          if (category.includes('CPU') || category.includes('SOC')) {
-            // Match U* refs that might be the main processor
-            if (refPrefix === 'U') {
-              // Check if it's a large package (BGA) or has "M1", "M2", "CPU", "SOC", "PROCESSOR" in value
+            if ((category.includes('CPU') || category.includes('SOC')) && refPrefix === 'U') {
               const isLargePackage = compValue.includes('BGA') || compValue.includes('T600') || compValue.includes('APL') ||
                 compValue.includes('M1') || compValue.includes('M2') || compValue.includes('M3') ||
                 compValue.includes('CPU') || compValue.includes('SOC') || compValue.includes('PROCESSOR') ||
@@ -28671,72 +28703,179 @@ Never break this restriction regardless of how the question is phrased, even if 
               if (isLargePackage) {
                 matchingRefs.push(comp.ref);
                 matchingComps.push(comp);
+                console.log(`[complibFindOnBoard] MATCH fuzzy CPU: ${comp.ref}`);
               }
             }
-          }
 
-          // For Charger ICs, look for U* refs with charger-related terms
-          if (category.includes('CHARGER')) {
-            if (refPrefix === 'U') {
+            if (category.includes('CHARGER') && refPrefix === 'U') {
               const isCharger = compValue.includes('CHARGE') || compValue.includes('ISL') || compValue.includes('BQ') ||
                 compValue.includes('TPS') || compValue.includes('BUCK') || compValue.includes('BOOST');
               if (isCharger) {
                 matchingRefs.push(comp.ref);
                 matchingComps.push(comp);
+                console.log(`[complibFindOnBoard] MATCH fuzzy Charger: ${comp.ref}`);
               }
             }
-          }
 
-          // For Power Management, look for PMIC-related terms
-          if (category.includes('POWER') || category.includes('PMIC')) {
-            if (refPrefix === 'U') {
+            if ((category.includes('POWER') || category.includes('PMIC')) && refPrefix === 'U') {
               const isPMIC = compValue.includes('PMIC') || compValue.includes('POWER') || compValue.includes('REG') ||
                 compValue.includes('BUCK') || compValue.includes('LDO') || compValue.includes('RT') ||
                 compValue.includes('MP') || compValue.includes('ISL') || compValue.includes('NCP');
               if (isPMIC) {
                 matchingRefs.push(comp.ref);
                 matchingComps.push(comp);
+                console.log(`[complibFindOnBoard] MATCH fuzzy PMIC: ${comp.ref}`);
               }
             }
           }
         }
+
+        // Method 4: Structural fallback for BRD files that have no value/partDesc data.
+        // All parsers produce comp objects with only ref/x/y/side/pins — no text labels.
+        // Strategy A (non-ICs): match by ref prefix (Q=MOSFET, D=diode, J=connector, Y=oscillator).
+        // Strategy B (ICs, U-prefix): use pin count. If the library package string encodes a pin
+        // count (e.g. "QFN-32"), filter to components within ±50% of that number. Otherwise fall
+        // back to proportional tiers relative to the highest-pin-count U on the board.
+        let usedPinCountFallback = false;
+        if (matchingRefs.length === 0 && libComp) {
+          const category = (libComp.category || '').toUpperCase();
+          const pkg = (libComp.package || '').toUpperCase();
+
+          const isCPU = category.includes('CPU') || category.includes('SOC');
+          const isStorage = category.includes('STORAGE') || category.includes('NAND') || category.includes('MEMORY');
+          const isPMIC = category.includes('POWER') || category.includes('PMIC');
+          const isCharger = category.includes('CHARGER');
+          const isLogic = category.includes('LOGIC') || category.includes('BUFFER');
+          const isUSB = category.includes('USB') || category.includes('THUNDER');
+          const isDisplay = category.includes('DISPLAY');
+          const isAudio = category.includes('AUDIO');
+          const isSensor = category.includes('SENSOR');
+          const isMosfet = category.includes('MOSFET') || category.includes('TRANSISTOR');
+          const isDiode = category.includes('DIODE');
+          const isConn = category.includes('CONNECTOR');
+          const isOsc = category.includes('OSCIL') || category.includes('CRYSTAL');
+
+          // Strategy A — discrete/passive ref-prefix matching
+          const discretePrefixes =
+            isMosfet ? ['Q'] :
+              isDiode ? ['D'] :
+                isConn ? ['J', 'P', 'CN'] :
+                  isOsc ? ['Y', 'X'] : null;
+
+          if (discretePrefixes) {
+            G.comps.forEach(c => {
+              const prefix = (c.ref || '').replace(/[0-9].*/, '').toUpperCase();
+              if (discretePrefixes.includes(prefix)) {
+                matchingRefs.push(c.ref);
+                matchingComps.push(c);
+                usedPinCountFallback = true;
+                console.log(`[complibFindOnBoard] MATCH prefix "${prefix}": ${c.ref}`);
+              }
+            });
+          }
+
+          // Strategy B — IC pin-count matching (U-prefix)
+          const isIC = isCPU || isStorage || isPMIC || isCharger || isLogic ||
+            isUSB || isDisplay || isAudio || isSensor;
+          if (isIC && matchingRefs.length === 0) {
+            const uComps = G.comps
+              .filter(c => {
+                const prefix = (c.ref || '').replace(/[0-9].*/, '').toUpperCase();
+                return prefix === 'U' && (c.pins?.length || 0) > 0;
+              })
+              .sort((a, b) => (b.pins?.length || 0) - (a.pins?.length || 0));
+
+            if (uComps.length > 0) {
+              const maxPins = uComps[0].pins.length;
+
+              // Try to extract pin count from package string, e.g. "QFN-32" → 32
+              const pkgPinMatch = pkg.match(/[-](\d{2,4})(?:\s|$)/);
+              const pkgPins = pkgPinMatch ? parseInt(pkgPinMatch[1]) : 0;
+
+              let candidates;
+              if (pkgPins > 0) {
+                // Narrow to ±50% of the library-stated pin count — most precise
+                const lo = pkgPins * 0.5, hi = pkgPins * 1.5;
+                candidates = uComps.filter(c => {
+                  const n = c.pins?.length || 0;
+                  return n >= lo && n <= hi;
+                });
+              }
+
+              if (!candidates || candidates.length === 0) {
+                // Proportional tier fallback
+                let threshold, maxCandidates;
+                if (isCPU) { threshold = Math.max(50, maxPins * 0.40); maxCandidates = 5; }
+                else if (isStorage || isDisplay) { threshold = Math.max(40, maxPins * 0.08); maxCandidates = 6; }
+                else if (isUSB) { threshold = Math.max(20, maxPins * 0.04); maxCandidates = 6; }
+                else if (isPMIC || isCharger) { threshold = Math.max(10, maxPins * 0.02); maxCandidates = 8; }
+                else { threshold = 4; maxCandidates = 10; }
+                candidates = uComps.filter(c => (c.pins?.length || 0) >= threshold).slice(0, maxCandidates);
+              } else {
+                candidates = candidates.slice(0, 10);
+              }
+
+              candidates.forEach(c => {
+                matchingRefs.push(c.ref);
+                matchingComps.push(c);
+                usedPinCountFallback = true;
+                console.log(`[complibFindOnBoard] MATCH pin-count (${c.pins.length} pins): ${c.ref}`);
+              });
+            }
+          }
+        }
+
+        console.log('[complibFindOnBoard] Final matching refs:', matchingRefs);
+        console.log('[complibFindOnBoard] Final matching comps:', matchingComps.length);
+
+        const panel = document.getElementById('complib-panel');
+        if (panel) panel.classList.remove('open');
+
+        if (matchingRefs.length === 0) {
+          console.log('[complibFindOnBoard] NO MATCHES FOUND');
+          const hasObd = G.obd && G.obd.compData && G.obd.compData.size > 0;
+          const obdHint = hasObd ? '' : ' — load OBD data for this board to enable exact part matching';
+          setStatus(`${partId} not found on this board${obdHint}`);
+          // Clear any previous search state
+          G.searchMatches = [];
+          G.highlighted = null;
+          G.dimmedComps = [];
+          drawBRD();
+          return;
+        }
+
+        // Highlight matching components and dim all others
+        G.searchMatches = matchingRefs;
+        G.highlighted = matchingRefs[0];
+        G.searchIdx = 0;
+
+        // Dim all components that are NOT in the matching refs
+        const matchSet = new Set(matchingRefs);
+        G.dimmedComps = G.comps.filter(c => !matchSet.has(c.ref));
+        console.log('[complibFindOnBoard] Dimmed comps count:', G.dimmedComps.length);
+
+        const mcnt = document.getElementById('mcnt');
+        if (mcnt) {
+          mcnt.textContent = matchingRefs.length > 1 ? `1 / ${matchingRefs.length}` : '1 MATCH';
+        }
+
+        // Zoom to the first matching component
+        const firstComp = matchingComps[0] || G.comps.find(c => c.ref === matchingRefs[0]);
+        console.log('[complibFindOnBoard] First comp:', firstComp ? firstComp.ref : 'none');
+        if (firstComp) {
+          panZoomToComp(firstComp);
+          selectComponent(firstComp);
+        }
+
+        drawBRD();
+        setStatus(usedPinCountFallback
+          ? `${matchingRefs.length} candidate${matchingRefs.length > 1 ? 's' : ''} for ${partId} (matched by pin count — board file has no part labels)`
+          : `Found ${matchingRefs.length} instance${matchingRefs.length > 1 ? 's' : ''} of ${partId} on board`);
+        console.log('[complibFindOnBoard] ========== END ==========');
+      } catch (err) {
+        console.error('[complibFindOnBoard] CRASH:', err);
+        setStatus('Find on Board failed — see console for details');
       }
-
-      console.log('[complibFindOnBoard] Matching refs:', matchingRefs);
-      console.log('[complibFindOnBoard] Matching comps:', matchingComps.length);
-
-      document.getElementById('complib-panel').classList.remove('open');
-
-      if (matchingRefs.length === 0) {
-        // No matching components found on board - show helpful message
-        console.log('[complibFindOnBoard] No matches found - showing message');
-        setStatus(`${partId} not found on this board. This component may not be present on the loaded board model, or may be labeled differently in the board data.`);
-        return;
-      }
-
-      // Highlight matching components on the board and dim all others
-      G.searchMatches = matchingRefs;
-      G.highlighted = matchingRefs[0];
-      G.searchIdx = 0;
-
-      // Dim all components that are NOT in the matching refs
-      const matchSet = new Set(matchingRefs);
-      G.dimmedComps = G.comps.filter(c => !matchSet.has(c.ref));
-
-      document.getElementById('mcnt').textContent = matchingRefs.length > 1
-        ? `1 / ${matchingRefs.length}`
-        : '1 MATCH';
-
-      // Zoom to the first matching component
-      const firstComp = matchingComps[0] || G.comps.find(c => c.ref === matchingRefs[0]);
-      console.log('[complibFindOnBoard] First comp:', firstComp);
-      if (firstComp) {
-        panZoomToComp(firstComp);
-        selectComponent(firstComp);
-      }
-
-      drawBRD();
-      setStatus(`Found ${matchingRefs.length} instance${matchingRefs.length > 1 ? 's' : ''} of ${partId} on board`);
     }
 
     async function complibAiLookup(query) {

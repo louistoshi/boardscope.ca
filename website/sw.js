@@ -1,7 +1,8 @@
-const CACHE_NAME = 'boardscope-v5.4.2';
+const CACHE_NAME = 'boardscope-v6.0.4-xzz1';
 const ASSETS_TO_CACHE = [
   '/',
   '/boardview.html',
+  '/xzz-parser.js',
   '/manifest.json'
 ];
 
