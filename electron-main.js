@@ -347,7 +347,7 @@ function buildMenu() {
             const result = await dialog.showOpenDialog(mainWindow, {
               properties: ['openFile'],
               filters: [
-                { name: 'Board Files', extensions: ['brd', 'pdf'] },
+                { name: 'Board Files', extensions: ['brd', 'pcb', 'xzz', 'pdf'] },
                 { name: 'All Files', extensions: ['*'] }
               ]
             });

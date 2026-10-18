@@ -61,3 +61,6 @@ electron/out
 
 # Readable source backups — never push unobfuscated code
 src-unobfuscated/
+
+# Real XZZ sample board files (proprietary — from slimeinacloak/XZZPCB-ImHex)
+test-files/

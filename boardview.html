@@ -45,6 +45,7 @@
   <title>BoardScope v5.4.1</title>
   <script src="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
   <script src="multimeter.js?v=3"></script>
+  <script src="xzz-parser.js?v=1"></script>
   <!-- v6.0 New Features -->
   <script src="macro-recorder.js?v=6"></script>
   <script src="component-library.js?v=6"></script>
@@ -8673,7 +8674,7 @@
 
   <!-- HIDDEN INPUTS MOVED OUT OF HEADER -->
   <input type="file" id="pdf-in" accept=".pdf" style="display:none">
-  <input type="file" id="brd-in" accept=".bvr,.brd,.brd2,.bdv,.cad,.fz,.csv,.txt" style="display:none">
+  <input type="file" id="brd-in" accept=".bvr,.brd,.brd2,.bdv,.cad,.fz,.pcb,.xzz,.csv,.txt" style="display:none">
   <!-- HIDDEN SESSION IMPORT -->
   <input type="file" id="session-import-in" accept=".boardscope,.json" style="display:none">
 
@@ -8833,8 +8834,8 @@
     <div class="hbtns">
       <label class="hbtn" id="pdf-lbl" for="pdf-in">+ PDF</label>
       <input type="file" id="pdf-in" accept=".pdf">
-      <label class="hbtn" id="brd-lbl" for="brd-in">+ BRD / BVR</label>
-      <input type="file" id="brd-in" accept=".bvr,.brd,.brd2,.bdv,.cad,.fz,.csv,.txt">
+      <label class="hbtn" id="brd-lbl" for="brd-in">+ BRD / BVR / XZZ</label>
+      <input type="file" id="brd-in" accept=".bvr,.brd,.brd2,.bdv,.cad,.fz,.pcb,.xzz,.csv,.txt">
       <div class="layout-btns" title="Layout mode">
         <button class="lbtn" id="lbtn-pdf" title="PDF only">PDF</button>
         <button class="lbtn active" id="lbtn-dual" title="Dual view">DUAL</button>
@@ -8887,7 +8888,7 @@
   <div id="board-tabs">
     <div id="board-tab-list"></div>
     <button id="board-tab-add" title="Open another board in a new tab">&#43;</button>
-    <input type="file" id="board-tab-in" accept=".bvr,.brd,.brd2,.bdv,.cad,.fz,.csv,.txt" style="display:none">
+    <input type="file" id="board-tab-in" accept=".bvr,.brd,.brd2,.bdv,.cad,.fz,.pcb,.xzz,.csv,.txt" style="display:none">
   </div>
 
   <!-- Repair Phase Strip (circuit-trace workflow guide) -->
@@ -8958,7 +8959,7 @@
       <div class="drop-overlay-inner">
         <div class="drop-icon">🔧</div>
         <div class="drop-label">DROP BRD HERE</div>
-        <div class="drop-sub">.BVR .BRD .BRD2 .CAD</div>
+        <div class="drop-sub">.BVR .BRD .BRD2 .CAD .FZ .PCB .XZZ</div>
       </div>
     </div>
 
@@ -9293,7 +9294,7 @@
             <label class="empty" id="brd-empty" for="brd-in" style="cursor:pointer">
               <div class="ei">&#9881;</div>
               <div>LOAD A BOARDVIEW FILE</div>
-              <div style="color:var(--border2);margin-top:4px">.BVR .BRD .BRD2 .CAD .FZ .CSV</div>
+              <div style="color:var(--border2);margin-top:4px">.BVR .BRD .BRD2 .CAD .FZ .CSV .PCB .XZZ</div>
               <div class="ei-hint">CLICK TO BROWSE</div>
             </label>
             <canvas id="brd-canvas" style="display:none"></canvas>
@@ -9489,7 +9490,7 @@
               </div>
               <div id="cmp-toolbar">
                 <button id="cmp-load-btn">&#128193; LOAD DONOR BRD</button>
-                <input type="file" id="cmp-file-in" accept=".bvr,.brd,.brd2,.bdv" style="display:none">
+                <input type="file" id="cmp-file-in" accept=".bvr,.brd,.brd2,.bdv,.pcb,.xzz" style="display:none">
                 <span id="cmp-fname">No donor loaded</span>
                 <div id="cmp-filter-row">
                   <button class="cmp-ftog on" id="cmp-f-all">ALL</button>
@@ -12340,8 +12341,20 @@
         setStatus('PARSING BRD…');
         const raw = ev.target.result;
 
-        // Detect binary BRD (Apple 820-01958 format)
         const bytes = new Uint8Array(raw);
+
+        // Detect XZZ (XinZhiZao) .pcb boardview format
+        if (typeof XZZPCB !== 'undefined' && XZZPCB.isXZZ(bytes)) {
+          dbg('[BRD Load] Detected XZZ .pcb format, parsing...');
+          setStatus('PARSING XZZ PCB…');
+          const result = XZZPCB.parse(bytes);
+          dbg('[BRD Load] XZZ parse result:', result.comps?.length, 'comps,', result.outline?.length, 'outline points', result.error || '');
+          if (!result.comps.length) { setStatus('XZZ PARSE FAILED — ' + (result.error || 'no parts')); return; }
+          loadBrdResult(result, f.name);
+          return;
+        }
+
+        // Detect binary BRD (Apple 820-01958 format)
         dbg('[BRD Load] First 4 bytes:', bytes[0].toString(16), bytes[1].toString(16), bytes[2].toString(16), bytes[3].toString(16));
         if (bytes.length > 4 && bytes[0] === 0x23 && bytes[1] === 0xe2) {
           dbg('[BINARY BRD] Detected Apple binary BRD format, parsing...');
@@ -18187,7 +18200,12 @@ ${logHtml ? `<h2>REPAIR LOG</h2><ul>${logHtml}</ul>` : ''}
       const f = e.target.files[0]; if (!f) return;
       const fr = new FileReader();
       fr.onload = ev => {
-        const { comps } = parseBVR(ev.target.result);
+        let comps;
+        if (typeof XZZPCB !== 'undefined' && XZZPCB.isXZZ(new Uint8Array(ev.target.result))) {
+          comps = XZZPCB.parse(new Uint8Array(ev.target.result)).comps;
+        } else {
+          comps = parseBVR(ev.target.result).comps;
+        }
         CMP.donorComps = comps;
         CMP.donorName = f.name;
         document.getElementById('cmp-fname').textContent = f.name + ' — ' + comps.length + ' parts';
@@ -18195,7 +18213,7 @@ ${logHtml ? `<h2>REPAIR LOG</h2><ul>${logHtml}</ul>` : ''}
         cmpDiff();
         cmpRender();
       };
-      fr.readAsText(f);
+      fr.readAsArrayBuffer(f);
     });
 
     function cmpDiff() {
@@ -21504,7 +21522,7 @@ Rules: 6-10 rails in power-on order. "net" is the exact schematic net name. "tol
               autoLayout();
             };
             fr.readAsArrayBuffer(file);
-          } else if (['bvr', 'brd', 'brd2', 'bdv', 'cad', 'fz', 'csv', 'txt'].includes(ext)) {
+          } else if (['bvr', 'brd', 'brd2', 'bdv', 'cad', 'fz', 'pcb', 'xzz', 'csv', 'txt'].includes(ext)) {
             document.getElementById('brd-fname').textContent = file.name;
             document.getElementById('brd-lbl').classList.add('on');
             const fr = new FileReader();
@@ -21512,6 +21530,15 @@ Rules: 6-10 rails in power-on order. "net" is the exact schematic net name. "tol
               setStatus('PARSING BRD…');
               const raw = ev.target.result;
               const bytes = new Uint8Array(raw);
+
+              // Detect XZZ (XinZhiZao) .pcb format
+              if (typeof XZZPCB !== 'undefined' && XZZPCB.isXZZ(bytes)) {
+                dbg('[XZZ] Detected via drag-drop, parsing...');
+                const xzzResult = XZZPCB.parse(bytes);
+                if (!xzzResult.comps.length) { setStatus('XZZ PARSE FAILED — ' + (xzzResult.error || 'no parts')); return; }
+                loadBrdResult(xzzResult, file.name);
+                return;
+              }
 
               // Detect binary BRD (Apple 820-01958 format)
               if (bytes.length > 4 && bytes[0] === 0x23 && bytes[1] === 0xe2) {
