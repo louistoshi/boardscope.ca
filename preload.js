@@ -14,6 +14,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   
   // File system methods
   readFile: (filePath) => ipcRenderer.invoke('fs:readFile', filePath),
+  readFileBinary: (filePath) => ipcRenderer.invoke('fs:readFileBinary', filePath),
   fileStat: (filePath) => ipcRenderer.invoke('fs:stat', filePath),
   
   // App methods

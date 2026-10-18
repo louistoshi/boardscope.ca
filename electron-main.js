@@ -439,6 +439,10 @@ ipcMain.handle('fs:readFile', async (event, filePath) => {
   return fs.readFileSync(filePath, 'utf8');
 });
 
+ipcMain.handle('fs:readFileBinary', async (event, filePath) => {
+  return fs.readFileSync(filePath).toString('base64');
+});
+
 ipcMain.handle('fs:stat', async (event, filePath) => {
   return fs.statSync(filePath);
 });
