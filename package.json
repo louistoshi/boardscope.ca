@@ -1,6 +1,6 @@
 {
   "name": "boardscope",
-  "version": "6.0.4",
+  "version": "6.0.5",
   "description": "PCB Boardview & Schematic Analysis Tool for board repair — shop management, AI diagnosis, live multimeter",
   "main": "electron-main.js",
   "author": "BoardScope <support@boardscope.com>",
@@ -21,7 +21,7 @@
     "build:secure:all": "npm run obfuscate && bash scripts/build-secure.sh --win --mac --linux --publish never",
     "build:mas": "electron-builder --mac mas --publish never",
     "release": "bash scripts/release.sh",
-    "website:sync": "cp boardview.html xzz-parser.js multimeter.js macro-recorder.js component-library.js test-suite.js collaboration.js oscilloscope.js fault-tree.js sw.js manifest.json website/ && cp -R assets data website/"
+    "website:sync": "cp boardview.html xzz-parser.js version.json multimeter.js macro-recorder.js component-library.js test-suite.js collaboration.js oscilloscope.js fault-tree.js sw.js manifest.json website/ && cp -R assets data website/"
   },
   "build": {
     "appId": "com.boardscope.app",
@@ -77,6 +77,16 @@
           "ext": "brd",
           "name": "BoardScope Board File",
           "description": "PCB Board View File"
+        },
+        {
+          "ext": "pcb",
+          "name": "BoardScope XZZ PCB File",
+          "description": "XinZhiZao PCB Board View File"
+        },
+        {
+          "ext": "xzz",
+          "name": "BoardScope XZZ PCB File",
+          "description": "XinZhiZao PCB Board View File"
         }
       ]
     },
@@ -84,11 +94,17 @@
       "target": [
         {
           "target": "dmg",
-          "arch": ["x64", "arm64"]
+          "arch": [
+            "x64",
+            "arm64"
+          ]
         },
         {
           "target": "pkg",
-          "arch": ["x64", "arm64"]
+          "arch": [
+            "x64",
+            "arm64"
+          ]
         }
       ],
       "icon": "assets/icon.icns",
