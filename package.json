@@ -50,7 +50,6 @@
       "multimeter.js",
       "assets/**/*",
       "data/**/*",
-      "node_modules/**/*",
       "!.api_key",
       "!api key",
       "!boardview-figma.html",
