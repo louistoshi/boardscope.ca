@@ -1,0 +1,55 @@
+name: Build Linux .deb
+
+# The local macOS build cannot produce valid .deb packages (fpm's ar step
+# silently writes an empty archive). Debs must be built on Linux.
+# Runs automatically when a release tag is pushed, or manually via
+# workflow_dispatch to (re)attach a deb to an existing release.
+
+on:
+  push:
+    tags:
+      - '6.*'
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag to attach the .deb to (defaults to package.json version)'
+        required: false
+
+permissions:
+  contents: write
+
+jobs:
+  deb:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Obfuscate sources (parity with local builds)
+        run: |
+          npm run obfuscate
+          cp dist-obfuscated/electron-main.js dist-obfuscated/preload.js dist-obfuscated/server.js .
+
+      - name: Build .deb
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GIT_ASKPASS: /bin/echo
+          GIT_TERMINAL_PROMPT: 0
+        run: npx electron-builder --linux deb --publish never
+
+      - name: Attach .deb to release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.release.tag_name || inputs.tag }}
+        run: |
+          TAG="${TAG:-$(node -p "require('./package.json').version")}"
+          gh release upload "$TAG" dist/*.deb --clobber
+          echo "Attached to release $TAG:"
+          gh release view "$TAG" --json assets --jq '.assets[] | select(.name | endswith(".deb")) | "  \(.name) \(.size) bytes"'

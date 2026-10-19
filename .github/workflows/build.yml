@@ -3,6 +3,7 @@ on:
   push:
     tags:
       - 'v*'
+      - '6.*'
   workflow_dispatch:
 permissions:
   contents: write
@@ -28,7 +29,7 @@ jobs:
           tag_name: ${{ github.ref_name }}
           files: "dist/BoardScope Setup *.exe"
         env:
-          GITHUB_TOKEN: ${{ secrets.PUBLIC_REPO_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   build-macos:
     runs-on: macos-latest
     steps:
@@ -58,7 +59,7 @@ jobs:
             dist/BoardScope-*.dmg
             dist/BoardScope-*.pkg
         env:
-          GITHUB_TOKEN: ${{ secrets.PUBLIC_REPO_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   build-linux:
     runs-on: ubuntu-latest
     steps:
@@ -79,7 +80,6 @@ jobs:
           repository: louistoshi/boardscope.ca
           tag_name: ${{ github.ref_name }}
           files: |
-            dist/*.AppImage
             dist/*.deb
         env:
-          GITHUB_TOKEN: ${{ secrets.PUBLIC_REPO_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
