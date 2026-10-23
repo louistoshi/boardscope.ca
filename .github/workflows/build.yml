@@ -19,7 +19,6 @@ jobs:
       - run: npm ci
       - run: npm run build:secure:win -- --publish never
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # electron-builder hard-links duplicated npm packages and dies with
           # EEXIST; plain copies tolerate the collision
           USE_HARD_LINKS: 'false'
@@ -50,7 +49,6 @@ jobs:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # electron-builder hard-links duplicated npm packages and dies with
           # EEXIST; plain copies tolerate the collision
           USE_HARD_LINKS: 'false'
@@ -79,7 +77,6 @@ jobs:
       - run: npm ci
       - run: npm run build:secure:linux -- --publish never
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # electron-builder hard-links duplicated npm packages and dies with
           # EEXIST; plain copies tolerate the collision
           USE_HARD_LINKS: 'false'
