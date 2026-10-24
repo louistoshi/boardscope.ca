@@ -17,7 +17,7 @@ jobs:
           node-version: 18
       - run: git config --global user.email "ci@boardscope.com" && git config --global user.name "BoardScope CI"
       - run: npm ci
-      - run: npm run build:secure:win -- --publish never
+      - run: npm run build:secure:win
         env:
           # electron-builder hard-links duplicated npm packages and dies with
           # EEXIST; plain copies tolerate the collision
@@ -42,7 +42,7 @@ jobs:
           node-version: 18
       - run: git config --global user.email "ci@boardscope.com" && git config --global user.name "BoardScope CI"
       - run: npm ci
-      - run: npm run build:secure:mac -- --publish never
+      - run: npm run build:secure:mac
         env:
           CSC_LINK: ${{ secrets.CSC_LINK }}
           CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
@@ -75,7 +75,7 @@ jobs:
           node-version: 18
       - run: git config --global user.email "ci@boardscope.com" && git config --global user.name "BoardScope CI"
       - run: npm ci
-      - run: npm run build:secure:linux -- --publish never
+      - run: npm run build:secure:linux
         env:
           # electron-builder hard-links duplicated npm packages and dies with
           # EEXIST; plain copies tolerate the collision

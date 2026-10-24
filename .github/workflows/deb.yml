@@ -52,7 +52,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.event.release.tag_name || inputs.tag }}
         run: |
-          TAG="${TAG:-$(node -p "require('./package.json').version")}"
+          TAG="${GITHUB_REF_NAME:-${TAG:-v$(node -p "require('./package.json').version")}}"
+          gh release view "$TAG" >/dev/null 2>&1 \
+            || gh release create "$TAG" --title "BoardScope $TAG" --notes "BoardScope $TAG"
           gh release upload "$TAG" dist/*.deb --clobber
           echo "Attached to release $TAG:"
           gh release view "$TAG" --json assets --jq '.assets[] | select(.name | endswith(".deb")) | "  \(.name) \(.size) bytes"'
