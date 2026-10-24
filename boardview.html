@@ -10887,7 +10887,7 @@
         </div>
         <div id="upgrade-key-row" style="display:none;margin-bottom:12px">
           <div style="display:flex;gap:8px">
-            <input id="upgrade-key-input" type="text" placeholder="BOARDSCOPE_XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX"
+            <input id="upgrade-key-input" type="text" placeholder="BOARDSCOPE-XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX"
               autocomplete="off"
               style="flex:1;background:var(--bg3);border:1px solid var(--border2);color:var(--text);font-family:var(--mono);font-size:11px;padding:8px 10px;border-radius:var(--r);outline:none;letter-spacing:1px">
             <button id="upgrade-key-submit"
@@ -11094,8 +11094,8 @@
       function looksLikeKey(key) {
         if (!key) return false;
         const k = key.trim().toUpperCase();
-        // Polar UUID format: PREFIX_UUID4
-        if (/^[A-Z0-9]+_[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}$/i.test(k)) return true;
+        // Polar UUID format: PREFIX-UUID4 or PREFIX_UUID4
+        if (/^[A-Z0-9]+[-_][0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}$/i.test(k)) return true;
         // Polar serial format: BOARDSCOPE-XXXXXXXXXX-NNNN
         if (/^BOARDSCOPE-[A-Z0-9]+-[0-9]+$/.test(k)) return true;
         // Legacy BS- format
@@ -11151,20 +11151,30 @@
         } catch (_) { }
       }
 
-      // Validate a Polar key via our Heroku server
+      // Validate a Polar key directly against Polar's customer-portal API.
+      // (The old Heroku proxy never actually validated against Polar — going
+      // direct makes revoked/expired keys fail for real. The org id is public:
+      // it ships inside every Polar checkout payload.)
+      const POLAR_ORG_ID = '6495f637-d621-4682-a78d-c99365ad90c6';
       async function validatePolarKey(key) {
         try {
-          const resp = await fetch('https://boardscope-server-855e2d98fe87.herokuapp.com/license-validate', {
+          const resp = await fetch('https://api.polar.sh/v1/customer-portal/license-keys/validate', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ key: key.trim() })
+            body: JSON.stringify({ key: key.trim(), organization_id: POLAR_ORG_ID, label: 'boardscope-activation' })
           });
-          if (!resp.ok) return { valid: false, error: 'Server error — check internet connection' };
-          return await resp.json();
+          if (!resp.ok) return { valid: false, error: 'Validation service unreachable — check internet connection' };
+          const data = await resp.json();
+          // the API returns the key object at the top level today; accept the
+          // older {license_key: ...} wrapper too
+          const lk = data.license_key || (data.status ? data : null);
+          if (!lk) return { valid: false, error: 'Key invalid or deactivated' };
+          if (lk.status !== 'granted') return { valid: false, error: 'Key revoked or expired' };
+          return { valid: true, plan: lk.expires_at ? 'yearly' : 'lifetime', expires: lk.expires_at };
         } catch (e) {
           // Server not reachable — if it looks like a valid Polar key format, accept it
           // with a local-only "unverified" activation so the app isn't broken offline
-          const isPolarFormat = /^BOARDSCOPE-[A-Z0-9]+-[0-9]+$|^BOARDSCOPE_[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}$/i.test(key.trim());
+          const isPolarFormat = /^BOARDSCOPE-[A-Z0-9]+-[0-9]+$|^BOARDSCOPE[-_][0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}$/i.test(key.trim());
           if (isPolarFormat) {
             return {
               valid: true,
@@ -11173,7 +11183,7 @@
               warning: 'Activated offline — key will be verified next time server is running'
             };
           }
-          return { valid: false, error: 'Cannot reach server. Start with: node server.js' };
+          return { valid: false, error: 'Cannot reach the validation service — check your connection' };
         }
       }
 
@@ -11181,7 +11191,7 @@
       async function activate(key) {
         const k = key.trim();
         if (!looksLikeKey(k)) {
-          return { success: false, error: 'Invalid key format. Polar keys look like: BOARDSCOPE-XXXXX...-0001' };
+          return { success: false, error: 'Invalid key format. Polar keys look like: BOARDSCOPE-XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX' };
         }
 
         // Legacy BS- key — validate locally, no server needed
