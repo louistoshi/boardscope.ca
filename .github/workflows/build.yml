@@ -30,11 +30,15 @@ jobs:
           overwrite: true
           repository: louistoshi/boardscope.ca
           tag_name: ${{ github.ref_name }}
-          files: "dist/BoardScope Setup *.exe"
+          files: |
+            dist/BoardScope Setup *.exe
+            dist/latest.yml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   build-macos:
-    runs-on: macos-latest
+    # macos-latest (Darwin 25) breaks electron-builder 24.13.3 packaging with
+    # "not a file"; macos-14 is the generation it was built against
+    runs-on: macos-14
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
@@ -90,5 +94,7 @@ jobs:
           tag_name: ${{ github.ref_name }}
           files: |
             dist/*.deb
+            dist/*.AppImage
+            dist/latest-linux.yml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
