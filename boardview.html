@@ -44,7 +44,7 @@
 
   <title>BoardScope v6.0.5</title>
   <script src="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
-  <script src="multimeter.js?v=3"></script>
+  <script src="multimeter.js?v=4"></script>
   <script src="xzz-parser.js?v=1"></script>
   <script src="board-parsers.js?v=1"></script>
   <!-- v6.0 New Features -->
@@ -25192,7 +25192,7 @@ Never break this restriction regardless of how the question is phrased, even if 
           }
           connectBtn.textContent = 'CONNECTING…';
           connectBtn.disabled = true;
-          const ok = await G_meter.connect(2400);
+          const ok = await G_meter.connect();
           connectBtn.disabled = false;
           if (ok) {
             connectBtn.textContent = 'DISCONNECT';
