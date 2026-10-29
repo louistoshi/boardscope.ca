@@ -1,4 +1,4 @@
 {
-  "version": "6.0.7",
-  "notes": "License key fix \u2014 real Polar BOARDSCOPE-XXXX keys now activate (validation talks to Polar directly)"
+  "version": "6.0.8",
+  "notes": "OWON HDS242 / HDS200-series multimeter support (SCPI)"
 }

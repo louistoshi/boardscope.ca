@@ -10,11 +10,24 @@
  *   OWON    — OWON OW16B, OW16C and compatible USB serial meters
  *              Baud: 9600, 11-byte frames (0xAB/0xAC start, 0x0D end)
  *
+ *   OWON HDS — OWON HDS200-series handheld scopes with built-in DMM
+ *              (HDS242, HDS272, Hanmatek HO5xS rebadges). USB ID 5345:1234.
+ *              SCPI over USB serial. Baud: 115200 (nominal — the device is a
+ *              USB bulk transport, so the baud setting is ignored by the OS).
+ *              Session: '*IDN?' → ':SCPI:DISP?' (activates DMM SCPI) → poll ':READ?'
+ *              Responses are ASCII lines: 'V=28.00mV', 'F=60.96kHz', 'R=4.7kΩ', 'OL'.
+ *              The meter must be in Multimeter mode on its front panel.
+ *              Firmware drops the USB port when the serial line goes idle, so
+ *              the driver keeps a 500 ms ':READ?' poll running and auto-reconnects
+ *              (matching VID:PID) if the port is torn down.
+ *
  *   Metex   — Metex M-3860M, Voltcraft M-3860, Conrad ME-32
  *              Baud: 1200, 14-byte ASCII frames (start with mode, end 0x0D)
  *
  * Protocol is auto-detected from the first valid frame received.
- * You can also force a protocol: meter.setProtocol('owon')
+ * Streaming meters (FS9721 / OWON binary / Metex) are detected passively;
+ * the silent SCPI devices are found by an active '*IDN?' probe after ~2 s.
+ * You can also force a protocol: meter.setProtocol('owon-hds')
  *
  * sigrok note: FS9721 and Metex are the same protocols sigrok implements.
  * OWON USB meters are also supported in sigrok as 'owon-ow18e' (BLE variant)
@@ -46,6 +59,18 @@ class Multimeter {
     this._protocol = 'auto';          // user setting
     this._detectedProtocol = null;    // confirmed after first valid frame
     this._readingTimer = null;
+
+    // OWON HDS SCPI session state
+    this._writer = null;              // Web Serial writable stream writer
+    this._scpiPollTimer = null;       // ':READ?' keepalive poll
+    this._scpiProbeTimer = null;      // auto-detect '*IDN?' probe
+    this._scpiProbeCount = 0;
+    this._probeSentAt = 0;            // timestamp of last probe write
+    this._scpiPending = null;         // { resolve } — response correlation
+    this._scpiBusy = false;
+    this._scpiFails = 0;
+    this._scpiHintShown = false;
+    this._lastSCPIMode = null;        // bare-number responses keep last mode
 
     // Event bus
     this._listeners = {};
@@ -170,8 +195,12 @@ class Multimeter {
     auto: { label: 'Auto-detect', baud: 2400 },
     fs9721: { label: 'FS9721 (UNI-T / Mastech / Lilliput / Voltcraft)', baud: 2400 },
     owon: { label: 'OWON (OW16B / OW16C)', baud: 9600 },
+    'owon-hds': { label: 'OWON HDS200 series (HDS242 / HO5xS, SCPI)', baud: 115200 },
     metex: { label: 'Metex / Voltcraft M-3860 / Conrad ME-32', baud: 1200 },
   };
+
+  // OWON test equipment all share this generic USB ID (HDS/PDS/VDS/SDS series)
+  static OWON_USB = { vendorId: 0x5345, productId: 0x1234 };
 
   setProtocol(name) {
     if (!Multimeter.PROTOCOLS[name]) return;
@@ -189,13 +218,14 @@ class Multimeter {
     return 'serial' in navigator;
   }
 
-  // baudRate: override; protocol: 'auto'|'fs9721'|'owon'|'metex'
+  // baudRate: override; protocol: 'auto'|'fs9721'|'owon'|'owon-hds'|'metex'
   async connect(baudRate = null, protocol = 'auto') {
     if (!this.isSupported()) {
       this._emit('error', 'Web Serial not supported. Use Chrome or Edge.');
       return false;
     }
 
+    this._resetSCPISession();
     this._protocol = protocol;
     this._detectedProtocol = protocol !== 'auto' ? protocol : null;
 
@@ -214,6 +244,13 @@ class Multimeter {
       this.connected = true;
       this._emit('status', 'Connected — protocol: ' + (this._detectedProtocol || 'detecting…'));
       this._startReading();
+      if (this._detectedProtocol === 'owon-hds') {
+        this._initSCPISession();
+      } else if (this._protocol === 'auto') {
+        // SCPI meters are silent until addressed — probe after streaming
+        // protocols have had a chance to be detected passively.
+        this._scpiProbeTimer = setTimeout(() => this._probeSCPI(), 1800);
+      }
       return true;
     } catch (err) {
       this.port = null;
@@ -228,10 +265,15 @@ class Multimeter {
 
   async disconnect() {
     this._running = false;
+    this._resetSCPISession();
     if (this.reader) {
       try { await this.reader.cancel(); } catch (_) { }
       try { await this.reader.releaseLock(); } catch (_) { }
       this.reader = null;
+    }
+    if (this._writer) {
+      try { await this._writer.releaseLock(); } catch (_) { }
+      this._writer = null;
     }
     if (this.port) {
       try { await this.port.close(); } catch (_) { }
@@ -254,6 +296,7 @@ class Multimeter {
     this._running = true;
     this._buffer = [];
     this._readingCount = 0;
+    if (this._readingTimer) clearInterval(this._readingTimer);
     this._readingTimer = setInterval(() => {
       this._readingsPerSecond = this._readingCount;
       this._readingCount = 0;
@@ -273,13 +316,21 @@ class Multimeter {
           }
         }
       } catch (err) {
-        if (this._running) this._emit('error', 'Read error: ' + err.message);
+        if (this._running && this._detectedProtocol !== 'owon-hds') {
+          this._emit('error', 'Read error: ' + err.message);
+        }
       } finally {
         try { this.reader.releaseLock(); } catch (_) { }
         this.reader = null;
       }
     }
     if (this._readingTimer) clearInterval(this._readingTimer);
+
+    // OWON HDS firmware tears its USB port down when the serial line goes idle
+    // (or when something like ModemManager pokes it). Try to get it back.
+    if (this._running && this._detectedProtocol === 'owon-hds') {
+      this._tryReconnectHDS();
+    }
   }
 
   _processBuffer() {
@@ -296,6 +347,7 @@ class Multimeter {
     }
 
     if (proto === 'owon') { this._processBufferOWON(); return; }
+    if (proto === 'owon-hds') { this._processBufferSCPI(); return; }
     if (proto === 'metex') { this._processBufferMetex(); return; }
 
     // Default / fs9721
@@ -333,6 +385,24 @@ class Multimeter {
 
   _tryDetectProtocol() {
     const buf = this._buffer;
+
+    // OWON HDS SCPI: device is silent until addressed, so only its response
+    // to our '*IDN?' probe shows up — ASCII text, no binary frame structure.
+    // An id string containing owon/hds is decisive on any line ending; a bare
+    // value line must be LF-terminated so a CR-only Metex reply can't match.
+    if (this._probeSentAt && Date.now() - this._probeSentAt < 6000 && this._detectedProtocol !== 'owon-hds') {
+      const text = this._decodeASCII(buf);
+      const idn = /owon|hds|ho5|scp/i.test(text);
+      if (idn || (text.includes('\n') && /^[A-Za-z]{0,4}=?\s*[+-]?(?:\d+\.?\d*|\.\d+)/.test(text.trim()))) {
+        this._detectedProtocol = 'owon-hds';
+        this._emit('protocol', 'owon-hds');
+        const model = (text.toUpperCase().match(/H[A-Z0-9]{3,6}/) || [])[0];
+        this._emit('status', 'Protocol: OWON HDS SCPI' + (model ? ' — ' + model : ''));
+        this._buffer = [];
+        this._initSCPISession();
+        return true;
+      }
+    }
 
     // OWON: frames start with 0xAB or 0xAC, end with 0x0D, 11 bytes
     for (let i = 0; i < buf.length - 10; i++) {
@@ -452,6 +522,262 @@ class Multimeter {
     };
   }
 
+  /* ── OWON HDS SCPI Protocol (HDS200 series: HDS242, HO5xS, …) ──── */
+  // USB ID 5345:1234, ASCII SCPI lines over USB serial. The device sends
+  // nothing on its own — every reading must be polled with ':READ?'.
+  // Session per OWON's HDS200 DMM SCPI document:
+  //   *IDN?            → "OWON,HDS242,26190843,V8.5.0"
+  //   :SCPI:DISP?      → "scpion"  (activates DMM SCPI; meter must be in DMM mode)
+  //   :READ? (poll)    → "V=28.00mV" / "F=60.96kHz" / "R=4.7kΩ" / "OL" / "3.28"
+
+  _resetSCPISession() {
+    if (this._scpiPollTimer) { clearInterval(this._scpiPollTimer); this._scpiPollTimer = null; }
+    if (this._scpiProbeTimer) { clearTimeout(this._scpiProbeTimer); this._scpiProbeTimer = null; }
+    if (this._scpiPending) { const p = this._scpiPending; this._scpiPending = null; p.resolve(null); }
+    this._scpiProbeCount = 0;
+    this._probeSentAt = 0;
+    this._scpiBusy = false;
+    this._scpiFails = 0;
+    this._scpiHintShown = false;
+  }
+
+  _decodeASCII(bytes) {
+    try {
+      return new TextDecoder().decode(Uint8Array.from(bytes));
+    } catch (_) {
+      return String.fromCharCode(...bytes);
+    }
+  }
+
+  async _writeSCPI(cmd) {
+    try {
+      if (!this.port || !this.port.writable) return false;
+      if (!this._writer) this._writer = this.port.writable.getWriter();
+      await this._writer.write(new TextEncoder().encode(cmd + '\n'));
+      return true;
+    } catch (_) {
+      this._writer = null; // writer lock dies with the port — recreate on reconnect
+      return false;
+    }
+  }
+
+  async _querySCPI(cmd, timeout = 800) {
+    if (this._scpiPending) return null; // previous response still outstanding
+    const sent = await this._writeSCPI(cmd);
+    if (!sent) return null;
+    return new Promise((resolve) => {
+      const timer = setTimeout(() => {
+        this._scpiPending = null;
+        resolve(null);
+      }, timeout);
+      this._scpiPending = {
+        resolve: (v) => { clearTimeout(timer); this._scpiPending = null; resolve(v); },
+      };
+    });
+  }
+
+  // Auto-detect probe: SCPI meters stay silent, so after the streaming
+  // protocols had their passive window we ask for an id string.
+  async _probeSCPI() {
+    this._scpiProbeTimer = null;
+    if (this._detectedProtocol || !this._running || !this.port) return;
+    this._scpiProbeCount++;
+    this._probeSentAt = Date.now();
+    await this._writeSCPI('*IDN?');
+    // The response is matched against this window in _tryDetectProtocol()
+    if (this._scpiProbeCount < 5 && !this._detectedProtocol) {
+      this._scpiProbeTimer = setTimeout(() => this._probeSCPI(), 3000);
+    }
+  }
+
+  _initSCPISession() {
+    if (this._scpiPollTimer) clearInterval(this._scpiPollTimer);
+    this._emit('status', 'OWON HDS — activating DMM SCPI mode');
+    (async () => {
+      await this._querySCPI(':SCPI:DISP?', 600); // activates DMM SCPI; reply "scpion"
+      await new Promise(r => setTimeout(r, 400));
+      if (!this._running || this._detectedProtocol !== 'owon-hds' || !this.port) return;
+      this._scpiPollTimer = setInterval(() => this._pollREAD(), 500);
+      this._pollREAD();
+    })();
+  }
+
+  async _pollREAD() {
+    if (this._scpiBusy || !this._running || !this.port) return;
+    this._scpiBusy = true;
+    try {
+      const line = await this._querySCPI(':READ?', 800);
+      const reading = line !== null ? this._parseOWONHDS(line) : null;
+      if (reading) {
+        this._scpiFails = 0;
+        this._dispatchReading(this._applyCalibration(reading));
+      } else {
+        this._scpiFails++;
+        if (this._scpiFails === 6 && !this._scpiHintShown) {
+          this._scpiHintShown = true;
+          this._emit('status', 'No DMM data — press Mode on the HDS until it shows the Multimeter screen');
+        }
+      }
+    } finally {
+      this._scpiBusy = false;
+    }
+  }
+
+  // The firmware drops the USB serial port on idle — recover by re-opening
+  // the (re-enumerated) OWON device without bothering the user again.
+  async _tryReconnectHDS() {
+    for (let attempt = 1; attempt <= 5; attempt++) {
+      await new Promise(r => setTimeout(r, 2000));
+      if (!this._running) return;
+      try {
+        const ports = await navigator.serial.getPorts();
+        const owon = ports.find(p => {
+          const info = (p.getInfo && p.getInfo()) || {};
+          return info.usbVendorId === Multimeter.OWON_USB.vendorId &&
+                 info.usbProductId === Multimeter.OWON_USB.productId;
+        });
+        if (!owon) continue;
+        await owon.open({ baudRate: 115200, dataBits: 8, stopBits: 1, parity: 'none' });
+        this.port = owon;
+        this._writer = null;
+        this._buffer = [];
+        this._emit('status', 'OWON HDS reconnected (attempt ' + attempt + ')');
+        this._startReading();
+        this._initSCPISession();
+        return;
+      } catch (_) { /* device not back yet — keep trying */ }
+    }
+    if (this._running) {
+      this.connected = false;
+      this._emit('error', 'OWON HDS connection lost — unplug/replug the meter, then CONNECT again. ' +
+        'On Linux, if this keeps happening, tell ModemManager to leave the port alone ' +
+        '(udev rule with ID_MM_DEVICE_IGNORE=1 for 5345:1234).');
+    }
+  }
+
+  _processBufferSCPI() {
+    while (true) {
+      const buf = this._buffer;
+      let idx = -1;
+      for (let i = 0; i < buf.length; i++) {
+        if (buf[i] === 0x0A || buf[i] === 0x0D) { idx = i; break; }
+      }
+      if (idx < 0) return; // no complete line yet
+      const lineBytes = buf.slice(0, idx);
+      this._buffer = buf.slice(idx + 1);
+      if (lineBytes.length) this._handleSCPILine(this._decodeASCII(lineBytes));
+    }
+  }
+
+  _handleSCPILine(line) {
+    const s = line.trim();
+    if (!s) return;
+    if (this._scpiPending) {
+      const p = this._scpiPending;
+      this._scpiPending = null;
+      p.resolve(s);
+      return;
+    }
+    // Unsolicited line (e.g. a late ':SCPI:DISP?' reply) — parse if it's a reading
+    const r = this._parseOWONHDS(s);
+    if (r) this._dispatchReading(this._applyCalibration(r));
+  }
+
+  // Parse ':READ?' responses: "[label=][sign]number[prefix]unit"
+  // e.g. "V=28.00mV" → 0.028 V DCV · "R=4.700kΩ" → 4700 Ω · "I=10.5uA" → 1.05e-5 A
+  _parseOWONHDS(s) {
+    if (!s) return null;
+    // 'Ω'/'µ' as raw UTF-8 bytes surviving a non-decoder path ("Î©"/"Âµ")
+    const str = s.trim().replace(/Î©/g, 'Ω').replace(/Âµ/g, 'µ');
+
+    // Overload — keep the last known function so UI/stats stay consistent
+    if (!/\d/.test(str) && /ol/i.test(str)) {
+      const mode = this._lastSCPIMode || 'DCV';
+      this._lastSCPIMode = mode;
+      return {
+        value: Infinity, mode, unit: this._scpiUnitFor(mode), ol: true, negative: false,
+        timestamp: Date.now(), stable: false, display: 'OL', protocol: 'owon-hds',
+      };
+    }
+
+    let label = '';
+    let rest = str;
+    const eq = str.indexOf('=');
+    if (eq > 0 && eq <= 5) {
+      label = str.slice(0, eq).trim().toLowerCase();
+      rest = str.slice(eq + 1).trim();
+    }
+
+    const m = rest.match(/^([+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?)\s*([A-Za-zμµ°%Ω]*)/);
+    if (!m) return null;
+    let value = parseFloat(m[1]);
+    if (isNaN(value)) return null;
+
+    // SI prefix + unit decomposition (case matters: mV milli vs MΩ mega)
+    const PREFIX = { k: 1e3, K: 1e3, m: 1e-3, M: 1e6, u: 1e-6, µ: 1e-6, μ: 1e-6, n: 1e-9, p: 1e-12, G: 1e9 };
+    let unit = m[2] || '';
+    if (unit.length >= 2 && PREFIX[unit[0]] !== undefined) {
+      const u = unit.slice(1);
+      if (/^(V|A|F|Hz|HZ|H[zZ]|ohm|OHM|Ohm|Ω)$/i.test(u)) {
+        value *= PREFIX[unit[0]];
+        unit = u;
+      }
+    }
+    unit = unit.replace(/ohm/i, 'Ω').replace(/^H[Zz]$/, 'Hz');
+
+    const l = label;
+    const isDiode = /^d(io)?$/.test(l);
+    let mode;
+    if (unit === 'Ω') mode = /bee|con/.test(l) ? 'CONT' : (isDiode ? 'DIODE' : 'OHM');
+    else if (unit === 'V') mode = /ac|^va$/.test(l) ? 'ACV' : (isDiode ? 'DIODE' : 'DCV');
+    else if (unit === 'A') mode = /ac|^ia$|^aa$/.test(l) ? 'ACA' : 'DCA';
+    else if (unit === 'F') mode = 'CAP';
+    else if (unit === 'Hz') mode = 'FREQ';
+    else if (unit === '°C' || unit === 'C') mode = 'TEMP';
+    else if (unit === '%') mode = 'DUTY';
+    else mode = this._lastSCPIMode || 'DCV'; // bare number — function unchanged
+    this._lastSCPIMode = mode;
+
+    const outUnit = this._scpiUnitFor(mode);
+    const negative = value < 0;
+    return {
+      value, mode, unit: outUnit, ol: false, negative,
+      timestamp: Date.now(), stable: false,
+      display: this._formatSI(value, outUnit),
+      protocol: 'owon-hds',
+    };
+  }
+
+  _scpiUnitFor(mode) {
+    const UNIT_MAP = {
+      'DCV': 'V', 'ACV': 'V', 'mV': 'mV',
+      'DCA': 'A', 'ACA': 'A', 'mA': 'mA', 'uA': 'uA',
+      'OHM': 'Ω', 'DIODE': 'V', 'CONT': 'Ω',
+      'CAP': 'F', 'FREQ': 'Hz', 'DUTY': '%', 'TEMP': '°C',
+    };
+    return UNIT_MAP[mode] || '';
+  }
+
+  // SI-prefixed display ("28.0 mV", "4.70 kΩ", "225 nF") — the HDS spans
+  // pF…MΩ and _formatDisplay's fixed decimals would swallow the small ends.
+  _formatSI(value, unit) {
+    if (!isFinite(value)) return 'OL';
+    if (unit === '°C' || unit === '%') {
+      const str = value.toFixed(1).replace(/\.0$/, '');
+      return str + ' ' + unit;
+    }
+    const abs = Math.abs(value);
+    if (abs === 0) return '0 ' + unit;
+    const steps = [[1e9, 'G'], [1e6, 'M'], [1e3, 'k'], [1, ''], [1e-3, 'm'], [1e-6, 'u'], [1e-9, 'n'], [1e-12, 'p']];
+    let scale = 1, prefix = '';
+    for (const [s, p] of steps) {
+      if (abs >= s) { scale = s; prefix = p; break; }
+    }
+    let str = (value / scale).toPrecision(4);
+    if (str.includes('.') && !str.includes('e')) str = str.replace(/\.?0+$/, '');
+    return str + ' ' + prefix + unit;
+  }
+
   /* ── Metex Protocol Parser ─────────────────────────────────────── */
   // 14-byte ASCII frame: [4 mode chars][4 digit chars][2 range chars][2 unit chars][CR+LF or CR]
   // Used by: Metex M-3860M, Voltcraft M-3860, Conrad ME-32
@@ -474,6 +800,11 @@ class Multimeter {
   _parseMetex(frame) {
     if (frame.length !== 14 || frame[13] !== 0x0D) return null;
     try {
+      // Metex frames are pure printable ASCII — reject anything else so SCPI
+      // text (e.g. an "OWON,HDS242,…" id string) can't be misread as a frame
+      for (let i = 0; i < 13; i++) {
+        if (frame[i] < 0x20 || frame[i] > 0x7E) return null;
+      }
       const str = String.fromCharCode(...frame.slice(0, 13)).trim();
       // Format: "MODE NNNNNUNIT" e.g. "DCV  1.234 V  "
       const modeStr = str.slice(0, 4).trim();
@@ -485,7 +816,8 @@ class Multimeter {
         'OHM': 'OHM', 'DIO': 'DIODE', 'CAP': 'CAP', 'FRQ': 'FREQ',
         'mV': 'mV', 'mA': 'mA', 'uA': 'uA',
       };
-      const mode = MODE_MAP[modeStr] || modeStr;
+      if (!MODE_MAP[modeStr]) return null;
+      const mode = MODE_MAP[modeStr];
       const ol = valStr === 'OL' || valStr === ' OL ';
       const value = ol ? Infinity : parseFloat(valStr);
       if (!ol && isNaN(value)) return null;
