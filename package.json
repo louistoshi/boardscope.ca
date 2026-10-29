@@ -92,20 +92,8 @@
     },
     "mac": {
       "target": [
-        {
-          "target": "dmg",
-          "arch": [
-            "x64",
-            "arm64"
-          ]
-        },
-        {
-          "target": "pkg",
-          "arch": [
-            "x64",
-            "arm64"
-          ]
-        }
+        "dmg",
+        "pkg"
       ],
       "icon": "assets/icon.icns",
       "category": "public.app-category.developer-tools",

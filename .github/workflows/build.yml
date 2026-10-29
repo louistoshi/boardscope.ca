@@ -90,8 +90,9 @@ jobs:
           overwrite: true
           repository: louistoshi/boardscope.ca
           tag_name: ${{ github.ref_name }}
+          # deb is attached by the dedicated deb.yml workflow — uploading it
+          # here too raced deb.yml's attach (404/422 on the same release)
           files: |
-            dist/*.deb
             dist/*.AppImage
             dist/latest-linux.yml
         env:
