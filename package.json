@@ -15,7 +15,7 @@
     "build:mac": "electron-builder --mac --publish never",
     "build:linux": "electron-builder --linux --publish never",
     "build:all": "electron-builder --win --mac --linux --publish never",
-    "build:secure:mac": "npm run obfuscate && bash scripts/build-secure.sh --mac --publish never",
+    "build:secure:mac": "npm run obfuscate && bash scripts/build-secure.sh --mac --x64 --publish never && bash scripts/build-secure.sh --mac --arm64 --publish never",
     "build:secure:win": "npm run obfuscate && bash scripts/build-secure.sh --win --publish never",
     "build:secure:linux": "npm run obfuscate && bash scripts/build-secure.sh --linux --publish never",
     "build:secure:all": "npm run obfuscate && bash scripts/build-secure.sh --win --mac --linux --publish never",
