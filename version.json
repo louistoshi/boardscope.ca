@@ -1,4 +1,4 @@
 {
-  "version": "6.0.9",
+  "version": "6.0.10",
   "notes": "Cross-platform font readability fix — larger minimum text size, fonts fully embedded (works offline, no font downloads)"
 }

@@ -1,6 +1,6 @@
 {
   "name": "boardscope",
-  "version": "6.0.9",
+  "version": "6.0.10",
   "description": "PCB Boardview & Schematic Analysis Tool for board repair \u2014 shop management, AI diagnosis, live multimeter",
   "main": "electron-main.js",
   "author": "BoardScope <support@boardscope.com>",
