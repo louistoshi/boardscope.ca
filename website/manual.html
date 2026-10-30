@@ -822,7 +822,7 @@ net:PP3 side:B — combine filters</code></pre>
 <p>Create a file called <code>.api_key</code> next to <code>server.js</code> with this content:</p>
 <pre><code>provider=google
 key=YOUR_GOOGLE_API_KEY
-model=gemini-2.0-flash</code></pre>
+model=gemini-2.5-flash</code></pre>
 
 <div class="callout tip">
   <div class="callout-label">💡 TIP</div>
@@ -1291,6 +1291,20 @@ model=llama3</code></pre>
 
 <h3>AI analysis not working</h3>
 <p>Check that your API key is configured correctly. Run <code>node server.js</code> and watch the console output — it shows which AI provider is active. If no key is found, the AI panel will show a setup guide.</p>
+
+<h3>USB multimeter won't connect (Linux)</h3>
+<p>Two things on Linux block serial ports, and both look like "detected but won't connect":</p>
+<ol style="margin:8px 0 8px 20px;color:var(--text2);font-size:14px;line-height:2">
+  <li><strong>Serial port permission</strong> — your user must be in the <code>dialout</code> group:<br>
+    <code>sudo usermod -aG dialout $USER</code> then log out and back in.</li>
+  <li><strong>ModemManager</strong> — on Ubuntu/Mint/Debian it probes every new USB serial device with AT commands for a few seconds after plug-in, which races with BoardScope. Tell it to ignore the meter (example for the OWON HDS200 series, USB ID 5345:1234 — adjust <code>idVendor</code>/<code>idProduct</code> for other meters):</li>
+</ol>
+<pre><code>echo 'SUBSYSTEM=="tty", ATTRS{idVendor}=="5345", ATTRS{idProduct}=="1234", ENV{ID_MM_DEVICE_IGNORE}="1"' | sudo tee /etc/udev/rules.d/99-boardscope-meter.rules
+sudo udevadm control --reload-rules && sudo udevadm trigger</code></pre>
+<p>BoardScope retries the port once automatically, but if ModemManager keeps holding it, the udev rule is the permanent fix. As a quick test you can also stop it entirely: <code>sudo systemctl stop ModemManager</code>.</p>
+
+<h3>Bluetooth warning in the console/log</h3>
+<p>Harmless. BoardScope's meter connection uses Web Serial (USB) only — no Bluetooth API is ever called by the app. The warning comes from the Chromium/Electron runtime itself probing the system Bluetooth stack at startup (common on Linux without a Bluetooth daemon). It does not affect the multimeter connection.</p>
 
 <div class="callout info">
   <div class="callout-label">ℹ SUPPORT</div>

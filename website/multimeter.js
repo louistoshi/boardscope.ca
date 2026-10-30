@@ -239,8 +239,20 @@ class Multimeter {
       this._emit('error', 'Port selection failed: ' + err.message);
       return false;
     }
+    const openOpts = { baudRate: baud, dataBits: 8, stopBits: 1, parity: 'none' };
+    const isLinux = /Linux/.test(navigator.userAgent) && !/Android|CrOS/.test(navigator.userAgent);
     try {
-      await this.port.open({ baudRate: baud, dataBits: 8, stopBits: 1, parity: 'none' });
+      try {
+        await this.port.open(openOpts);
+      } catch (err) {
+        // ModemManager probes every newly plugged tty with AT commands for a
+        // few seconds; on Linux the first open can lose that race. One retry
+        // after the probe window usually wins.
+        if (!isLinux || err.name === 'InvalidStateError') throw err;
+        this._emit('status', 'Port busy — retrying in 3 s (ModemManager probe?)');
+        await new Promise(r => setTimeout(r, 3000));
+        await this.port.open(openOpts);
+      }
       this.connected = true;
       this._emit('status', 'Connected — protocol: ' + (this._detectedProtocol || 'detecting…'));
       this._startReading();
@@ -257,7 +269,16 @@ class Multimeter {
       if (err.name === 'InvalidStateError') {
         this._emit('error', 'Port already open — close other apps using this port');
       } else {
-        this._emit('error', 'Failed to open port: ' + err.message);
+        let msg = 'Failed to open port: ' + err.message;
+        if (isLinux) {
+          msg += ' — Linux checklist: ' +
+            '(1) serial port permission: sudo usermod -aG dialout $USER, then log out/in · ' +
+            '(2) keep ModemManager off the meter: create /etc/udev/rules.d/99-boardscope-meter.rules with ' +
+            'SUBSYSTEM=="tty", ATTRS{idVendor}=="5345", ATTRS{idProduct}=="1234", ENV{ID_MM_DEVICE_IGNORE}="1" ' +
+            '(OWON HDS USB IDs — adjust for other meters), then ' +
+            'sudo udevadm control --reload-rules && sudo udevadm trigger';
+        }
+        this._emit('error', msg);
       }
       return false;
     }

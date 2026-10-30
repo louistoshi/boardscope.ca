@@ -39,9 +39,9 @@
   <link rel="manifest" href="/manifest.json">
   <link rel="apple-touch-icon" href="/assets/icon.png">
 
-  <title>BoardScope v6.0.9</title>
+  <title>BoardScope v6.0.10</title>
   <script src="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
-  <script src="multimeter.js?v=4"></script>
+  <script src="multimeter.js?v=5"></script>
   <script src="xzz-parser.js?v=1"></script>
   <script src="board-parsers.js?v=1"></script>
   <!-- v6.0 New Features -->
@@ -8862,6 +8862,31 @@
     }
 
 </style>
+  <style id="user-font-style">
+    /* User-selected typeface (Settings → TYPEFACE). The :root prefix keeps
+       specificity above the theme blocks so it wins over their !important stacks. */
+    :root.user-font body,
+    :root.user-font #pp-body,
+    :root.user-font #csb-body,
+    :root.user-font .mac-header,
+    :root.user-font * {
+      font-family: var(--user-font-stack) !important;
+    }
+  </style>
+  <script>
+    // Apply saved typeface + UI size before first paint (Settings → TYPEFACE)
+    (function () {
+      try {
+        var z = parseFloat(localStorage.getItem('bs_ui_zoom'));
+        if (z >= 0.8 && z <= 1.4) document.documentElement.style.zoom = z;
+        var f = localStorage.getItem('bs_ui_font');
+        if (f) {
+          document.documentElement.style.setProperty('--user-font-stack', f);
+          document.documentElement.classList.add('user-font');
+        }
+      } catch (_) { }
+    })();
+  </script>
 </head>
 
 <body>
@@ -10443,6 +10468,30 @@
         style="flex:1;accent-color:var(--accent);cursor:pointer">
       <span style="font-size:10px;color:var(--text3);margin-left:6px">Fast</span>
     </div>
+    <div class="sp-section">🔤 TYPEFACE</div>
+    <div class="sp-row">
+      <span class="sp-label">Font</span>
+      <select id="sp-font-family"
+        style="flex:1;background:var(--bg3);border:1px solid var(--border2);color:var(--text);font-family:var(--mono);font-size:10px;padding:4px 8px;border-radius:4px;outline:none">
+        <option value="">JetBrains Mono (embedded)</option>
+        <option value="'Cascadia Code', Consolas, monospace">Cascadia Code / Consolas (Windows)</option>
+        <option value="Menlo, 'SF Mono', monospace">Menlo / SF Mono (macOS)</option>
+        <option value="'DejaVu Sans Mono', monospace">DejaVu Sans Mono (Linux)</option>
+        <option value="'Liberation Mono', monospace">Liberation Mono (Linux)</option>
+        <option value="'Ubuntu Mono', monospace">Ubuntu Mono (Linux)</option>
+        <option value="'Noto Sans Mono', monospace">Noto Sans Mono (Linux)</option>
+        <option value="'Courier New', monospace">Courier New</option>
+        <option value="monospace">System monospace</option>
+      </select>
+    </div>
+    <div class="sp-row">
+      <span class="sp-label">UI Size</span>
+      <span style="font-size:9px;color:var(--text3)">A</span>
+      <input type="range" id="sp-ui-zoom" min="0.8" max="1.4" step="0.05" value="1"
+        style="flex:1;accent-color:var(--accent);cursor:pointer;margin:0 6px">
+      <span style="font-size:14px;color:var(--text3)">A</span>
+      <span id="sp-ui-zoom-val" style="font-size:10px;color:var(--text3);min-width:36px;text-align:right">100%</span>
+    </div>
     <div class="sp-section"><svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.125em"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg> AI DIAGNOSIS</div>
     <div class="sp-row">
       <span class="sp-label">API Provider</span>
@@ -10468,7 +10517,7 @@
     </div>
     <div class="sp-row">
       <span class="sp-label">Model</span>
-      <input type="text" id="sp-ai-model" placeholder="grok-3-mini (or gemini-2.0-flash)"
+      <input type="text" id="sp-ai-model" placeholder="grok-3-mini (or gemini-2.5-flash)"
         style="flex:1;background:var(--bg3);border:1px solid var(--border2);color:var(--text);font-family:var(--mono);font-size:10px;padding:4px 8px;border-radius:4px;outline:none">
     </div>
     <div class="sp-row">
@@ -22340,7 +22389,7 @@ Rules: 6-10 rails in power-on order. "net" is the exact schematic net name. "tol
     });
 
     function getDefaultModel(p) {
-      if (p === 'google') return 'gemini-2.0-flash';
+      if (p === 'google') return 'gemini-2.5-flash';
       if (p === 'openrouter') return 'google/gemini-2.5-flash';
       if (p === 'anthropic') return 'claude-3-5-haiku-20241022';
       if (p === 'openai') return 'gpt-4o-mini';
@@ -22359,6 +22408,11 @@ Rules: 6-10 rails in power-on order. "net" is the exact schematic net name. "tol
       let model = (document.getElementById('sp-ai-model')?.value || localStorage.getItem('bs_ai_model') || '').trim();
       if (!model) {
         model = getDefaultModel(provider);
+      }
+      // Google retired the Gemini 1.5/2.0 families on 2026-06-01 — upgrade stale saved models
+      if (provider === 'google' && /^gemini-(1\.5|2\.0)-/.test(model)) {
+        model = 'gemini-2.5-flash';
+        console.log('[aiChat Debug] Retired model upgraded to:', model);
       }
 
       console.log('[aiChat Debug] Provider:', provider);
@@ -22543,7 +22597,7 @@ Rules: 6-10 rails in power-on order. "net" is the exact schematic net name. "tol
           aiStatus.textContent = msg;
           aiStatus.style.color = 'var(--red)';
         } else {
-          const text = (data.content?.[0]?.text || '').trim();
+          const text = (typeof data.content === 'string' ? data.content : (data.content?.[0]?.text || '')).trim();
           aiStatus.innerHTML = `<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.125em"><path d="M20 6 9 17l-5-5"/></svg> Connection OK — model replied: "${text.slice(0, 40)}"`;
           aiStatus.style.color = 'var(--accent)';
         }
@@ -22623,8 +22677,8 @@ Rules: 6-10 rails in power-on order. "net" is the exact schematic net name. "tol
     document.getElementById('sp-ai-model-select').addEventListener('change', function () {
       if (this.value) {
         aiModel.value = this.value;
-        status.innerHTML = `<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.125em"><path d="M20 6 9 17l-5-5"/></svg> Model set to: ${this.value}`;
-        status.style.color = 'var(--accent)';
+        aiStatus.innerHTML = `<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.125em"><path d="M20 6 9 17l-5-5"/></svg> Model set to: ${this.value}`;
+        aiStatus.style.color = 'var(--accent)';
       }
     });
 
@@ -22843,6 +22897,50 @@ Rules: 6-10 rails in power-on order. "net" is the exact schematic net name. "tol
 
       // Global exports for external access if needed
       window.BS_Theme = { toggleDarkMode, applyUITheme, applyCustomColor };
+    })();
+
+    /* ── TYPEFACE: user font + UI size ── */
+    (function () {
+      const FONT_KEY = 'bs_ui_font';
+      const ZOOM_KEY = 'bs_ui_zoom';
+      const fontSel = document.getElementById('sp-font-family');
+      const zoomRange = document.getElementById('sp-ui-zoom');
+      const zoomVal = document.getElementById('sp-ui-zoom-val');
+
+      function applyFont(stack, persist = true) {
+        const root = document.documentElement;
+        if (stack) {
+          root.style.setProperty('--user-font-stack', stack);
+          root.classList.add('user-font');
+        } else {
+          root.style.removeProperty('--user-font-stack');
+          root.classList.remove('user-font');
+        }
+        if (persist) localStorage.setItem(FONT_KEY, stack || '');
+      }
+
+      function applyZoom(z, persist = true) {
+        z = Math.min(1.4, Math.max(0.8, parseFloat(z) || 1));
+        document.documentElement.style.zoom = z;
+        if (zoomVal) zoomVal.textContent = Math.round(z * 100) + '%';
+        if (zoomRange) zoomRange.value = z;
+        if (persist) {
+          localStorage.setItem(ZOOM_KEY, String(z));
+          // canvases are sized from CSS px — let their resize handlers re-run
+          window.dispatchEvent(new Event('resize'));
+        }
+      }
+
+      if (fontSel) {
+        const savedFont = localStorage.getItem(FONT_KEY) || '';
+        fontSel.value = savedFont;
+        if (savedFont && fontSel.value !== savedFont) fontSel.value = ''; // unknown stack → default
+        fontSel.addEventListener('change', () => applyFont(fontSel.value));
+      }
+      if (zoomRange) {
+        zoomRange.addEventListener('input', () => applyZoom(parseFloat(zoomRange.value)));
+      }
+      applyZoom(localStorage.getItem(ZOOM_KEY) || 1, false);
     })();
 
     document.getElementById('settings-btn').addEventListener('click', e => {

@@ -60,7 +60,9 @@ function startServer() {
     let hostname = providerDef.hostname;
     let apiPath = providerDef.path;
     if (cfg.provider === 'google') {
-      const model = (reqModel || 'gemini-2.0-flash').replace(/^models\//, '');
+      let model = (reqModel || 'gemini-2.5-flash').replace(/^models\//, '');
+      // Google retired the Gemini 1.5/2.0 families on 2026-06-01 — upgrade stale saved config
+      if (/^gemini-(1\.5|2\.0)-/.test(model)) model = 'gemini-2.5-flash';
       apiPath = `/v1beta/models/${model}:generateContent?key=${cfg.key}`;
     }
 
