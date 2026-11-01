@@ -45,6 +45,12 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: 18
+      - name: Validate notarytool credentials (fail fast with Apple's real error)
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: xcrun notarytool history --apple-id "$APPLE_ID" --password "$APPLE_APP_SPECIFIC_PASSWORD" --team-id "$APPLE_TEAM_ID" > /dev/null && echo "notarytool credentials OK"
       - run: git config --global user.email "ci@boardscope.com" && git config --global user.name "BoardScope CI"
       - run: npm ci
       - run: npm run build:secure:mac
