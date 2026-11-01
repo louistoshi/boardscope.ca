@@ -36,9 +36,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   build-macos:
-    # macos-latest (Darwin 25) breaks electron-builder 24.13.3 packaging with
-    # "not a file"; macos-14 is the generation it was built against
-    runs-on: macos-14
+    # macos-26 (Darwin 25) breaks electron-builder 24.13.3 packaging with
+    # "not a file"; macos-14 image retired 2026-11-02. macos-15 (Darwin 24)
+    # is the newest runner generation electron-builder 24.x works with.
+    runs-on: macos-15
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
