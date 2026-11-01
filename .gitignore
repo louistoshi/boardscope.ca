@@ -64,3 +64,6 @@ src-unobfuscated/
 
 # Real XZZ sample board files (proprietary — from slimeinacloak/XZZPCB-ImHex)
 test-files/
+
+# ZCode session artifacts
+.zcode/
