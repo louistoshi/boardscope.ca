@@ -1,6 +1,6 @@
 {
   "name": "boardscope",
-  "version": "6.0.10",
+  "version": "6.0.11",
   "description": "PCB Boardview & Schematic Analysis Tool for board repair \u2014 shop management, AI diagnosis, live multimeter",
   "main": "electron-main.js",
   "author": "BoardScope <support@boardscope.com>",
@@ -92,14 +92,12 @@
     },
     "mac": {
       "target": [
-        "dmg",
-        "pkg"
+        "dmg"
       ],
       "icon": "assets/icon.icns",
       "category": "public.app-category.developer-tools",
-      "hardenedRuntime": false,
-      "gatekeeperAssess": false,
-      "notarize": false,
+      "hardenedRuntime": true,
+      "notarize": true,
       "fileAssociations": [
         {
           "ext": "brd",

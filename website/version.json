@@ -1,4 +1,4 @@
 {
-  "version": "6.0.10",
-  "notes": "Cross-platform font readability fix — larger minimum text size, fonts fully embedded (works offline, no font downloads)"
+  "version": "6.0.11",
+  "notes": "Mac builds are now code-signed and notarized — fixes the 'BoardScope is damaged and can't be opened' error on macOS. Update-checker download link no longer 404s."
 }
