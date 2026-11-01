@@ -11,6 +11,7 @@ const https = require('https');
 const fs = require('fs');
 const path = require('path');
 const { URL } = require('url');
+const { trialCheck } = require('./license-validate');
 
 // Handle keygen before server start
 if (process.argv[2] === 'keygen') {
@@ -248,6 +249,11 @@ app.post('/license-validate', async (req, res) => {
 
   // Simple local validation fallback
   const k = key.trim().toUpperCase();
+
+  // Trial keys carry their own expiry — check before Polar/optimistic paths
+  const trial = trialCheck(k);
+  if (trial) return res.json(trial);
+
   const isPolarSerial = /^BOARDSCOPE-[A-Z0-9]+-[0-9]+$/.test(k);
   const isPolarUUID = /^BOARDSCOPE[-_][0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}$/i.test(k);
 
