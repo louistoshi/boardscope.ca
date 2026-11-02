@@ -1,4 +1,4 @@
 {
-  "version": "6.0.12",
-  "notes": "New pro UI: native menu bar (File/Edit/View/Tools/Settings/Help), toolbar and status bar; schematic pane opens only when a PDF is loaded; sessions now embed the schematic PDF."
+  "version": "6.0.13",
+  "notes": "Slim macOS-height menu bar. AI/LLM errors now open a readable popup with Copy. 'Visual Settings' renamed to 'Settings'. Multimeter correctly shows its PRO badge."
 }
