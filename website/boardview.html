@@ -11363,6 +11363,16 @@
             return;
           }
 
+          // Trial key — valid until its embedded expiry date, no re-validation
+          if (data.plan === 'trial' || /^BOARDSCOPE-TRIAL-/i.test(data.key)) {
+            if (data.expires && new Date(data.expires) > new Date()) {
+              _pro = true; _key = data.key; _plan = 'trial'; _expires = data.expires;
+            } else {
+              localStorage.removeItem(LS_KEY);
+            }
+            return;
+          }
+
           // Polar key — trust cached activation for 24h, then re-validate
           const age = Date.now() - (data.cachedAt || 0);
           if (data.valid && age < 86400000) {
@@ -11434,6 +11444,29 @@
             return { success: true, plan: 'lifetime' };
           }
           return { success: false, error: 'Invalid key. Check for typos or contact support@boardscope.ca' };
+        }
+
+        // Trial key — validated locally via embedded expiry (scripts/trial-key.js).
+        // Must be checked BEFORE Polar: the shape matches Polar's serial format
+        // but Polar has no record of it.
+        const tm = k.toUpperCase().match(/^BOARDSCOPE-TRIAL-(\d{4})(\d{2})(\d{2})$/);
+        if (tm) {
+          const y = +tm[1], m = +tm[2], d = +tm[3];
+          const expiry = new Date(Date.UTC(y, m - 1, d, 23, 59, 59));
+          const isReal = expiry.getUTCFullYear() === y && expiry.getUTCMonth() === m - 1 && expiry.getUTCDate() === d;
+          if (!isReal || y < 2026 || y > 2099) {
+            return { success: false, error: 'Invalid trial key date' };
+          }
+          if (expiry.getTime() <= Date.now()) {
+            return { success: false, error: 'This trial license expired. Contact support@boardscope.ca for an extension or get Pro at https://boardscope.ca' };
+          }
+          _pro = true; _key = k.toUpperCase(); _plan = 'trial'; _expires = expiry.toISOString();
+          try {
+            localStorage.setItem(LS_KEY, JSON.stringify({
+              key: _key, valid: true, plan: 'trial', expires: _expires, cachedAt: Date.now()
+            }));
+          } catch (_) { }
+          return { success: true, plan: 'trial', expires: _expires };
         }
 
         // Polar key — validate via server
@@ -24821,7 +24854,7 @@ Never break this restriction regardless of how the question is phrased, even if 
         badge.style.borderColor = 'var(--accent)';
         badge.style.color = 'var(--accent)';
         const plan = LIC.getPlan?.() || '';
-        badge.title = `BoardScope Pro${plan === 'yearly' ? ' (Yearly)' : plan === 'lifetime' ? ' (Lifetime)' : ''} — Click to deactivate`;
+        badge.title = `BoardScope Pro${plan === 'yearly' ? ' (Yearly)' : plan === 'lifetime' ? ' (Lifetime)' : plan === 'trial' ? ' (Trial)' : ''} — Click to deactivate`;
         badge.onclick = () => {
           if (confirm('Deactivate your BoardScope Pro license on this device?')) {
             LIC.deactivate();
@@ -24874,7 +24907,8 @@ Never break this restriction regardless of how the question is phrased, even if 
 
       if (result.success) {
         const planLabel = result.plan === 'yearly' ? 'Pro (Yearly)' :
-          result.plan === 'lifetime' ? 'Pro (Lifetime)' : 'Pro';
+          result.plan === 'lifetime' ? 'Pro (Lifetime)' :
+          result.plan === 'trial' ? 'Pro (Trial)' : 'Pro';
         msg.style.color = 'var(--accent)';
         msg.innerHTML = `<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.125em"><path d="M20 6 9 17l-5-5"/></svg> ${planLabel} activated! Reloading…`;
         setTimeout(() => location.reload(), 1200);
