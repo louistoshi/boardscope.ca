@@ -8488,7 +8488,8 @@
       font-weight: 650;
       letter-spacing: -0.01em;
       color: var(--text);
-      margin-right: 12px;
+      margin-left: auto;
+      margin-right: 10px;
       white-space: nowrap;
     }
 
@@ -8625,7 +8626,7 @@
     }
 
     body.theme-light .mac-sub { background: #fff; box-shadow: 0 12px 36px rgba(0, 0, 0, .14); }
-    .has-sub:hover > .mac-sub, .mac-sub.open { display: block; }
+    .mac-sub.open { display: block; }
 
     #lang-btn {
       background: none;
@@ -9017,11 +9018,15 @@
       border: 1px solid var(--red);
       border-radius: 9px;
       box-shadow: 0 12px 36px rgba(0, 0, 0, .45);
-      z-index: 500;
+      z-index: 100000;
       overflow: hidden;
     }
 
     .errpop.open { display: flex; }
+
+    /* long AI errors must wrap, not overflow their panels */
+    #sp-ai-status { overflow-wrap: anywhere; white-space: pre-wrap; }
+    #aidiag-result, #aidiag-result span { overflow-wrap: anywhere; white-space: pre-wrap; }
 
     .errpop-hdr {
       display: flex;
@@ -9095,7 +9100,6 @@
   <input type="file" id="session-import-in" accept=".boardscope,.json" style="display:none">
 
   <header class="menubar" id="menubar">
-    <div class="mb-logo">Board<span>Scope</span></div>
     <ul class="mb-menu">
       <li class="mb-item">
         <button class="mb-head" type="button">File</button>
@@ -9255,6 +9259,7 @@
         </ul>
       </li>
     </ul>
+    <div class="mb-logo">Board<span>Scope</span></div>
   </header>
 
   <div class="toolbar" id="main-toolbar">
@@ -10708,7 +10713,7 @@
     <div class="sp-row">
       <span class="sp-label"></span>
       <button id="sp-ai-save"
-        style="flex:1;background:var(--accent);border:none;color:#000;font-family:var(--mono);font-size:10px;font-weight:700;padding:6px;border-radius:4px;cursor:pointer">SAVE
+        style="flex:1;background:var(--text);border:none;color:var(--bg);font-family:var(--mono);font-size:10px;font-weight:700;padding:6px;border-radius:4px;cursor:pointer">SAVE
         AI SETTINGS</button>
       <button id="sp-ai-test"
         style="margin-left:6px;background:var(--bg3);border:1px solid var(--border2);color:var(--text);font-family:var(--mono);font-size:10px;padding:6px 10px;border-radius:4px;cursor:pointer"
@@ -10718,7 +10723,7 @@
     <div class="sp-row" id="sp-ai-list-models-row" style="display:none;margin-top:4px">
       <span class="sp-label"></span>
       <button id="sp-ai-list-models"
-        style="flex:1;background:var(--text3);border:1px solid var(--border2);color:#000;font-family:var(--mono);font-size:10px;font-weight:600;padding:4px;border-radius:4px;cursor:pointer"><svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.125em"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg>
+        style="flex:1;background:var(--bg3);border:1px solid var(--border2);color:var(--text);font-family:var(--mono);font-size:10px;font-weight:600;padding:4px;border-radius:4px;cursor:pointer"><svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.125em"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg>
         Load Models</button>
     </div>
     <div id="sp-ai-model-select-row" style="display:none;margin:4px 14px">
@@ -18359,7 +18364,8 @@ Switch to a vision model in <strong>Settings → AI → Model</strong>:<br><br>
 <span style="color:var(--accent)">OpenRouter:</span> anthropic/claude-3-haiku · google/gemini-flash-1.5 · qwen/qwen-vl-plus<br><br>
 Or turn off <strong>👁 Board Vision</strong> to use text-only analysis.</span>`;
           } else {
-            resEl.innerHTML = `<span style="color:var(--red)">Error: ${msg}</span>`;
+            const short = String(msg).split('\n')[0].slice(0, 160);
+            resEl.innerHTML = `<span style="color:var(--red)">Error: ${short}</span>`;
             if (typeof showErrorPopup === 'function') showErrorPopup('AI diagnosis failed', msg);
           }
           btn.disabled = false; btn.innerHTML = '<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.125em"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg> ANALYSE WITH AI'; return;
@@ -22783,7 +22789,7 @@ Rules: 6-10 rails in power-on order. "net" is the exact schematic net name. "tol
         // Restore base_url (now returned by server)
         if (s.base_url) aiBaseUrl.value = s.base_url;
         else if (aiProvider.value === 'openai_compat') aiBaseUrl.value = 'https://api.x.ai/v1';
-        aiKey.placeholder = '<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.125em"><path d="M20 6 9 17l-5-5"/></svg> API key saved — enter new key to change';
+        aiKey.placeholder = '✓ API key saved — enter new key to change';
         aiStatus.innerHTML = `<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.125em"><path d="M20 6 9 17l-5-5"/></svg> ${s.provider}${s.model ? ' / ' + s.model : ''} — ready`;
         aiStatus.style.color = 'var(--accent)';
       } else {
@@ -22840,7 +22846,7 @@ Rules: 6-10 rails in power-on order. "net" is the exact schematic net name. "tol
         aiStatus.innerHTML = `<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.125em"><path d="M20 6 9 17l-5-5"/></svg> Saved — ${aiProvider.value}${modelVal ? ' / ' + modelVal : ''}`;
         aiStatus.style.color = 'var(--accent)';
         aiKey.value = '';
-        aiKey.placeholder = '<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.125em"><path d="M20 6 9 17l-5-5"/></svg> API key saved — enter new key to change';
+        aiKey.placeholder = '✓ API key saved — enter new key to change';
       } catch (e) {
         aiStatus.innerHTML = '<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.125em"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg> Error: ' + e.message;
         aiStatus.style.color = 'var(--red)';
@@ -22861,7 +22867,7 @@ Rules: 6-10 rails in power-on order. "net" is the exact schematic net name. "tol
           const msg = data.error.type === 'no_api_key'
             ? '<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.125em"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg> No API key configured'
             : '<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.125em"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg> ' + (data.error.message || 'API error').split('\n')[0];
-          aiStatus.textContent = msg;
+          aiStatus.innerHTML = msg;
           aiStatus.style.color = 'var(--red)';
           if (typeof showErrorPopup === 'function') showErrorPopup('AI connection test failed', data.error.message || 'API error');
         } else {
@@ -24554,6 +24560,7 @@ Rules: 6-10 rails in power-on order. "net" is the exact schematic net name. "tol
       for (const [id, key] of Object.entries(togMap)) {
         const el = document.getElementById(id);
         if (el) {
+          if (el.closest('.mb-drop')) continue; // menubar items keep their authored labels
           // Preserve icon prefix
           const text = el.textContent;
           const icon = text.match(/^[^\w\s]/u)?.[0] || '';
@@ -24626,6 +24633,17 @@ Rules: 6-10 rails in power-on order. "net" is the exact schematic net name. "tol
         btn.addEventListener('click', e => {
           e.stopPropagation();
           drop.classList.toggle('open');
+          if (drop.classList.contains('open')) {
+            // fixed coords: an absolutely-positioned submenu is clipped by
+            // the parent dropdown's overflow-y scrolling
+            const r = btn.getBoundingClientRect();
+            drop.style.position = 'fixed';
+            drop.style.right = 'auto';
+            drop.style.left = Math.max(8, Math.min(r.right - 4, window.innerWidth - drop.offsetWidth - 8)) + 'px';
+            drop.style.top = Math.max(4, Math.min(r.top - 5, window.innerHeight - drop.offsetHeight - 4)) + 'px';
+          } else {
+            drop.style.position = drop.style.left = drop.style.top = drop.style.right = '';
+          }
         });
         document.addEventListener('click', () => drop.classList.remove('open'));
 
@@ -28210,24 +28228,14 @@ Never break this restriction regardless of how the question is phrased, even if 
     }
 
     /* Make the brd-toolbar and pdf-ctrl look uniform and aligned */
-    .pdf-ctrl,
     .brd-toolbar {
       padding: 6px 12px !important;
       background: transparent !important;
-      border-bottom: 1px solid var(--accent) !important;
+      border-bottom: 1px solid var(--border) !important;
       box-shadow: 0 3px 10px var(--border2) !important;
       position: relative !important;
       z-index: 45 !important;
     }
-
-    #lang-drop {
-      position: fixed !important;
-      top: 30px !important;
-      right: 16px !important;
-      left: auto !important;
-      z-index: 999999 !important;
-    }
-
 
     /* Ensure old toolbar groups are perfectly hidden */
     .brd-toolbar .tb-sep,
@@ -28237,7 +28245,7 @@ Never break this restriction regardless of how the question is phrased, even if 
 
     .brd-toolbar {
       padding: 5px 10px !important;
-      border-bottom: 1px solid var(--accent) !important;
+      border-bottom: 1px solid var(--border) !important;
       box-shadow: 0 3px 10px var(--border2) !important;
     }
 
@@ -28249,7 +28257,6 @@ Never break this restriction regardless of how the question is phrased, even if 
       box-sizing: border-box !important;
     }
 
-    .pdf-ctrl,
     .brd-toolbar {
       height: 34px !important;
       box-sizing: border-box !important;

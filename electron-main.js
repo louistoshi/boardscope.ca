@@ -104,6 +104,26 @@ function startServer() {
     if (!key) return res.status(400).json({ valid: false, error: 'No key provided' });
 
     const k = key.trim().toUpperCase();
+
+    // Trial keys embed their own expiry date: BOARDSCOPE-TRIAL-YYYYMMDD
+    // (scripts/trial-key.js). Checked locally BEFORE the Polar serial
+    // regex below — trial keys match that shape too and Polar rejects
+    // them, which dropped licensed installs back to Free.
+    if (/^BOARDSCOPE-TRIAL-/.test(k)) {
+      if (!/^BOARDSCOPE-TRIAL-[0-9]{8}$/.test(k)) {
+        return res.json({ valid: false, error: 'Invalid trial key format — expected BOARDSCOPE-TRIAL-YYYYMMDD (expiry date)' });
+      }
+      const y = +k.slice(-8, -4), m = +k.slice(-4, -2), d = +k.slice(-2);
+      const expiry = new Date(Date.UTC(y, m - 1, d, 23, 59, 59));
+      const isRealDate = expiry.getUTCFullYear() === y && expiry.getUTCMonth() === m - 1 && expiry.getUTCDate() === d;
+      if (!isRealDate || y < 2026 || y > 2099) {
+        return res.json({ valid: false, error: 'Invalid trial key date' });
+      }
+      if (expiry.getTime() <= Date.now()) {
+        return res.json({ valid: false, error: `This trial license expired on ${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}. Get Pro at https://boardscope.ca or contact support@boardscope.ca for an extension` });
+      }
+      return res.json({ valid: true, plan: 'trial', expires: expiry.toISOString() });
+    }
     const isPolarSerial = /^BOARDSCOPE-[A-Z0-9]+-[0-9]+$/.test(k);
     const isPolarUUID = /^BOARDSCOPE[-_][0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}$/i.test(k);
 
@@ -324,8 +344,19 @@ function waitForServer(maxAttempts = 30, interval = 200) {
 function buildMenu() {
   const isMac = process.platform === 'darwin';
 
+  if (!isMac) {
+    // Windows/Linux: the in-app menu bar is the app's only menu. Removing
+    // the native one avoids a doubled "File Edit View …" bar above it.
+    Menu.setApplicationMenu(null);
+    return;
+  }
+
+  // macOS keeps only the standard app-name menu (About / Services / Hide /
+  // Quit). File/Edit/etc. live in the in-app menu bar — repeating them
+  // natively showed two stacked menu bars. The hidden Edit submenu keeps
+  // copy/paste/undo shortcuts working without a visible duplicate menu.
   const template = [
-    ...(isMac ? [{
+    {
       label: app.name,
       submenu: [
         { role: 'about' },
@@ -338,35 +369,10 @@ function buildMenu() {
         { type: 'separator' },
         { role: 'quit' }
       ]
-    }] : []),
-    {
-      label: 'File',
-      submenu: [
-        {
-          label: 'Open Board File...',
-          accelerator: 'CmdOrCtrl+O',
-          click: async () => {
-            const result = await dialog.showOpenDialog(mainWindow, {
-              properties: ['openFile'],
-              filters: [
-                { name: 'Board & Schematic Files', extensions: ['brd', 'pcb', 'brd2', 'bvr', 'bdv', 'cad', 'xzz', 'kicad_pcb', 'kicad_sch', 'sch', 'dsn', 'fz', 'cae', '356', 'ipc', 'gbr', 'gko', 'tgz', 'csv', 'txt', 'pdf'] },
-                { name: 'Board View Files', extensions: ['brd', 'pcb', 'brd2', 'bvr', 'bdv', 'cad', 'xzz', 'fz'] },
-                { name: 'CAD / EDA Files', extensions: ['kicad_pcb', 'kicad_sch', 'sch', 'dsn', 'gbr', 'gko', 'tgz', '356', 'ipc'] },
-                { name: 'Schematics (PDF)', extensions: ['pdf'] },
-                { name: 'All Files', extensions: ['*'] }
-              ]
-            });
-            if (!result.canceled && result.filePaths.length > 0) {
-              mainWindow.webContents.send('file-opened', result.filePaths[0]);
-            }
-          }
-        },
-        { type: 'separator' },
-        { role: 'close' }
-      ]
     },
     {
       label: 'Edit',
+      visible: false,
       submenu: [
         { role: 'undo' },
         { role: 'redo' },
@@ -376,57 +382,9 @@ function buildMenu() {
         { role: 'paste' },
         { role: 'selectAll' }
       ]
-    },
-    {
-      label: 'View',
-      submenu: [
-        { role: 'reload' },
-        { role: 'forceReload' },
-        { role: 'toggleDevTools' },
-        { type: 'separator' },
-        { role: 'resetZoom' },
-        { role: 'zoomIn' },
-        { role: 'zoomOut' },
-        { type: 'separator' },
-        { role: 'togglefullscreen' }
-      ]
-    },
-    {
-      label: 'Window',
-      submenu: [
-        { role: 'minimize' },
-        { role: 'zoom' },
-        ...(isMac ? [
-          { type: 'separator' },
-          { role: 'front' },
-          { type: 'separator' },
-          { role: 'window' }
-        ] : [
-          { role: 'close' }
-        ])
-      ]
-    },
-    {
-      role: 'help',
-      submenu: [
-        {
-          label: 'About BoardScope',
-          click: () => {
-            dialog.showMessageBox(mainWindow, {
-              type: 'info',
-              title: 'About BoardScope',
-              message: 'BoardScope v1.0.0',
-              detail: 'PCB Boardview & Schematic Analysis Tool for board repair\n\n© 2024 BoardScope',
-              buttons: ['OK']
-            });
-          }
-        }
-      ]
     }
   ];
-
-  const menu = Menu.buildFromTemplate(template);
-  Menu.setApplicationMenu(menu);
+  Menu.setApplicationMenu(Menu.buildFromTemplate(template));
 }
 
 // ── IPC HANDLERS ───────────────────────────────────────────────────
