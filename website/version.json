@@ -1,4 +1,4 @@
 {
-  "version": "6.0.14",
-  "notes": "Single menu bar (logo moved after Help, File first at left). Language list now opens attached to its menu. Fixed: raw <svg> text and unreadable SAVE button in AI settings, error popup rendering under panels, settings gear not opening, menu labels being renamed (GHOST), trial licenses being rejected in the desktop app."
+  "version": "6.0.15",
+  "notes": "Fixed Google Gemini setup (API key now saves correctly on Linux installs, List Google Models works, current model defaults). AI models now self-update from the provider's live list — retired models are switched automatically. AI errors show as clear error banners. OWON scopes/meters no longer drop the USB connection (auto-reconnect + USB fix shipped in the .deb). About menu now shows the real app version."
 }
