@@ -41,7 +41,7 @@
 
   <title>BoardScope v6.0.10</title>
   <script src="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
-  <script src="multimeter.js?v=5"></script>
+  <script src="multimeter.js?v=6"></script>
   <script src="xzz-parser.js?v=1"></script>
   <script src="board-parsers.js?v=1"></script>
   <!-- v6.0 New Features -->
@@ -49,7 +49,7 @@
   <script src="component-library.js?v=6"></script>
   <script src="test-suite.js?v=6"></script>
   <script src="collaboration.js?v=6"></script>
-  <script src="oscilloscope.js?v=6"></script>
+  <script src="oscilloscope.js?v=7"></script>
   <style id="embedded-fonts">
     @font-face {
       font-family: 'JetBrains Mono';
@@ -9025,7 +9025,55 @@
     .errpop.open { display: flex; }
 
     /* long AI errors must wrap, not overflow their panels */
-    #sp-ai-status { overflow-wrap: anywhere; white-space: pre-wrap; }
+    #sp-ai-status { overflow-wrap: anywhere; white-space: pre-wrap; padding: 4px 14px; box-sizing: border-box; }
+
+    /* AI status banners — tinted cards so errors read as errors, never as
+       plain text melted into the settings form */
+    #sp-ai-status.sp-banner-err {
+      background: rgba(255, 92, 92, .09);
+      border: 1px solid rgba(255, 92, 92, .38);
+      border-radius: 4px;
+      padding: 6px 10px;
+      margin: 0 14px 4px;
+    }
+
+    #sp-ai-status.sp-banner-warn {
+      background: rgba(245, 166, 35, .09);
+      border: 1px solid rgba(245, 166, 35, .38);
+      border-radius: 4px;
+      padding: 6px 10px;
+      margin: 0 14px 4px;
+    }
+
+    #sp-ai-status.sp-banner-ok {
+      background: rgba(0, 217, 166, .07);
+      border: 1px solid rgba(0, 217, 166, .32);
+      border-radius: 4px;
+      padding: 6px 10px;
+      margin: 0 14px 4px;
+    }
+
+    /* Diagnosis result error/warning cards (same idea, inside the AI panel) */
+    .ai-err-card {
+      color: var(--red);
+      background: rgba(255, 92, 92, .09);
+      border: 1px solid rgba(255, 92, 92, .38);
+      border-radius: 4px;
+      padding: 8px 10px;
+      margin: 4px 0;
+      overflow-wrap: anywhere;
+    }
+
+    .ai-warn-card {
+      color: var(--amber);
+      background: rgba(245, 166, 35, .09);
+      border: 1px solid rgba(245, 166, 35, .38);
+      border-radius: 4px;
+      padding: 8px 10px;
+      margin: 4px 0;
+      overflow-wrap: anywhere;
+    }
+
     #aidiag-result, #aidiag-result span { overflow-wrap: anywhere; white-space: pre-wrap; }
 
     .errpop-hdr {
@@ -10707,7 +10755,7 @@
     </div>
     <div class="sp-row">
       <span class="sp-label">Model</span>
-      <input type="text" id="sp-ai-model" placeholder="grok-3-mini (or gemini-2.5-flash)"
+      <input type="text" id="sp-ai-model" placeholder="grok-3-mini (or gemini-3.8-flash)"
         style="flex:1;background:var(--bg3);border:1px solid var(--border2);color:var(--text);font-family:var(--mono);font-size:10px;padding:4px 8px;border-radius:4px;outline:none">
     </div>
     <div class="sp-row">
@@ -10719,7 +10767,7 @@
         style="margin-left:6px;background:var(--bg3);border:1px solid var(--border2);color:var(--text);font-family:var(--mono);font-size:10px;padding:6px 10px;border-radius:4px;cursor:pointer"
         title="Test: send a quick ping to verify API key works">TEST</button>
     </div>
-    <div id="sp-ai-status" style="font-size:10px;color:var(--text3);padding:4px 14px;min-height:20px"></div>
+    <div id="sp-ai-status" style="font-size:10px;color:var(--text3);min-height:20px"></div>
     <div class="sp-row" id="sp-ai-list-models-row" style="display:none;margin-top:4px">
       <span class="sp-label"></span>
       <button id="sp-ai-list-models"
@@ -11012,8 +11060,8 @@
         <div style="text-align:center;padding:20px 0 16px">
           <div style="font-family:var(--mono);font-size:24px;font-weight:700;color:var(--accent);letter-spacing:3px">
             BOARDSCOPE</div>
-          <div style="font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:2px;margin-top:4px">
-            VERSION 5.4.1 · PRO EDITION</div>
+          <div id="hp-version" style="font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:2px;margin-top:4px">
+            VERSION — · PRO EDITION</div>
         </div>
         <div class="hp-about-grid">
           <div class="hp-about-stat"><span id="hp-stat-comps">—</span>
@@ -18383,23 +18431,25 @@ Be concise and practical. Use component names and net names from the board conte
         if (data.error) {
           resEl.className = 'show';
           const msg = data.error.message || '';
+          const friendly = aiFriendlyError(data.error);
           const isVisionError = imgBase64 && (
             /image|vision|multimodal|endpoint.*input|no endpoints/i.test(msg)
           );
           if (data.error.type === 'no_api_key') {
-            resEl.innerHTML = `<span style="color:var(--amber)"><svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.125em"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg> API Key Not Configured</span><br><br>${msg.replace(/\n/g, '<br>')}`;
+            resEl.innerHTML = `<div class="ai-warn-card"><svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.125em"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg> API Key Not Configured</div><br>${msg.replace(/\n/g, '<br>')}`;
           } else if (isVisionError) {
-            resEl.innerHTML = `<span style="color:var(--amber)"><svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.125em"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg> Board Vision requires a vision-capable model</span><br><br>
+            resEl.innerHTML = `<div class="ai-warn-card"><svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.125em"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg> Board Vision requires a vision-capable model</div>
 <span style="color:var(--text2);font-size:10px">The model <strong>${configuredModel || '(default)'}</strong> does not support image input.<br><br>
 Switch to a vision model in <strong>Settings → AI → Model</strong>:<br><br>
 <span style="color:var(--accent)">Anthropic:</span> claude-haiku-4-5-20251001 · claude-sonnet-4-6<br>
 <span style="color:var(--accent)">OpenAI:</span> gpt-4o · gpt-4o-mini<br>
-<span style="color:var(--accent)">OpenRouter:</span> anthropic/claude-3-haiku · google/gemini-flash-1.5 · qwen/qwen-vl-plus<br><br>
+<span style="color:var(--accent)">Google:</span> gemini-3.8-flash<br>
+<span style="color:var(--accent)">OpenRouter:</span> anthropic/claude-3-haiku · google/gemini-3.8-flash · qwen/qwen-vl-plus<br><br>
 Or turn off <strong>👁 Board Vision</strong> to use text-only analysis.</span>`;
           } else {
-            const short = String(msg).split('\n')[0].slice(0, 160);
-            resEl.innerHTML = `<span style="color:var(--red)">Error: ${short}</span>`;
-            if (typeof showErrorPopup === 'function') showErrorPopup('AI diagnosis failed', msg);
+            const short = String(friendly).split('\n')[0].slice(0, 200);
+            resEl.innerHTML = `<div class="ai-err-card"><svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.125em"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg> Error: ${short}</div>`;
+            if (typeof showErrorPopup === 'function') showErrorPopup('AI diagnosis failed', friendly);
           }
           btn.disabled = false; btn.innerHTML = '<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.125em"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg> ANALYSE WITH AI'; return;
         }
@@ -18419,7 +18469,7 @@ Or turn off <strong>👁 Board Vision</strong> to use text-only analysis.</span>
         });
       } catch (e) {
         resEl.className = 'show';
-        resEl.innerHTML = `<span style="color:var(--red)">Error: ${e.message}</span><br><br>Make sure you're running via the server and have API access.`;
+        resEl.innerHTML = `<div class="ai-err-card"><svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.125em"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg> Error: ${e.message}</div><br><span style="color:var(--text2)">Make sure you're running via the server and have API access.</span>`;
         if (typeof showErrorPopup === 'function') showErrorPopup('AI diagnosis failed', e.message + "\n\nMake sure you're running via the server and have API access.");
       }
 
@@ -22695,13 +22745,15 @@ Rules: 6-10 rails in power-on order. "net" is the exact schematic net name. "tol
     });
 
     function getDefaultModel(p) {
-      if (p === 'google') return 'gemini-2.5-flash';
-      if (p === 'openrouter') return 'google/gemini-2.5-flash';
+      // gemini-2.5-flash is closed to new API keys (2026-10) — 3.8-flash is
+      // the current free-tier default
+      if (p === 'google') return 'gemini-3.8-flash';
+      if (p === 'openrouter') return 'google/gemini-3.8-flash';
       if (p === 'anthropic') return 'claude-3-5-haiku-20241022';
       if (p === 'openai') return 'gpt-4o-mini';
       if (p === 'ollama_local') return 'llama3';
       if (p === 'openai_compat') return 'grok-3-mini';
-      return 'google/gemini-2.5-flash';
+      return 'google/gemini-3.8-flash';
     }
 
     /* ── AI HELPER FUNCTION ── */
@@ -22715,9 +22767,10 @@ Rules: 6-10 rails in power-on order. "net" is the exact schematic net name. "tol
       if (!model) {
         model = getDefaultModel(provider);
       }
-      // Google retired the Gemini 1.5/2.0 families on 2026-06-01 — upgrade stale saved models
-      if (provider === 'google' && /^gemini-(1\.5|2\.0)-/.test(model)) {
-        model = 'gemini-2.5-flash';
+      // Google retired Gemini 1.5/2.0 (2026-06-01) and closed 2.5-flash to
+      // new API keys (2026-10) — upgrade stale saved models to the current default
+      if (provider === 'google' && /^gemini-(1\.5|2\.0|2\.5)-/.test(model)) {
+        model = 'gemini-3.8-flash';
         console.log('[aiChat Debug] Retired model upgraded to:', model);
       }
 
@@ -22731,7 +22784,7 @@ Rules: 6-10 rails in power-on order. "net" is the exact schematic net name. "tol
         return { error: { type: 'no_api_key', message: 'No API key configured. Go to Settings → AI to add your key.' } };
       }
 
-      try {
+      const send = async () => {
         if (provider === 'google') {
           // Gemini API
           const body = {
@@ -22746,7 +22799,17 @@ Rules: 6-10 rails in power-on order. "net" is the exact schematic net name. "tol
           });
           const data = await resp.json();
           if (data.error) return { error: data.error };
-          const content = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+          // Thinking models emit thought summaries as extra parts — keep only
+          // the answer (parts[0] alone misses it when the first part is a thought)
+          const parts = data.candidates?.[0]?.content?.parts || [];
+          const content = parts.filter(p => p.text && !p.thought).map(p => p.text).join('');
+          if (!content.trim()) {
+            const block = data.promptFeedback?.blockReason;
+            const finish = data.candidates?.[0]?.finishReason || '';
+            if (block) return { error: { message: 'Request blocked (' + block + ') — rephrase the prompt or check the API key safety settings.' } };
+            if (finish === 'MAX_TOKENS') return { error: { message: 'The model spent its whole token budget on internal reasoning and returned no answer. Retry, or pick a non-thinking model in Settings → AI.' } };
+            return { error: { message: 'The model returned an empty response' + (finish ? ' (' + finish + ')' : '') + '. Retry or switch models in Settings → AI.' } };
+          }
           return { content };
         } else {
           // OpenRouter (OpenAI-compatible)
@@ -22771,9 +22834,136 @@ Rules: 6-10 rails in power-on order. "net" is the exact schematic net name. "tol
           const content = data.choices?.[0]?.message?.content || '';
           return { content };
         }
+      };
+
+      try {
+        let result = await send();
+        // Stale-model auto-heal: providers retire models — resolve a current
+        // replacement from the live list and retry once instead of failing
+        if (result?.error && AI_STALE_MODEL_RE.test(result.error.message || '') &&
+          (provider === 'google' || provider === 'openrouter')) {
+          const fresh = await aiResolveStaleModel(provider, model);
+          if (fresh) {
+            console.warn('[aiChat] Model "' + model + '" retired — auto-switched to "' + fresh + '"');
+            model = fresh;
+            result = await send();
+          }
+        }
+        return result;
       } catch (e) {
         return { error: { message: e.message } };
       }
+    }
+
+    /* ── AI ERROR TRANSLATION ──
+       Raw provider errors read like telemetry. Map the common ones to
+       something a repair tech can act on. */
+    const AI_STALE_MODEL_RE = /no longer available|not supported|not found|does not exist|deprecat|unsupported|is not available|unknown model|invalid model|not a valid model|no such model|model_not_found/i;
+
+    function aiFriendlyError(err) {
+      const raw = (err && typeof err === 'object') ? String(err.message || err.msg || JSON.stringify(err)) : String(err || 'Unknown error');
+      const status = err && (err.status || err.code);
+      if (status === 429 || /high demand|RESOURCE_EXHAUSTED|rate ?limit|quota|too many requests/i.test(raw)) {
+        return 'Google is limiting requests right now (high demand / free-tier rate limit). This is temporary — wait a minute and retry, or switch models via Load Models.';
+      }
+      if (AI_STALE_MODEL_RE.test(raw)) {
+        return raw + ' — the model was retired by the provider. Click Load Models and pick a current one.';
+      }
+      if (/API key not valid|API_KEY_INVALID|permission denied/i.test(raw)) {
+        return 'The API key was rejected. Double-check it in Settings → AI (Google AI Studio keys start with AIza).';
+      }
+      return raw;
+    }
+
+    /* ── SELF-HEALING MODEL RESOLUTION ──
+       Providers retire models (Gemini 2.5-flash being closed to new keys
+       stranded every hardcoded default we ever shipped). Defaults now
+       resolve against the provider's live model list: refreshed in the
+       background at startup, and re-resolved + retried automatically when
+       a request dies with a stale-model error. Lists are cached 12 h in
+       localStorage so calls stay instant. */
+    const AI_MODELS_TTL = 12 * 3600 * 1000;
+
+    async function aiFetchModelList(provider, force = false) {
+      const cacheKey = 'bs_model_list_' + provider;
+      if (!force) {
+        try {
+          const c = JSON.parse(localStorage.getItem(cacheKey) || 'null');
+          if (c && Array.isArray(c.models) && c.models.length && (Date.now() - c.ts) < AI_MODELS_TTL) return c.models;
+        } catch (_) { }
+      }
+      let models = null;
+      try {
+        if (provider === 'openrouter') {
+          // Public endpoint — no key required
+          const r = await fetch('https://openrouter.ai/api/v1/models');
+          const d = await r.json();
+          if (!d.error) models = (d.data || []).map(m => ({ id: m.id, name: m.name || m.id, pricing: m.pricing || null, ctx: m.context_length || 0 }));
+        } else if (provider === 'google') {
+          const key = document.getElementById('sp-ai-key')?.value.trim() || localStorage.getItem('bs_ai_key') || '';
+          if (!key) return null;
+          const r = await fetch('https://generativelanguage.googleapis.com/v1beta/models?pageSize=200&key=' + encodeURIComponent(key));
+          const d = await r.json();
+          if (!d.error) models = (d.models || [])
+            .filter(m => (m.supportedGenerationMethods || []).includes('generateContent'))
+            .map(m => ({ id: String(m.name).replace('models/', ''), name: m.displayName || m.name }));
+        }
+      } catch (_) { return null; }
+      if (models && models.length) {
+        try { localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), models })); } catch (_) { }
+        return models;
+      }
+      return null;
+    }
+
+    // Which model should the app default to? Cheap+fast families first,
+    // newest version within the winning family.
+    function aiPickDefaultModel(provider, models) {
+      const ver = id => (String(id).match(/\d+(\.\d+)*/g) || []).map(Number);
+      const newer = (a, b) => {
+        const va = ver(a), vb = ver(b);
+        for (let i = 0; i < Math.max(va.length, vb.length); i++) {
+          const d = (va[i] || 0) - (vb[i] || 0);
+          if (d) return d;
+        }
+        return 0;
+      };
+      if (provider === 'google') {
+        const flash = models.filter(m => /^gemini-[\d.]+-flash$/.test(m.id));
+        if (flash.length) return flash.sort((a, b) => newer(b.id, a.id))[0].id;
+        return models[0]?.id || null;
+      }
+      if (provider === 'openrouter') {
+        const FAMILIES = [
+          /^google\/gemini-[\d.]+-flash$/,
+          /^openai\/gpt-[\d.]+o?-mini/,
+          /^anthropic\/claude-[\d.]+.*haiku/,
+          /^qwen\/qwen-[\d.]+-/,
+          /^meta-llama\/llama-[\d.]+-/,
+        ];
+        for (const fam of FAMILIES) {
+          const hits = models.filter(m => fam.test(m.id) && !/preview|beta|latest$|:free$/i.test(m.id));
+          if (hits.length) return hits.sort((a, b) => newer(b.id, a.id))[0].id;
+        }
+        const free = models.filter(m => m.pricing && String(m.pricing.prompt) === '0');
+        return (free[0] || models[0])?.id || null;
+      }
+      return null;
+    }
+
+    // The saved/default model died mid-call — resolve a current replacement
+    // from the live list, persist it, and keep the settings field in sync.
+    async function aiResolveStaleModel(provider, failedModel) {
+      const models = await aiFetchModelList(provider, true);
+      if (!models) return null;
+      const pick = aiPickDefaultModel(provider, models);
+      if (pick && pick !== failedModel) {
+        localStorage.setItem('bs_ai_model', pick);
+        const el = document.getElementById('sp-ai-model');
+        if (el) el.value = pick;
+        return pick;
+      }
+      return null;
     }
 
     /* ── MULTIMETER TOGGLE ── */
@@ -22789,6 +22979,22 @@ Rules: 6-10 rails in power-on order. "net" is the exact schematic net name. "tol
     const aiKey = document.getElementById('sp-ai-key');
     const aiModel = document.getElementById('sp-ai-model');
     const aiStatus = document.getElementById('sp-ai-status');
+
+    const AI_SVG_OK = '<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.125em"><path d="M20 6 9 17l-5-5"/></svg>';
+    const AI_SVG_WARN = '<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.125em"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>';
+    const AI_SVG_ERR = '<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.125em"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>';
+
+    /* Status line setter — every AI status message goes through here so
+       errors/warnings always render as banner cards, never bare red text
+       melted into the form */
+    function aiSetStatus(kind, html) {
+      aiStatus.style.color = kind === 'err' ? 'var(--red)'
+        : kind === 'warn' ? 'var(--amber)'
+          : kind === 'ok' ? 'var(--accent)'
+            : 'var(--text3)';
+      aiStatus.className = kind ? 'sp-banner-' + kind : '';
+      aiStatus.innerHTML = html;
+    }
 
     function aiUpdateVisibility() {
       const p = aiProvider.value;
@@ -22812,6 +23018,7 @@ Rules: 6-10 rails in power-on order. "net" is the exact schematic net name. "tol
         aiBaseUrl.value = 'http://localhost:11434/v1';
       }
       aiModel.value = getDefaultModel(p);
+      aiAutoPopulateModels();
     });
 
     // Load current settings from server (includes base_url now)
@@ -22823,31 +23030,27 @@ Rules: 6-10 rails in power-on order. "net" is the exact schematic net name. "tol
         if (s.base_url) aiBaseUrl.value = s.base_url;
         else if (aiProvider.value === 'openai_compat') aiBaseUrl.value = 'https://api.x.ai/v1';
         aiKey.placeholder = '✓ API key saved — enter new key to change';
-        aiStatus.innerHTML = `<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.125em"><path d="M20 6 9 17l-5-5"/></svg> ${s.provider}${s.model ? ' / ' + s.model : ''} — ready`;
-        aiStatus.style.color = 'var(--accent)';
+        aiSetStatus('ok', `${AI_SVG_OK} ${s.provider}${s.model && s.model !== '(default)' ? ' / ' + s.model : ''} — ready`);
       } else {
         aiProvider.value = 'openai_compat';
         aiBaseUrl.value = 'https://api.x.ai/v1';
         aiModel.value = 'grok-3-mini';
-        aiStatus.innerHTML = '<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.125em"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg> No API key — enter key below and click SAVE';
-        aiStatus.style.color = 'var(--amber)';
+        aiSetStatus('warn', `${AI_SVG_WARN} No API key — enter key below and click SAVE`);
       }
       aiUpdateVisibility();
+      aiAutoPopulateModels();
     }).catch(() => {
-      aiStatus.innerHTML = '<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.125em"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg> Server not running — start server.js first';
-      aiStatus.style.color = 'var(--red)';
+      aiSetStatus('err', `${AI_SVG_ERR} Server not running — start server.js first`);
     });
 
     // Save settings
     document.getElementById('sp-ai-save').addEventListener('click', async () => {
       const key = aiKey.value.trim() || localStorage.getItem('bs_ai_key') || '';
       if (!key) {
-        aiStatus.innerHTML = '<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.125em"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg> Please enter an API key';
-        aiStatus.style.color = 'var(--amber)';
+        aiSetStatus('warn', `${AI_SVG_WARN} Please enter an API key`);
         return;
       }
-      aiStatus.textContent = 'Saving…';
-      aiStatus.style.color = 'var(--text3)';
+      aiSetStatus('', 'Saving…');
       try {
         let modelVal = aiModel.value.trim();
         if (!modelVal) {
@@ -22860,9 +23063,13 @@ Rules: 6-10 rails in power-on order. "net" is the exact schematic net name. "tol
         localStorage.setItem('bs_ai_model', modelVal);
         localStorage.setItem('bs_ai_baseurl', aiBaseUrl.value.trim());
 
-        // Also save to server's .api_key file for server-side AI proxy
+        // Also save to the server's key store — AI Diagnosis (POST /ai)
+        // reads it from there. A failure here must NOT be reported as a
+        // successful save (it used to be swallowed, leaving diagnosis
+        // saying "API Key Not Configured" while TEST kept working).
+        let serverErr = null;
         try {
-          await fetch('/ai-setup', {
+          const r = await fetch('/ai-setup', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -22872,112 +23079,117 @@ Rules: 6-10 rails in power-on order. "net" is the exact schematic net name. "tol
               base_url: aiBaseUrl.value.trim()
             })
           });
-        } catch (serverErr) {
-          console.warn('[AI] Could not save to server:', serverErr);
+          if (!r.ok) {
+            const j = await r.json().catch(() => ({}));
+            throw new Error(j.error || ('HTTP ' + r.status));
+          }
+        } catch (e) {
+          serverErr = e;
+          console.warn('[AI] Could not save to server:', e);
         }
 
-        aiStatus.innerHTML = `<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.125em"><path d="M20 6 9 17l-5-5"/></svg> Saved — ${aiProvider.value}${modelVal ? ' / ' + modelVal : ''}`;
-        aiStatus.style.color = 'var(--accent)';
+        if (serverErr) {
+          aiSetStatus('warn', `${AI_SVG_WARN} Saved in this browser only — the app server could not store the key (${serverErr.message}). TEST works, but AI Diagnosis will not until the server save succeeds.`);
+        } else {
+          aiSetStatus('ok', `${AI_SVG_OK} Saved — ${aiProvider.value}${modelVal ? ' / ' + modelVal : ''}`);
+        }
         aiKey.value = '';
         aiKey.placeholder = '✓ API key saved — enter new key to change';
       } catch (e) {
-        aiStatus.innerHTML = '<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.125em"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg> Error: ' + e.message;
-        aiStatus.style.color = 'var(--red)';
+        aiSetStatus('err', `${AI_SVG_ERR} Error: ` + e.message);
       }
     });
 
     // TEST button — fires a minimal AI request to verify key works
     document.getElementById('sp-ai-test').addEventListener('click', async () => {
-      aiStatus.textContent = 'Testing connection…';
-      aiStatus.style.color = 'var(--text3)';
+      aiSetStatus('', 'Testing connection…');
       try {
         const data = await aiChat(
           [{ role: 'user', content: 'ping' }],
           'Reply with exactly: OK',
-          { max_tokens: 16 }
+          // 512, not 16: thinking models burn small budgets on reasoning
+          // and return no visible text, which used to pass as "OK"
+          { max_tokens: 512 }
         );
         if (data.error) {
+          const friendly = aiFriendlyError(data.error);
           const msg = data.error.type === 'no_api_key'
-            ? '<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.125em"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg> No API key configured'
-            : '<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.125em"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg> ' + (data.error.message || 'API error').split('\n')[0];
-          aiStatus.innerHTML = msg;
-          aiStatus.style.color = 'var(--red)';
-          if (typeof showErrorPopup === 'function') showErrorPopup('AI connection test failed', data.error.message || 'API error');
+            ? `${AI_SVG_ERR} No API key configured`
+            : `${AI_SVG_ERR} ` + friendly.split('\n')[0];
+          aiSetStatus('err', msg);
+          if (typeof showErrorPopup === 'function') showErrorPopup('AI connection test failed', friendly);
         } else {
           const text = (typeof data.content === 'string' ? data.content : (data.content?.[0]?.text || '')).trim();
-          aiStatus.innerHTML = `<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.125em"><path d="M20 6 9 17l-5-5"/></svg> Connection OK — model replied: "${text.slice(0, 40)}"`;
-          aiStatus.style.color = 'var(--accent)';
+          aiSetStatus('ok', `${AI_SVG_OK} Connection OK — model replied: "${text.slice(0, 40)}"`);
         }
       } catch (e) {
-        aiStatus.innerHTML = '<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.125em"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg> Server error: ' + e.message;
-        aiStatus.style.color = 'var(--red)';
+        aiSetStatus('err', `${AI_SVG_ERR} Server error: ` + e.message);
         if (typeof showErrorPopup === 'function') showErrorPopup('AI connection test failed', e.message);
       }
     });
 
-    document.getElementById('sp-ai-list-models').addEventListener('click', async () => {
+    /* ── MODEL DROPDOWN ──
+       Populated from the same live lists the auto-heal logic uses, so the
+       dropdown and the defaults can never disagree. It also fills itself
+       (from cache) whenever a live-list provider is selected. */
+    function aiModelEntries(provider, models) {
+      const entries = models.map(m => {
+        if (provider === 'openrouter') {
+          const pricing = m.pricing ? ` ($${(m.pricing.prompt * 1e6).toFixed(2)}/M)` : '';
+          const ctx = m.ctx ? ` [${(m.ctx / 1000).toFixed(0)}k ctx]` : '';
+          return { id: m.id, label: `${m.name || m.id}${ctx}${pricing}` };
+        }
+        return { id: m.id, label: m.name || m.id };
+      });
+      return entries.sort((a, b) => a.label.localeCompare(b.label));
+    }
+
+    function aiPopulateModelSelect(provider, models) {
       const selectRow = document.getElementById('sp-ai-model-select-row');
       const selectEl = document.getElementById('sp-ai-model-select');
-      const status = document.getElementById('sp-ai-status');
+      const entries = aiModelEntries(provider, models);
+      selectRow.style.display = 'block';
+      selectEl.innerHTML = '<option value="">-- Select a model (' + entries.length + ' available) --</option>';
+      entries.forEach(e => {
+        const opt = document.createElement('option');
+        opt.value = e.id;
+        opt.textContent = e.label;
+        selectEl.appendChild(opt);
+      });
+    }
+
+    // Background fill from cache — silent, the manual button reports errors
+    async function aiAutoPopulateModels() {
+      const p = aiProvider.value;
+      if (p !== 'google' && p !== 'openrouter') return;
+      const models = await aiFetchModelList(p);
+      if (models && models.length) {
+        try { aiPopulateModelSelect(p, models); } catch (_) { }
+      }
+    }
+
+    document.getElementById('sp-ai-list-models').addEventListener('click', async () => {
       const provider = aiProvider.value;
-      status.textContent = 'Loading available models...';
-      status.style.color = 'var(--text3)';
-      selectRow.style.display = 'none';
-      selectEl.innerHTML = '<option value="">Loading...</option>';
+      aiSetStatus('', 'Loading available models...');
+      document.getElementById('sp-ai-model-select-row').style.display = 'none';
+      document.getElementById('sp-ai-model-select').innerHTML = '<option value="">Loading...</option>';
 
       try {
-        if (provider === 'openrouter') {
-          // Fetch models from OpenRouter API
-          const resp = await fetch('https://openrouter.ai/api/v1/models');
-          const data = await resp.json();
-          if (data.data && data.data.length > 0) {
-            // Sort by name
-            const models = data.data.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-            selectRow.style.display = 'block';
-            selectEl.innerHTML = '<option value="">-- Select a model (' + models.length + ' available) --</option>';
-            models.forEach(m => {
-              const opt = document.createElement('option');
-              opt.value = m.id;
-              const pricing = m.pricing ? ` ($${(m.pricing.prompt * 1e6).toFixed(2)}/M)` : '';
-              const ctx = m.context_length ? ` [${(m.context_length / 1000).toFixed(0)}k ctx]` : '';
-              opt.textContent = `${m.name || m.id}${ctx}${pricing}`;
-              selectEl.appendChild(opt);
-            });
-            status.innerHTML = `<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.125em"><path d="M20 6 9 17l-5-5"/></svg> Loaded ${models.length} models. Select from dropdown below.`;
-            status.style.color = 'var(--accent)';
-          } else if (data.error) {
-            status.innerHTML = `<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.125em"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg> ${data.error.message || 'API error'}`;
-            status.style.color = 'var(--amber)';
-          } else {
-            status.textContent = 'No models returned from OpenRouter API';
-            status.style.color = 'var(--red)';
-          }
+        // Force a fresh fetch (12 h cache is bypassed) — this is the manual
+        // "refresh everything" affordance. Google calls go directly with the
+        // same key aiChat uses; the old /ai-list-models proxy route never
+        // existed and always failed with "Unexpected token '<'".
+        const models = await aiFetchModelList(provider, true);
+        if (models && models.length) {
+          aiPopulateModelSelect(provider, models);
+          aiSetStatus('ok', `${AI_SVG_OK} Loaded ${models.length} models. Select from dropdown below.`);
+        } else if (provider === 'google' && !(aiKey.value.trim() || localStorage.getItem('bs_ai_key'))) {
+          aiSetStatus('warn', `${AI_SVG_WARN} Enter your Google API key first (SAVE keeps it for next time)`);
         } else {
-          // Google Gemini models
-          const resp = await fetch('/ai-list-models');
-          const data = await resp.json();
-          if (data.models && data.models.length > 0) {
-            selectRow.style.display = 'block';
-            selectEl.innerHTML = '<option value="">-- Select a model --</option>';
-            data.models.forEach(m => {
-              const opt = document.createElement('option');
-              opt.value = m.name.replace('models/', '');
-              opt.textContent = m.displayName || m.name;
-              selectEl.appendChild(opt);
-            });
-            status.innerHTML = `<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.125em"><path d="M20 6 9 17l-5-5"/></svg> Loaded ${data.models.length} models. Select from dropdown below.`;
-            status.style.color = 'var(--accent)';
-          } else if (data.error) {
-            status.innerHTML = `<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.125em"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg> ${data.error}${data.details ? ' — Check API key' : ''}`;
-            status.style.color = 'var(--amber)';
-          } else {
-            status.textContent = 'No models returned';
-            status.style.color = 'var(--red)';
-          }
+          aiSetStatus('warn', `${AI_SVG_WARN} No models returned — check your connection/key and try again`);
         }
       } catch (e) {
-        status.innerHTML = `<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.125em"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg> Network error: ${e.message}`;
-        status.style.color = 'var(--red)';
+        aiSetStatus('err', `${AI_SVG_ERR} Network error: ${e.message}`);
       }
     });
 
@@ -22985,10 +23197,37 @@ Rules: 6-10 rails in power-on order. "net" is the exact schematic net name. "tol
     document.getElementById('sp-ai-model-select').addEventListener('change', function () {
       if (this.value) {
         aiModel.value = this.value;
-        aiStatus.innerHTML = `<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.125em"><path d="M20 6 9 17l-5-5"/></svg> Model set to: ${this.value}`;
-        aiStatus.style.color = 'var(--accent)';
+        aiSetStatus('ok', `${AI_SVG_OK} Model set to: ${this.value}`);
       }
     });
+
+    /* ── STARTUP MODEL FRESHNESS ──
+       Keep the configured model current without any user action: adopt the
+       live default when nothing is saved, and silently replace a saved
+       model that no longer exists in the provider's list. Mid-call
+       retirements are handled by the retry in aiChat. */
+    (async () => {
+      try {
+        const p = localStorage.getItem('bs_ai_provider');
+        if (p !== 'google' && p !== 'openrouter') return;
+        const models = await aiFetchModelList(p);
+        if (!models) return;                       // offline / no key — static defaults apply
+        const pick = aiPickDefaultModel(p, models);
+        if (!pick) return;
+        const saved = localStorage.getItem('bs_ai_model') || '';
+        const stillExists = !saved || models.some(m => m.id === saved);
+        if (!saved) {
+          localStorage.setItem('bs_ai_model', pick);
+          const el = document.getElementById('sp-ai-model');
+          if (el && !el.value) el.value = pick;
+        } else if (!stillExists) {
+          console.warn('[AI] Saved model "' + saved + '" no longer exists — switching to "' + pick + '"');
+          localStorage.setItem('bs_ai_model', pick);
+          const el = document.getElementById('sp-ai-model');
+          if (el && el.value === saved) el.value = pick;
+        }
+      } catch (_) { }
+    })();
 
     // Panel open/close
     /* ── UNIFIED THEME SYSTEM (Light/Dark + UI Themes + Custom Accent) ── */
@@ -30715,6 +30954,23 @@ Rules:
     }
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', checkForUpdate);
     else checkForUpdate();
+  })();
+
+  /* ══ ABOUT TAB — real version, never a stale hard-coded string ══
+     The About panel shipped "VERSION 5.4.1" for three major versions. */
+  (function () {
+    const el = document.getElementById('hp-version');
+    if (!el) return;
+    const set = v => {
+      if (v) el.textContent = 'VERSION ' + String(v).replace(/^v/, '') + ' · PRO EDITION';
+    };
+    if (window.electronAPI && window.electronAPI.getAppVersion) {
+      // Desktop: the packaged app's own version
+      window.electronAPI.getAppVersion().then(set).catch(() => { });
+    } else {
+      // Web build: served version.json is the source of truth
+      fetch('version.json').then(r => r.json()).then(d => set(d.version)).catch(() => { });
+    }
   })();
 </script>
 </body>

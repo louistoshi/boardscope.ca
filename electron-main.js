@@ -24,24 +24,30 @@ function startServer() {
   expressApp.use(express.static(__dirname));
 
   expressApp.get('/', (req, res) => {
-    res.json({ status: 'BoardScope License & Proxy Server v5.4.1' });
+    res.json({ status: 'BoardScope License & Proxy Server v' + app.getVersion() });
   });
 
   // AI Status
   expressApp.get('/ai-status', (req, res) => {
     const cfg = loadAIConfig();
-    res.json({ configured: !!cfg.key, provider: cfg.provider, model: cfg.model || '(default)' });
+    res.json({ configured: !!cfg.key, provider: cfg.provider, model: cfg.model || '(default)', base_url: cfg.baseUrl || '' });
   });
 
   // AI Setup
   expressApp.post('/ai-setup', (req, res) => {
     const { provider, key, model, base_url } = req.body;
-    const configPath = path.join(__dirname, '.api_key');
     let content = `provider=${provider}\nkey=${key}`;
     if (model) content += `\nmodel=${model}`;
     if (base_url) content += `\nbase_url=${base_url}`;
-    fs.writeFileSync(configPath, content);
-    res.json({ success: true });
+    try {
+      writeApiKeyFile(content);
+      res.json({ success: true });
+    } catch (err) {
+      // The client must see this — it used to be reported as success while
+      // every server-side AI feature kept saying "no key configured"
+      console.error('[AI] Could not save API key:', err.message);
+      res.status(500).json({ success: false, error: 'Could not save API key: ' + err.message });
+    }
   });
 
   // AI Proxy
@@ -55,47 +61,53 @@ function startServer() {
     let reqModel = cfg.model;
     if (req.body.model) reqModel = req.body.model;
 
-    const outBody = providerDef.transform ? providerDef.transform(req.body, reqModel) : JSON.stringify(req.body);
-
-    let hostname = providerDef.hostname;
-    let apiPath = providerDef.path;
-    if (cfg.provider === 'google') {
-      let model = (reqModel || 'gemini-2.5-flash').replace(/^models\//, '');
-      // Google retired the Gemini 1.5/2.0 families on 2026-06-01 — upgrade stale saved config
-      if (/^gemini-(1\.5|2\.0)-/.test(model)) model = 'gemini-2.5-flash';
-      apiPath = `/v1beta/models/${model}:generateContent?key=${cfg.key}`;
+    // No model configured — resolve the current default from the live list
+    if (!reqModel && (cfg.provider === 'openrouter' || cfg.provider === 'google')) {
+      reqModel = (await freshDefaultModel(cfg.provider, cfg.key)) || undefined;
     }
 
-    console.log(`[AI] ${cfg.provider} → ${hostname}${apiPath}`);
-
-    const options = {
-      hostname,
-      path: apiPath,
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Content-Length': Buffer.byteLength(outBody),
-        ...(cfg.provider !== 'google' && providerDef.headers ? providerDef.headers(cfg.key) : {}),
+    const send = async (modelToUse) => {
+      const outBody = providerDef.transform ? providerDef.transform(req.body, modelToUse) : JSON.stringify(req.body);
+      let apiPath = providerDef.path;
+      if (cfg.provider === 'google') {
+        let model = (modelToUse || 'gemini-3.8-flash').replace(/^models\//, '');
+        // Google retired Gemini 1.5/2.0 (2026-06-01) and closed 2.5-flash to new
+        // API keys (2026-10) — upgrade stale saved config to the current default
+        if (/^gemini-(1\.5|2\.0|2\.5)-/.test(model)) model = 'gemini-3.8-flash';
+        apiPath = `/v1beta/models/${model}:generateContent?key=${cfg.key}`;
       }
+      const options = {
+        hostname: providerDef.hostname,
+        path: apiPath,
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(outBody),
+          ...(cfg.provider !== 'google' && providerDef.headers ? providerDef.headers(cfg.key) : {}),
+        }
+      };
+      console.log(`[AI] ${cfg.provider} → ${providerDef.hostname}${apiPath}`);
+      return requestUpstream(options, outBody);
     };
 
-    const upstream = https.request(options, upRes => {
-      const chunks = [];
-      upRes.on('data', c => chunks.push(c));
-      upRes.on('end', () => {
-        let data;
-        try { data = JSON.parse(Buffer.concat(chunks).toString()); } catch(_) { data = {}; }
-        if (providerDef.normalize) data = providerDef.normalize(data);
-        res.status(upRes.statusCode).json(data);
-      });
-    });
-
-    upstream.on('error', err => {
+    try {
+      let usedModel = reqModel;
+      let result = await send(usedModel);
+      // Stale-model auto-heal — a retired model must never strand an install
+      const errMsg = (result.data && result.data.error && result.data.error.message) || '';
+      if (result.data && result.data.error && STALE_MODEL_RE.test(errMsg)) {
+        const fresh = await freshDefaultModel(cfg.provider, cfg.key, usedModel);
+        if (fresh && fresh !== usedModel) {
+          console.log(`[AI] Stale model "${usedModel}" — retrying with "${fresh}"`);
+          usedModel = fresh;
+          result = await send(fresh);
+        }
+      }
+      if (providerDef.normalize) result.data = providerDef.normalize(result.data);
+      res.status(result.status).json(result.data);
+    } catch (err) {
       res.status(502).json({ error: { type: 'upstream_error', message: err.message } });
-    });
-
-    upstream.write(outBody);
-    upstream.end();
+    }
   });
 
   // License Validation
@@ -178,6 +190,97 @@ function startServer() {
   });
 }
 
+// ── LIVE MODEL DEFAULTS ──────────────────────────────────────────
+// Hardcoded defaults go stale as providers retire models (Gemini 2.5-flash
+// being the latest to strand installs). Resolve defaults from the
+// provider's live model list — cached 24 h — and retry once with a fresh
+// model when a call dies with a stale-model error.
+const STALE_MODEL_RE = /no longer available|not supported|not found|does not exist|deprecat|unsupported|is not available|unknown model|invalid model|not a valid model|no such model|model_not_found/i;
+const _liveModelCache = {};
+
+function httpsGetJson(url) {
+  return new Promise((resolve, reject) => {
+    const r = https.get(url, { headers: { 'User-Agent': 'BoardScope/1.0' }, timeout: 8000 }, res => {
+      const chunks = [];
+      res.on('data', c => chunks.push(c));
+      res.on('end', () => {
+        try { resolve(JSON.parse(Buffer.concat(chunks).toString())); } catch (e) { reject(e); }
+      });
+    });
+    r.on('timeout', () => { r.destroy(); reject(new Error('timeout')); });
+    r.on('error', reject);
+  });
+}
+
+// Which model to default to: cheap+fast families first (gemini-flash,
+// gpt-mini, claude-haiku, qwen, llama), newest version within the family.
+function pickDefaultFromList(provider, raw) {
+  const ver = id => (String(id).match(/\d+(\.\d+)*/g) || []).map(Number);
+  const newer = (a, b) => {
+    const va = ver(a), vb = ver(b);
+    for (let i = 0; i < Math.max(va.length, vb.length); i++) {
+      const d = (va[i] || 0) - (vb[i] || 0);
+      if (d) return d;
+    }
+    return 0;
+  };
+  if (provider === 'google') {
+    const usable = (raw || []).filter(m => (m.supportedGenerationMethods || []).includes('generateContent'));
+    const flash = usable.map(m => String(m.name || '').replace('models/', '')).filter(id => /^gemini-[\d.]+-flash$/.test(id));
+    if (flash.length) return flash.sort((a, b) => newer(b, a))[0];
+    return usable[0] ? String(usable[0].name).replace('models/', '') : null;
+  }
+  if (provider === 'openrouter') {
+    const FAMILIES = [
+      /^google\/gemini-[\d.]+-flash$/,
+      /^openai\/gpt-[\d.]+o?-mini/,
+      /^anthropic\/claude-[\d.]+.*haiku/,
+      /^qwen\/qwen-[\d.]+-/,
+      /^meta-llama\/llama-[\d.]+-/,
+    ];
+    for (const fam of FAMILIES) {
+      const hits = (raw || []).filter(m => m.id && fam.test(m.id) && !/preview|beta|latest$|:free$/i.test(m.id));
+      if (hits.length) return hits.sort((a, b) => newer(b.id, a.id))[0].id;
+    }
+    const free = (raw || []).filter(m => m.pricing && String(m.pricing.prompt) === '0');
+    return (free[0] && free[0].id) || (raw[0] && raw[0].id) || null;
+  }
+  return null;
+}
+
+async function freshDefaultModel(provider, key, avoidModel) {
+  const now = Date.now();
+  const c = _liveModelCache[provider];
+  if (c && (now - c.ts) < 24 * 3600 * 1000 && c.model !== avoidModel) return c.model;
+  try {
+    let model = null;
+    if (provider === 'openrouter') {
+      model = pickDefaultFromList('openrouter', ((await httpsGetJson('https://openrouter.ai/api/v1/models')) || {}).data);
+    } else if (provider === 'google' && key) {
+      model = pickDefaultFromList('google', ((await httpsGetJson('https://generativelanguage.googleapis.com/v1beta/models?pageSize=200&key=' + encodeURIComponent(key))) || {}).models);
+    }
+    if (model) { _liveModelCache[provider] = { model, ts: now }; return model; }
+  } catch (_) { }
+  return null;
+}
+
+function requestUpstream(options, body) {
+  return new Promise((resolve, reject) => {
+    const upstream = https.request(options, upRes => {
+      const chunks = [];
+      upRes.on('data', c => chunks.push(c));
+      upRes.on('end', () => {
+        let data;
+        try { data = JSON.parse(Buffer.concat(chunks).toString()); } catch (_) { data = {}; }
+        resolve({ status: upRes.statusCode, data });
+      });
+    });
+    upstream.on('error', reject);
+    upstream.write(body);
+    upstream.end();
+  });
+}
+
 // ── AI PROVIDER HELPERS ──────────────────────────────────────────
 const AI_PROVIDERS = {
   anthropic: {
@@ -230,30 +333,66 @@ const AI_PROVIDERS = {
       return JSON.stringify({ contents: [{ parts }], generationConfig: { maxOutputTokens: parsed.max_tokens || 1000, temperature: 0.7 }, systemInstruction: { parts: [{ text: parsed.system || '' }] } });
     },
     normalize: (data) => {
-      const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      if (data.error) return data;
+      // Thinking models emit thought summaries as extra parts — keep only
+      // the answer (parts[0] alone misses it when the first part is a thought)
+      const text = (data.candidates?.[0]?.content?.parts || [])
+        .filter(p => p.text && !p.thought).map(p => p.text).join('');
       return { content: [{ type: 'text', text }] };
     }
   }
 };
 
+// ── API KEY STORAGE ──────────────────────────────────────────────
+// System-wide installs (/opt, /usr) make the app dir root-owned and
+// read-only — a .api_key written next to electron-main.js silently failed
+// with EACCES, so saving a key in Settings reported success while every
+// server-side AI feature (AI Diagnosis, /ai proxy) kept saying "no key
+// configured". Store it in the user's data dir instead, still reading the
+// legacy file if it exists from an older install.
+function apiKeyPaths() {
+  const paths = [];
+  try { paths.push(path.join(app.getPath('userData'), '.api_key')); } catch (_) { }
+  paths.push(path.join(__dirname, '.api_key'));
+  return paths;
+}
+
+function readApiKeyFile() {
+  for (const p of apiKeyPaths()) {
+    if (fs.existsSync(p)) return fs.readFileSync(p, 'utf8');
+  }
+  return null;
+}
+
+function writeApiKeyFile(content) {
+  const primary = apiKeyPaths()[0];
+  fs.mkdirSync(path.dirname(primary), { recursive: true });
+  fs.writeFileSync(primary, content);
+}
+
 function loadAIConfig() {
   let provider = (process.env.AI_PROVIDER || 'anthropic').toLowerCase();
   let key = process.env.AI_API_KEY || process.env.ANTHROPIC_API_KEY || null;
   let model = process.env.AI_MODEL || null;
-  const keyFile = path.join(__dirname, '.api_key');
-  if (fs.existsSync(keyFile)) {
-    const content = fs.readFileSync(keyFile, 'utf8').trim();
-    if (content.startsWith('sk-ant-')) { key = content; provider = 'anthropic'; }
-    else {
-      content.split('\n').forEach(line => {
-        const [k, v] = line.trim().split('=');
-        if (k === 'provider') provider = v.toLowerCase();
-        if (k === 'key') key = v;
-        if (k === 'model') model = v;
-      });
+  let baseUrl = process.env.AI_BASE_URL || null;
+  const content = readApiKeyFile();
+  if (content !== null) {
+    const trimmed = content.trim();
+    if (trimmed.startsWith('sk-ant-') || trimmed.startsWith('sk-ant_')) {
+      key = trimmed; provider = 'anthropic';
+    } else {
+      for (const line of trimmed.split('\n')) {
+        const [k, ...v] = line.trim().split('=');
+        const val = v.join('=').trim();   // join: keys/values may contain '='
+        if (!val) continue;
+        if (k === 'provider') provider = val.toLowerCase();
+        if (k === 'key') key = val;
+        if (k === 'model') model = val;
+        if (k === 'base_url') baseUrl = val;
+      }
     }
   }
-  return { provider, key, model };
+  return { provider, key, model, baseUrl };
 }
 
 /**

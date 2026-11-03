@@ -118,6 +118,9 @@
       "entitlementsInherit": "build/entitlements.mas.inherit.plist",
       "provisioningProfile": "secrets/BoardScope.provisioningprofile"
     },
+    "deb": {
+      "afterInstall": "build/deb-postinst.sh"
+    },
     "linux": {
       "maintainer": "BoardScope <support@boardscope.com>",
       "target": [

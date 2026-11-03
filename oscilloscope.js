@@ -149,6 +149,19 @@ class SCPIDriver {
     this.writer = null;
     this._buf = '';
     this.model = 'SCPI';
+    // OWON firmware tears the USB port down when the serial line goes idle
+    // (same quirk as the OWON meters — see multimeter.js). A light *IDN?
+    // poll keeps the bulk pipe busy, and an auto-reopen recovers the
+    // (re-enumerated) device after a drop.
+    this._keepAliveTimer = null;
+    this._keepAliveBusy = false;
+    this._ioBusy = false;        // true during multi-command captures — keep-alive stands back
+    this._closed = false;        // true after explicit disconnect() — stops reconnect attempts
+    this._reconnecting = false;
+    this.onEvent = null;         // (type, info) → 'reconnected' | 'lost'
+    this._serialDisconnectHandler = (e) => {
+      if (this.port && e.port === this.port && !this._closed) this._tryReconnect();
+    };
   }
 
   static serialFilters() {
@@ -174,20 +187,87 @@ class SCPIDriver {
       this.model = idn.trim();
     } catch (_) { this.model = 'SCPI Scope'; }
 
+    this._closed = false;
+    navigator.serial.addEventListener('disconnect', this._serialDisconnectHandler);
+    this._startKeepAlive();
     return this.model;
   }
 
   async disconnect() {
+    this._closed = true;
+    this._stopKeepAlive();
+    try { navigator.serial.removeEventListener('disconnect', this._serialDisconnectHandler); } catch (_) { }
     if (this.reader) {
       try { await this.reader.cancel(); } catch (_) { }
-      try { this.reader.releaseLock(); } catch (_) { }
+      try { await this.reader.releaseLock(); } catch (_) { }
       this.reader = null;
     }
-    if (this.writer) { try { this.writer.releaseLock(); } catch (_) { } this.writer = null; }
+    if (this.writer) { try { await this.writer.releaseLock(); } catch (_) { } this.writer = null; }
     if (this.port) { try { await this.port.close(); } catch (_) { } this.port = null; }
   }
 
+  setBusy(busy) {
+    // Oscilloscope.capture brackets the whole configure+capture exchange so
+    // the keep-alive poll can never interleave its *IDN? with :WAV:DATA?
+    this._ioBusy = !!busy;
+  }
+
+  _startKeepAlive() {
+    this._stopKeepAlive();
+    this._keepAliveTimer = setInterval(async () => {
+      if (this._ioBusy || this._keepAliveBusy || this._reconnecting || !this.port) return;
+      this._keepAliveBusy = true;
+      try { await this.query('*IDN?', 1500); }
+      catch (_) { /* unanswered polls are fine — drops raise the disconnect event */ }
+      finally { this._keepAliveBusy = false; }
+    }, 2000);
+  }
+
+  _stopKeepAlive() {
+    if (this._keepAliveTimer) { clearInterval(this._keepAliveTimer); this._keepAliveTimer = null; }
+  }
+
+  // The firmware drops the USB serial port on idle — the device comes back
+  // re-enumerated as a new SerialPort. Re-open it without user action,
+  // mirroring Multimeter._tryReconnectHDS.
+  async _tryReconnect() {
+    if (this._reconnecting || this._closed) return;
+    this._reconnecting = true;
+    this._stopKeepAlive();
+    console.warn('[Scope] Serial port dropped — trying to recover');
+    const dead = this.port;
+    this.port = null;
+    this._buf = '';
+    try { if (dead) await dead.close(); } catch (_) { }
+
+    for (let attempt = 1; attempt <= 5; attempt++) {
+      await new Promise(r => setTimeout(r, 2000));
+      if (this._closed) { this._reconnecting = false; return; }
+      try {
+        const ports = await navigator.serial.getPorts();
+        const scope = ports.find(p => {
+          const info = (p.getInfo && p.getInfo()) || {};
+          return SCPIDriver.OWON_DEVICES.some(d => d.vendorId === info.usbVendorId && d.productId === info.usbProductId);
+        });
+        if (!scope) continue;
+        await scope.open({ baudRate: 115200, dataBits: 8, stopBits: 1, parity: 'none' });
+        this.port = scope;
+        this.writer = scope.writable.getWriter();
+        this._startReader();
+        this._startKeepAlive();
+        console.log('[Scope] Reconnected (attempt ' + attempt + ')');
+        if (this.onEvent) this.onEvent('reconnected', attempt);
+        this._reconnecting = false;
+        return;
+      } catch (_) { /* device not back yet — keep trying */ }
+    }
+
+    this._reconnecting = false;
+    if (!this._closed && this.onEvent) this.onEvent('lost', null);
+  }
+
   async write(cmd) {
+    if (!this.writer) throw new Error('Serial port not open — reconnecting, try again in a moment');
     const enc = new TextEncoder();
     await this.writer.write(enc.encode(cmd + '\n'));
   }
@@ -377,6 +457,17 @@ class Oscilloscope {
     if ('serial' in navigator) {
       try {
         this._scpi = new SCPIDriver();
+        // OWON firmware drops the port when idle — the driver keep-alives
+        // and auto-reconnects; surface its lifecycle to our listeners
+        this._scpi.onEvent = (type) => {
+          if (type === 'reconnected') {
+            this.emit('connected', { device: this._scpi.model, driver: 'scpi', reconnected: true });
+          } else if (type === 'lost') {
+            this.connected = false;
+            this.emit('disconnected');
+            this.emit('error', { message: 'Scope connection lost — unplug/replug the scope, then CONNECT again.' });
+          }
+        };
         const model = await this._scpi.connect();
         this._driver = 'scpi';
         this.connected = true;
@@ -445,9 +536,16 @@ class Oscilloscope {
         ch2 = new Float32Array(ch2);
 
       } else if (this._driver === 'scpi') {
-        await this._scpi.configure(this.sampleRate, numSamples, this.channelEnabled);
-        ch1 = this.channelEnabled[0] ? await this._scpi.captureChannel(1) : new Float32Array(numSamples);
-        ch2 = this.channelEnabled[1] ? await this._scpi.captureChannel(2) : new Float32Array(numSamples);
+        // Bracket the whole exchange — the driver's keep-alive poll must not
+        // interleave its *IDN? with :WAV:DATA? responses
+        this._scpi.setBusy(true);
+        try {
+          await this._scpi.configure(this.sampleRate, numSamples, this.channelEnabled);
+          ch1 = this.channelEnabled[0] ? await this._scpi.captureChannel(1) : new Float32Array(numSamples);
+          ch2 = this.channelEnabled[1] ? await this._scpi.captureChannel(2) : new Float32Array(numSamples);
+        } finally {
+          this._scpi.setBusy(false);
+        }
 
       } else {
         // Demo mode — generate waveforms
