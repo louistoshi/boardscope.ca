@@ -235,7 +235,14 @@ class Multimeter {
     try {
       this.port = await navigator.serial.requestPort();
     } catch (err) {
-      if (err.name === 'NotFoundError') return false;
+      if (err.name === 'NotFoundError') {
+        // Real user cancel — or no serial ports exist at all (the Electron
+        // picker is told "no ports" the same way). Either way, say so
+        // instead of returning silently: a dead-silent CONNECT button is
+        // unreportable ("still not connecting" with nothing in any log).
+        this._emit('status', 'No port selected — cancelled, or no serial ports found');
+        return false;
+      }
       this._emit('error', 'Port selection failed: ' + err.message);
       return false;
     }

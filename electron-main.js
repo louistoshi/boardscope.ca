@@ -441,6 +441,7 @@ function createWindow() {
   });
 
   buildMenu();
+  setupSerial(mainWindow.webContents.session);
 
   waitForServer().then(() => {
     mainWindow.loadURL(`http://127.0.0.1:${SERVER_PORT}/boardview.html`);
@@ -457,6 +458,53 @@ function createWindow() {
   if (process.env.NODE_ENV === 'development' || process.argv.includes('--devtools')) {
     mainWindow.webContents.openDevTools();
   }
+}
+
+// ── WEB SERIAL (multimeter / oscilloscope) ─────────────────────────
+// Electron ships no built-in serial-port picker. Unless the session's
+// select-serial-port event picks a port, navigator.serial.requestPort()
+// rejects with NotFoundError — which multimeter.js treats as "user
+// cancelled", so CONNECT did nothing at all in the desktop app (every
+// platform — the web build in Chrome was unaffected).
+function setupSerial(ses) {
+  const hexId = (v) => { const n = parseInt(v, 16); return Number.isNaN(n) ? -1 : n; };
+
+  ses.setPermissionCheckHandler((wc, permission, requestingOrigin) =>
+    permission === 'serial' && /^https?:\/\/(127\.0\.0\.1|localhost):/.test(requestingOrigin));
+
+  // Grants normally die with the WebContents. Pre-granting serial devices
+  // keeps the port accessible across the OWON HDS firmware's USB
+  // teardown/re-enumeration, so multimeter.js can reconnect via getPorts().
+  ses.setDevicePermissionHandler((details) =>
+    details.deviceType === 'serial' &&
+    /^https?:\/\/(127\.0\.0\.1|localhost):/.test(details.origin || ''));
+
+  ses.on('select-serial-port', (event, portList, webContents, callback) => {
+    event.preventDefault();
+    if (!portList || portList.length === 0) {
+      callback(''); // requestPort() rejects NotFoundError → "cancelled" status
+      return;
+    }
+    // OWON test gear first — it's what the deb ships udev rules for
+    const owon = portList.find(p =>
+      hexId(p.vendorId) === 0x5345 && hexId(p.productId) === 0x1234);
+    if (owon) { callback(owon.portId); return; }
+    if (portList.length === 1) { callback(portList[0].portId); return; }
+    // Several ports and none is known gear — ask with a native dialog
+    if (!mainWindow) { callback(''); return; }
+    const labels = portList.map(p =>
+      (p.displayName ? p.displayName + ' — ' : '') + (p.portName || p.portId));
+    const choice = dialog.showMessageBoxSync(mainWindow, {
+      type: 'question',
+      title: 'BoardScope — select serial port',
+      message: 'Which port is your device on?',
+      buttons: [...labels, 'Cancel'],
+      defaultId: 0,
+      cancelId: labels.length,
+      noLink: true,
+    });
+    callback(choice >= 0 && choice < portList.length ? portList[choice].portId : '');
+  });
 }
 
 // ── WAIT FOR SERVER ────────────────────────────────────────────────
