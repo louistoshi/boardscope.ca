@@ -1,4 +1,4 @@
 {
   "version": "6.0.15",
-  "notes": "Fixed Google Gemini setup (API key now saves correctly on Linux installs, List Google Models works, current model defaults). AI models now self-update from the provider's live list — retired models are switched automatically. AI errors show as clear error banners. OWON scopes/meters no longer drop the USB connection (auto-reconnect + USB fix shipped in the .deb). About menu now shows the real app version."
+  "notes": "Multimeter/oscilloscope CONNECT now works in the desktop app — Electron was missing its serial-port picker, so the button silently did nothing on every platform (web in Chrome was unaffected). The window title bar now shows the real app version instead of a stale v6.0.10. Fixed Google Gemini setup (API key saves correctly on Linux, List Google Models works). AI models self-update from the provider's live list. OWON scopes/meters no longer drop the USB connection (auto-reconnect + USB fix shipped in the .deb)."
 }

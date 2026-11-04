@@ -39,7 +39,7 @@
   <link rel="manifest" href="/manifest.json">
   <link rel="apple-touch-icon" href="/assets/icon.png">
 
-  <title>BoardScope v6.0.10</title>
+  <title>BoardScope</title>
   <script src="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
   <script src="multimeter.js?v=6"></script>
   <script src="xzz-parser.js?v=1"></script>
@@ -30956,20 +30956,24 @@ Rules:
     else checkForUpdate();
   })();
 
-  /* ══ ABOUT TAB — real version, never a stale hard-coded string ══
-     The About panel shipped "VERSION 5.4.1" for three major versions. */
+  /* ══ ABOUT TAB + WINDOW TITLE — real version, never a stale hard-coded string ══
+     The About panel shipped "VERSION 5.4.1" for three major versions, and the
+     <title> tag said "v6.0.10" through 6.0.14 — users concluded their update
+     hadn't installed. One resolver feeds both displays now. */
   (function () {
     const el = document.getElementById('hp-version');
-    if (!el) return;
     const set = v => {
-      if (v) el.textContent = 'VERSION ' + String(v).replace(/^v/, '') + ' · PRO EDITION';
+      if (!v) return;
+      const ver = String(v).replace(/^v/, '');
+      if (el) el.textContent = 'VERSION ' + ver + ' · PRO EDITION';
+      document.title = 'BoardScope v' + ver;
     };
     if (window.electronAPI && window.electronAPI.getAppVersion) {
       // Desktop: the packaged app's own version
       window.electronAPI.getAppVersion().then(set).catch(() => { });
     } else {
       // Web build: served version.json is the source of truth
-      fetch('version.json').then(r => r.json()).then(d => set(d.version)).catch(() => { });
+      fetch('version.json', { cache: 'no-store' }).then(r => r.json()).then(d => set(d.version)).catch(() => { });
     }
   })();
 </script>
