@@ -441,7 +441,7 @@ function createWindow() {
   });
 
   buildMenu();
-  setupSerial(mainWindow.webContents.session);
+  setupDeviceAccess(mainWindow.webContents.session);
 
   waitForServer().then(() => {
     mainWindow.loadURL(`http://127.0.0.1:${SERVER_PORT}/boardview.html`);
@@ -460,24 +460,28 @@ function createWindow() {
   }
 }
 
-// ── WEB SERIAL (multimeter / oscilloscope) ─────────────────────────
-// Electron ships no built-in serial-port picker. Unless the session's
-// select-serial-port event picks a port, navigator.serial.requestPort()
-// rejects with NotFoundError — which multimeter.js treats as "user
-// cancelled", so CONNECT did nothing at all in the desktop app (every
-// platform — the web build in Chrome was unaffected).
-function setupSerial(ses) {
+// ── WEB SERIAL + WEBUSB (multimeter / oscilloscope) ────────────────
+// Electron ships no built-in serial-port or USB-device picker. Unless the
+// session's select-serial-port event picks a port, navigator.serial
+// .requestPort() rejects with NotFoundError — which multimeter.js treats
+// as "user cancelled", so CONNECT did nothing at all in the desktop app
+// (every platform — the web build in Chrome was unaffected). The same
+// applies to navigator.usb.requestDevice() and select-usb-device, which
+// the OWON HDS needs: it's a raw bulk-USB device, never a serial port.
+function setupDeviceAccess(ses) {
   const hexId = (v) => { const n = parseInt(v, 16); return Number.isNaN(n) ? -1 : n; };
+  const isLocalOrigin = (o) => /^https?:\/\/(127\.0\.0\.1|localhost):/.test(o || '');
 
   ses.setPermissionCheckHandler((wc, permission, requestingOrigin) =>
-    permission === 'serial' && /^https?:\/\/(127\.0\.0\.1|localhost):/.test(requestingOrigin));
+    (permission === 'serial' || permission === 'usb') && isLocalOrigin(requestingOrigin));
 
-  // Grants normally die with the WebContents. Pre-granting serial devices
-  // keeps the port accessible across the OWON HDS firmware's USB
-  // teardown/re-enumeration, so multimeter.js can reconnect via getPorts().
+  // Grants normally die with the WebContents. Pre-granting serial/USB
+  // devices keeps them accessible across the OWON HDS firmware's USB
+  // teardown/re-enumeration, so drivers can reconnect via
+  // navigator.serial.getPorts() / navigator.usb.getDevices().
   ses.setDevicePermissionHandler((details) =>
-    details.deviceType === 'serial' &&
-    /^https?:\/\/(127\.0\.0\.1|localhost):/.test(details.origin || ''));
+    (details.deviceType === 'serial' || details.deviceType === 'usb') &&
+    isLocalOrigin(details.origin));
 
   ses.on('select-serial-port', (event, portList, webContents, callback) => {
     event.preventDefault();
@@ -504,6 +508,19 @@ function setupSerial(ses) {
       noLink: true,
     });
     callback(choice >= 0 && choice < portList.length ? portList[choice].portId : '');
+  });
+
+  // WebUSB — multimeter.js falls back to this when the HDS has no serial
+  // port (stock Linux). requestDevice() is filtered to OWON 5345:1234 in
+  // the renderer, so the list normally holds exactly that device.
+  // Electron's USBDevice carries vendorId/productId as integers.
+  ses.on('select-usb-device', (event, details, callback) => {
+    event.preventDefault();
+    const devices = details.deviceList || [];
+    const owon = devices.find(d => d.vendorId === 0x5345 && d.productId === 0x1234);
+    if (owon) { callback(owon.deviceId); return; }
+    if (devices.length === 1) { callback(devices[0].deviceId); return; }
+    callback('');
   });
 }
 

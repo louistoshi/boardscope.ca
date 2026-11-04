@@ -1,4 +1,4 @@
 {
-  "version": "6.0.15",
-  "notes": "Multimeter/oscilloscope CONNECT now works in the desktop app — Electron was missing its serial-port picker, so the button silently did nothing on every platform (web in Chrome was unaffected). The window title bar now shows the real app version instead of a stale v6.0.10. Fixed Google Gemini setup (API key saves correctly on Linux, List Google Models works). AI models self-update from the provider's live list. OWON scopes/meters no longer drop the USB connection (auto-reconnect + USB fix shipped in the .deb)."
+  "version": "6.0.16",
+  "notes": "Multimeter now connects to OWON HDS meters on Linux — they are raw USB devices, not serial ports, so BoardScope now talks to them over WebUSB directly (no kernel driver or setup needed; also works on Windows/macOS desktop). Handles both :READ? and :DMM:MEAS? SCPI firmware dialects and keeps the measurement mode synced. Includes all 6.0.15 fixes: desktop CONNECT serial picker, real app version in the title bar, Gemini setup on Linux, self-updating AI models, OWON auto-reconnect."
 }
