@@ -1,4 +1,4 @@
 {
-  "version": "6.0.16",
-  "notes": "Multimeter now connects to OWON HDS meters on Linux — they are raw USB devices, not serial ports, so BoardScope now talks to them over WebUSB directly (no kernel driver or setup needed; also works on Windows/macOS desktop). Handles both :READ? and :DMM:MEAS? SCPI firmware dialects and keeps the measurement mode synced. Includes all 6.0.15 fixes: desktop CONNECT serial picker, real app version in the title bar, Gemini setup on Linux, self-updating AI models, OWON auto-reconnect."
+  "version": "6.0.17",
+  "notes": "Multimeter CONNECT no longer throws a huge device popup: in the desktop app the OWON HDS is probed over raw USB first, silently, and the old full-screen serial-port dialog is replaced by a compact in-app port picker (only shown when several unknown ports exist). Also fixed the meter connecting but never displaying readings over WebUSB, and the stale packaged build missing the WebUSB code entirely."
 }
