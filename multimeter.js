@@ -768,8 +768,14 @@ class Multimeter {
   }
 
   // USB query: one transferIn per response (64-byte bulk packets, same
-  // shape as the pyusb reference). A timed-out read is simply dropped —
-  // responses arrive in order, so it can't desync the next poll.
+  // shape as the pyusb reference). WebUSB transfers cannot be cancelled,
+  // so a read that loses its race against the timeout leaves that
+  // transferIn queued — the abandoned transfer then consumes exactly the
+  // late packet, which is what keeps the request/response stream synced.
+  // Do NOT add a pyusb-style pre-read flush here (draining "stale"
+  // packets first): those extra queued transfers would swallow fresh
+  // responses instead — every consumer stays paired one-to-one with a
+  // command.
   async _queryUSB(cmd, timeout = 1000) {
     const sent = await this._writeSCPI(cmd);
     if (!sent) return null;
@@ -811,6 +817,14 @@ class Multimeter {
       // transport, and a plain port check silently killed the poll timer
       // there: the meter reported "Connected" over WebUSB but never read.
       if (!this._running || this._detectedProtocol !== 'owon-hds' || !this._linkUp()) return;
+      // Model ID — best effort, same as the pyusb reference's identify():
+      // *IDN? names the exact model (HDS242, HO5xS, …). Silence just keeps
+      // the generic label; the reading poll is not gated on it.
+      const idn = await this._querySCPI('*IDN?', 800);
+      if (idn) {
+        const model = (idn.toUpperCase().match(/\b[A-Z]{2,4}\d{2,4}[A-Z]{0,2}\b/) || [])[0];
+        if (model) this._emit('status', 'OWON ' + model + ' — SCPI active');
+      }
       this._scpiPollTimer = setInterval(() => this._pollREAD(), 500);
       this._pollREAD();
     })();
@@ -993,6 +1007,16 @@ class Multimeter {
     else if (unit === '%') mode = 'DUTY';
     else mode = this._lastSCPIMode || 'DCV'; // bare number — function unchanged
     this._lastSCPIMode = mode;
+
+    // Numeric overload — some firmware replies with a huge value (≥ 9.9e37)
+    // instead of the string 'OL' (threshold per Lab1717/owon-hds-usb_streamer,
+    // verified against an HDS242)
+    if (Math.abs(value) >= 9.9e37) {
+      return {
+        value: Infinity, mode, unit: this._scpiUnitFor(mode), ol: true, negative: false,
+        timestamp: Date.now(), stable: false, display: 'OL', protocol: 'owon-hds',
+      };
+    }
 
     const outUnit = this._scpiUnitFor(mode);
     const negative = value < 0;

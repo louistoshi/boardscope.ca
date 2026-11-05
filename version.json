@@ -1,4 +1,4 @@
 {
-  "version": "6.0.17",
-  "notes": "Multimeter CONNECT no longer throws a huge device popup: in the desktop app the OWON HDS is probed over raw USB first, silently, and the old full-screen serial-port dialog is replaced by a compact in-app port picker (only shown when several unknown ports exist). Also fixed the meter connecting but never displaying readings over WebUSB, and the stale packaged build missing the WebUSB code entirely."
+  "version": "6.0.18",
+  "notes": "OWON HDS protocol hardening cross-checked against the community pyusb reference (Lab1717/owon-hds-usb_streamer, HDS242): firmware that reports overload as a huge number (≥9.9e37) instead of 'OL' now shows OL correctly, and the meter window now shows the exact model (e.g. 'OWON HDS242 — SCPI active') queried via *IDN?. Same endpoints, command set and 64-byte framing as before — transport unchanged."
 }
