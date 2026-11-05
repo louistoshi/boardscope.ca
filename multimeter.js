@@ -246,6 +246,21 @@ class Multimeter {
     // Baud rate: explicit arg > protocol default > 2400
     const baud = baudRate || Multimeter.PROTOCOLS[protocol]?.baud || 2400;
 
+    // In the desktop app, probe the OWON raw-USB transport before showing
+    // any port picker: the HDS is a bulk device that never appears as a
+    // serial port, so serial-first meant every CONNECT popped a wall of
+    // unrelated system tty devices (keyboards, receivers, rfcomm junk) —
+    // and picking one of those made the meter never connect, because the
+    // WebUSB fallback only ran after a cancel. Electron's select-usb-device
+    // handler resolves the filtered request silently; if nothing answers
+    // SCPI (serial-only OWON gear shares the same VID:PID) we fall through
+    // to the serial picker below. The web build keeps serial-first —
+    // Chrome's chooser is filtered and most meters are serial there.
+    const inDesktop = typeof window !== 'undefined' && window.electronAPI && window.electronAPI.isElectron;
+    if (inDesktop && 'usb' in navigator && (protocol === 'auto' || protocol === 'owon-hds')) {
+      if (await this._probeOWONUSB()) return true;
+    }
+
     try {
       this.port = await navigator.serial.requestPort();
     } catch (err) {
@@ -379,6 +394,56 @@ class Multimeter {
     this._emit('status', 'Connected — OWON HDS over USB');
     this._initSCPISession();
     return true;
+  }
+
+  // Desktop pre-probe: claim the OWON raw-USB device and verify it speaks
+  // SCPI before committing. Returns true only when the meter answers, so
+  // serial-only OWON gear (which shares the generic 5345:1234 VID:PID)
+  // falls through to the serial transport. Every failure path is silent —
+  // the caller continues with navigator.serial.requestPort().
+  async _probeOWONUSB() {
+    if (!('usb' in navigator)) return false;
+    let dev;
+    try {
+      const granted = (await navigator.usb.getDevices()).find(d =>
+        d.vendorId === Multimeter.OWON_USB.vendorId &&
+        d.productId === Multimeter.OWON_USB.productId);
+      // No chooser UI flashes here: in the desktop app select-usb-device
+      // auto-picks the OWON, or rejects silently when none is plugged in.
+      dev = granted || await navigator.usb.requestDevice({ filters: [Multimeter.OWON_USB] });
+      await dev.open();
+      if (!dev.configuration) await dev.selectConfiguration(1);
+      await dev.claimInterface(0);
+    } catch (_) {
+      return false; // no OWON present, or the OS refuses access (udev/uaccess)
+    }
+    try {
+      this._usbDev = dev;
+      this._transport = 'usb';
+      this._buffer = [];
+      this._running = true;
+      // ':SCPI:DISP?' activates DMM SCPI and replies 'scpion' — but only
+      // once the meter is on its DMM screen. If it stays silent, probe
+      // both known firmware dialects before concluding it's not an HDS.
+      if (await this._querySCPI(':SCPI:DISP?', 800) === null) {
+        const a = await this._querySCPI(':READ?', 1200);
+        if (a === null && await this._querySCPI(':DMM:MEAS?', 1200) === null) {
+          throw new Error('no SCPI response');
+        }
+      }
+      this.connected = true;
+      this._detectedProtocol = 'owon-hds';
+      this._startRateTimer();
+      this._emit('status', 'Connected — OWON HDS over USB');
+      this._initSCPISession();
+      return true;
+    } catch (_) {
+      this._running = false;
+      this._transport = 'serial';
+      this._usbDev = null;
+      try { await dev.close(); } catch (_) { }
+      return false;
+    }
   }
 
   // Is the data link (serial port or USB device) currently usable?
@@ -742,7 +807,10 @@ class Multimeter {
     (async () => {
       await this._querySCPI(':SCPI:DISP?', 600); // activates DMM SCPI; reply "scpion"
       await new Promise(r => setTimeout(r, 400));
-      if (!this._running || this._detectedProtocol !== 'owon-hds' || !this.port) return;
+      // _linkUp() covers both transports — this.port is null on the USB
+      // transport, and a plain port check silently killed the poll timer
+      // there: the meter reported "Connected" over WebUSB but never read.
+      if (!this._running || this._detectedProtocol !== 'owon-hds' || !this._linkUp()) return;
       this._scpiPollTimer = setInterval(() => this._pollREAD(), 500);
       this._pollREAD();
     })();

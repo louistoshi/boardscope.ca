@@ -25,6 +25,18 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onFileOpened: (callback) => {
     ipcRenderer.on('file-opened', (event, filePath) => callback(filePath));
   },
+
+  // Serial port picker — the desktop app's compact CONNECT chooser.
+  // The main process sends the port list when a requestPort() needs a
+  // human choice; the renderer answers with 'serial-port-pick' ('' to
+  // cancel). Both sides must stay in lockstep or requestPort() hangs.
+  onSerialPortChoice: (callback) => {
+    ipcRenderer.on('serial-port-choice', (event, ports) => callback(ports));
+  },
+  onSerialPortChoiceClose: (callback) => {
+    ipcRenderer.on('serial-port-choice:close', () => callback());
+  },
+  pickSerialPort: (portId) => ipcRenderer.send('serial-port-pick', portId),
   
   // Platform info
   platform: process.platform,

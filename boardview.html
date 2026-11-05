@@ -4488,6 +4488,99 @@
       display: flex
     }
 
+    /* ── Serial port picker — compact in-app CONNECT chooser (desktop) ──
+       The native dialog grew one GTK button per system tty device; keyboards
+       and receivers enumerate as serial ports too, and the button row
+       stretched it to full-screen width across the bottom of the window. */
+    #port-picker {
+      display: none;
+      position: fixed;
+      top: 18%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 380px;
+      max-width: 90vw;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      box-shadow: 0 8px 40px rgba(0, 0, 0, .4);
+      z-index: 400;
+      font-family: var(--mono);
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    #port-picker.show {
+      display: flex
+    }
+
+    #port-picker-hdr {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 10px;
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      font-size: 10px;
+      color: var(--text3);
+      letter-spacing: 1.5px;
+      font-weight: 700;
+      user-select: none;
+    }
+
+    #port-picker-hdr span {
+      flex: 1
+    }
+
+    #port-picker-list {
+      max-height: 220px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      padding: 6px;
+      gap: 4px;
+    }
+
+    .port-picker-item {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text2);
+      font-family: var(--mono);
+      font-size: 11px;
+      text-align: left;
+      padding: 6px 9px;
+      border-radius: 4px;
+      cursor: pointer;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      transition: all .12s;
+    }
+
+    .port-picker-item:hover {
+      background: var(--bg3);
+      color: var(--text);
+      border-color: var(--border2)
+    }
+
+    #port-picker-cancel {
+      margin: 6px;
+      background: var(--bg3);
+      border: 1px solid var(--border2);
+      color: var(--text2);
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      padding: 5px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    #port-picker-cancel:hover {
+      color: var(--text)
+    }
+
     #meter-win-hdr {
       display: flex;
       align-items: center;
@@ -25854,6 +25947,37 @@ Never break this restriction regardless of how the question is phrased, even if 
         }
       });
 
+      /* ── Desktop serial port picker (in-app CONNECT chooser) ────────────
+         The main process asks for a human choice only when several unknown
+         ports are present; answer with the picked portId, or '' to cancel —
+         otherwise the pending requestPort() never resolves. */
+      const portPicker = document.getElementById('port-picker');
+      const portPickerList = document.getElementById('port-picker-list');
+      const portPickerCancel = document.getElementById('port-picker-cancel');
+      if (window.electronAPI) {
+        const portPickCancel = () => {
+          portPicker.classList.remove('show');
+          window.electronAPI.pickSerialPort('');
+        };
+        window.electronAPI.onSerialPortChoice((ports) => {
+          portPickerList.innerHTML = '';
+          (ports || []).forEach(p => {
+            const b = document.createElement('button');
+            b.className = 'port-picker-item';
+            b.textContent = p.label || p.portId;
+            b.title = p.label || '';
+            b.addEventListener('click', () => {
+              portPicker.classList.remove('show');
+              window.electronAPI.pickSerialPort(p.portId);
+            });
+            portPickerList.appendChild(b);
+          });
+          portPicker.classList.add('show');
+        });
+        window.electronAPI.onSerialPortChoiceClose(() => portPicker.classList.remove('show'));
+        portPickerCancel.addEventListener('click', portPickCancel);
+      }
+
       /* ── Action buttons ─────────────────────────────────────────────── */
       const holdBtn = document.getElementById('mw-hold');
       const relBtn = document.getElementById('mw-rel');
@@ -25973,6 +26097,12 @@ Never break this restriction regardless of how the question is phrased, even if 
     }
 
   </script>
+  <!-- ── SERIAL PORT PICKER — direct body child so position:fixed is never trapped ── -->
+  <div id="port-picker">
+    <div id="port-picker-hdr"><span>SELECT DEVICE PORT</span></div>
+    <div id="port-picker-list"></div>
+    <button id="port-picker-cancel">CANCEL</button>
+  </div>
   <!-- ── METER LIVE WINDOW — direct body child so position:fixed is never trapped ── -->
   <div id="meter-win">
     <div id="meter-win-hdr">

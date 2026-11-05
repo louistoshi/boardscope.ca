@@ -483,6 +483,10 @@ function setupDeviceAccess(ses) {
     (details.deviceType === 'serial' || details.deviceType === 'usb') &&
     isLocalOrigin(details.origin));
 
+  // One pending in-app port picker at a time; a newer request supersedes
+  // the older one (its callback resolves as cancelled).
+  let pendingPortPick = null;
+
   ses.on('select-serial-port', (event, portList, webContents, callback) => {
     event.preventDefault();
     if (!portList || portList.length === 0) {
@@ -494,20 +498,36 @@ function setupDeviceAccess(ses) {
       hexId(p.vendorId) === 0x5345 && hexId(p.productId) === 0x1234);
     if (owon) { callback(owon.portId); return; }
     if (portList.length === 1) { callback(portList[0].portId); return; }
-    // Several ports and none is known gear — ask with a native dialog
-    if (!mainWindow) { callback(''); return; }
-    const labels = portList.map(p =>
-      (p.displayName ? p.displayName + ' — ' : '') + (p.portName || p.portId));
-    const choice = dialog.showMessageBoxSync(mainWindow, {
-      type: 'question',
-      title: 'BoardScope — select serial port',
-      message: 'Which port is your device on?',
-      buttons: [...labels, 'Cancel'],
-      defaultId: 0,
-      cancelId: labels.length,
-      noLink: true,
-    });
-    callback(choice >= 0 && choice < portList.length ? portList[choice].portId : '');
+    // Several ports and none is known gear — ask with the in-app picker.
+    // A native showMessageBoxSync grew one GTK button per system tty, and
+    // keyboards/receivers (they enumerate as serial ports) stretched that
+    // dialog to full-screen width at the bottom of the window. The in-app
+    // picker is a compact scrollable list; resolving the callback after
+    // the user answers is exactly how Electron custom choosers work.
+    if (!mainWindow || mainWindow.isDestroyed()) { callback(''); return; }
+    const wc = mainWindow.webContents;
+    if (pendingPortPick) pendingPortPick.finish('');
+    let settled = false;
+    const onPick = (e, portId) => {
+      if (e.sender !== wc || !pendingPortPick) return;
+      const hit = portList.find(p => p.portId === portId);
+      pendingPortPick.finish(hit ? hit.portId : '');
+    };
+    pendingPortPick = {
+      finish: (portId) => {
+        if (settled) return;
+        settled = true;
+        pendingPortPick = null;
+        ipcMain.removeListener('serial-port-pick', onPick);
+        wc.send('serial-port-choice:close');
+        try { callback(portId); } catch (_) { /* renderer may be gone */ }
+      },
+    };
+    ipcMain.on('serial-port-pick', onPick);
+    wc.send('serial-port-choice', portList.map(p => ({
+      portId: p.portId,
+      label: (p.displayName ? p.displayName + ' — ' : '') + (p.portName || p.portId),
+    })));
   });
 
   // WebUSB — multimeter.js falls back to this when the HDS has no serial
