@@ -1,4 +1,4 @@
 {
-  "version": "6.0.18",
-  "notes": "OWON HDS protocol hardening cross-checked against the community pyusb reference (Lab1717/owon-hds-usb_streamer, HDS242): firmware that reports overload as a huge number (≥9.9e37) instead of 'OL' now shows OL correctly, and the meter window now shows the exact model (e.g. 'OWON HDS242 — SCPI active') queried via *IDN?. Same endpoints, command set and 64-byte framing as before — transport unchanged."
+  "version": "6.0.19",
+  "notes": "AI Diagnosis window now has a provider switcher — jump between every AI you have configured (Grok/xAI, Gemini, OpenRouter, Anthropic, OpenAI, Ollama) without opening Settings. Configs are stored per provider, so setting up a second AI no longer overwrites the first. Fixed: after a restart the AI settings always showed Grok instead of the provider you configured. Grok/xAI, Anthropic, OpenAI and Ollama API keys are now tested through the local server proxy (the old direct path always failed)."
 }

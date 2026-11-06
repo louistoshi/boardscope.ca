@@ -17,6 +17,7 @@ www/
 
 # API keys and secrets
 .api_key
+.ai_config.json
 api key
 secrets/
 *.cer

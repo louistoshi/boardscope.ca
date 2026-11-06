@@ -166,16 +166,71 @@ function readApiKeyFile() {
   return null;
 }
 
-function writeApiKeyFile(content) {
+// ── MULTI-PROVIDER AI STORE ──────────────────────────────────────
+// .ai_config.json holds every provider the user has configured plus which
+// one is active:  { "active": "openrouter",
+//                    "providers": { "<id>": { key, model, base_url } } }
+// The AI-window provider switcher needs all of them; a single .api_key INI
+// could only ever hold one. Same two locations as .api_key: app dir first
+// (read-only system installs fall back to ~/.boardscope/).
+function configPaths() {
+  return [
+    path.join(__dirname, '.ai_config.json'),
+    path.join(process.env.HOME || process.env.USERPROFILE || '.', '.boardscope', '.ai_config.json'),
+  ];
+}
+
+function readConfigFile() {
+  for (const p of configPaths()) {
+    if (fs.existsSync(p)) {
+      try { return JSON.parse(fs.readFileSync(p, 'utf8')); } catch (_) { }
+    }
+  }
+  return null;
+}
+
+function writeConfigFile(store) {
   try {
-    fs.writeFileSync(apiKeyPaths()[0], content);
-    return apiKeyPaths()[0];
+    fs.writeFileSync(configPaths()[0], JSON.stringify(store, null, 2));
+    return configPaths()[0];
   } catch (_) {
-    const fallback = apiKeyPaths()[1];
+    const fallback = configPaths()[1];
     fs.mkdirSync(path.dirname(fallback), { recursive: true });
-    fs.writeFileSync(fallback, content);
+    fs.writeFileSync(fallback, JSON.stringify(store, null, 2));
     return fallback;
   }
+}
+
+// Legacy single-provider .api_key INI → store shape (migrated on first load)
+function parseLegacyKeyFile() {
+  const content = readApiKeyFile();
+  if (content === null) return null;
+  const trimmed = content.trim();
+  if (trimmed.startsWith('sk-ant-') || trimmed.startsWith('sk-ant_')) {
+    return { active: 'anthropic', providers: { anthropic: { key: trimmed } } };
+  }
+  const entry = {};
+  let provider = 'anthropic';
+  for (const line of trimmed.split('\n')) {
+    const [k, ...v] = line.trim().split('=');
+    const val = v.join('=').trim();
+    if (!val) continue;
+    if (k === 'provider') provider = val.toLowerCase();
+    if (k === 'key') entry.key = val;
+    if (k === 'model') entry.model = val;
+    if (k === 'base_url') entry.base_url = val;
+  }
+  if (!entry.key) return null;
+  return { active: provider, providers: { [provider]: entry } };
+}
+
+// Providers map as the client may see it — never includes keys
+function publicProviders(store) {
+  const out = {};
+  for (const [id, e] of Object.entries((store && store.providers) || {})) {
+    if (e && e.key) out[id] = { model: e.model || null, base_url: e.base_url || null };
+  }
+  return out;
 }
 
 function loadConfig() {
@@ -184,22 +239,21 @@ function loadConfig() {
   let model = process.env.AI_MODEL || null;
   let baseUrl = process.env.AI_BASE_URL || null;
 
-  const content = readApiKeyFile();
-  if (content !== null) {
-    const trimmed = content.trim();
-    if (trimmed.startsWith('sk-ant-') || trimmed.startsWith('sk-ant_')) {
-      key = trimmed; provider = 'anthropic';
-    } else {
-      for (const line of trimmed.split('\n')) {
-        const [k, ...v] = line.trim().split('=');
-        const val = v.join('=').trim();
-        if (!val) continue;
-        if (k === 'provider') provider = val.toLowerCase();
-        if (k === 'key') key = val;
-        if (k === 'model') model = val;
-        if (k === 'base_url') baseUrl = val;
-      }
+  let store = readConfigFile();
+  if (!store || !store.providers || !Object.keys(store.providers).length) {
+    const legacy = parseLegacyKeyFile();
+    if (legacy) {
+      store = legacy;
+      try { writeConfigFile(store); } catch (_) { }
     }
+  }
+  const providers = (store && store.providers) || {};
+  const active = (store && store.active && providers[store.active] && providers[store.active].key)
+    ? store.active
+    : Object.keys(providers).find(id => providers[id] && providers[id].key);
+  if (active) {
+    const e = providers[active];
+    return { provider: active, key: e.key, model: e.model || null, baseUrl: e.base_url || null };
   }
   return { provider, key, model, baseUrl };
 }
@@ -304,24 +358,58 @@ app.get('/', (req, res) => {
 // AI Status
 app.get('/ai-status', (req, res) => {
   const cfg = loadConfig();
-  res.json({ configured: !!cfg.key, provider: cfg.provider, model: cfg.model || '(default)', base_url: cfg.baseUrl || '' });
+  res.json({
+    configured: !!cfg.key, provider: cfg.provider, model: cfg.model || '(default)', base_url: cfg.baseUrl || '',
+    providers: publicProviders(readConfigFile())
+  });
 });
 
-// AI Setup
+// AI Setup — upserts one provider into the multi-provider store and makes
+// it active. Re-saving a provider without a key keeps its stored key.
 app.post('/ai-setup', (req, res) => {
   const { provider, key, model, base_url } = req.body;
-  let content = `provider=${provider}\nkey=${key}`;
-  if (model) content += `\nmodel=${model}`;
-  if (base_url) content += `\nbase_url=${base_url}`;
+  if (!provider) return res.status(400).json({ success: false, error: 'No provider given' });
+  const store = readConfigFile() || { active: null, providers: {} };
+  if (!store.providers || typeof store.providers !== 'object') store.providers = {};
+  const prev = store.providers[provider] || {};
+  const entry = { key: key || prev.key || '' };
+  if (model || prev.model) entry.model = model || prev.model;
+  if (base_url || prev.base_url) entry.base_url = base_url || prev.base_url;
+  if (!entry.key) return res.status(400).json({ success: false, error: 'No API key for provider ' + provider });
+  store.providers[provider] = entry;
+  store.active = provider;
   try {
-    writeApiKeyFile(content);
+    writeConfigFile(store);
     res.json({ success: true });
   } catch (err) {
     // Read-only install with an unwritable home dir — the client must know,
     // it used to treat this as success and diagnosis broke silently
-    console.error('[AI] Could not save API key:', err.message);
-    res.status(500).json({ success: false, error: 'Could not save API key: ' + err.message });
+    console.error('[AI] Could not save API config:', err.message);
+    res.status(500).json({ success: false, error: 'Could not save API config: ' + err.message });
   }
+});
+
+// AI Switch — change the active provider (AI-window dropdown). The provider
+// must already be configured; /ai-setup is the way to add one.
+app.post('/ai-switch', (req, res) => {
+  const { provider } = req.body || {};
+  const store = readConfigFile() || { providers: {} };
+  const entry = provider && store.providers && store.providers[provider];
+  if (!entry || !entry.key) {
+    return res.status(400).json({ success: false, error: 'Provider not configured: ' + provider });
+  }
+  store.active = provider;
+  try {
+    writeConfigFile(store);
+  } catch (err) {
+    return res.status(500).json({ success: false, error: 'Could not switch provider: ' + err.message });
+  }
+  const cfg = loadConfig();
+  res.json({
+    success: true,
+    configured: !!cfg.key, provider: cfg.provider, model: cfg.model || '(default)', base_url: cfg.baseUrl || '',
+    providers: publicProviders(store)
+  });
 });
 
 // AI Proxy
