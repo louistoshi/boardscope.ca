@@ -87,6 +87,11 @@ class Multimeter {
     this._reconnecting = false;       // guards the HDS reconnect loop
     this._pollIntervalMs = 500;       // SCPI poll cadence — RATE presets in the meter window
     this._lastGoodPollAt = 0;         // timestamp of last successful poll reading
+    this._scpiGarbage = 0;            // consecutive unparseable SCPI replies (dialect rotation)
+    this._detectTimer = null;         // "connected but nothing answers" deadline (serial auto-detect)
+    this._detectTimeoutMs = 16000;    // generous: the *IDN? probe itself runs ~15 s
+    this._reconnectAttempts = 5;      // HDS reconnect loop (test-tunable)
+    this._reconnectDelayMs = 2000;
 
     // Event bus
     this._listeners = {};
@@ -275,6 +280,7 @@ class Multimeter {
     this._resetSCPISession();
     this._protocol = protocol;
     this._detectedProtocol = protocol !== 'auto' ? protocol : null;
+    this._transport = 'serial'; // a prior session's give-up may have left 'usb' set
 
     // Baud rate: explicit arg > protocol default > 2400
     const baud = baudRate || Multimeter.PROTOCOLS[protocol]?.baud || 2400;
@@ -331,6 +337,18 @@ class Multimeter {
         // SCPI meters are silent until addressed — probe after streaming
         // protocols have had a chance to be detected passively.
         this._scpiProbeTimer = setTimeout(() => this._probeSCPI(), 1800);
+        // Deadline for auto-detect: if the port stays silent (meter asleep
+        // / auto-off, wrong port, wedged firmware) the read loop never
+        // exits and the button showed DISCONNECT forever with no data and
+        // no name (tester, v6.0.20). Fail loudly instead.
+        this._detectTimer = setTimeout(() => {
+          this._detectTimer = null;
+          if (this._running && !this._detectedProtocol && !this._reconnecting) {
+            this._fullResetSession('No response from the meter — it may be asleep or powered off ' +
+              '(check the meter\'s AUTO-OFF setting and press Mode until the Multimeter screen shows). ' +
+              'Then CONNECT again.');
+          }
+        }, this._detectTimeoutMs);
       }
       return true;
     } catch (err) {
@@ -397,6 +415,49 @@ class Multimeter {
      udev rule (uaccess for 5345:1234) already grants the logged-in user
      the device node. Endpoint/command map verified against a user's
      working pyusb implementation on Linux. */
+  // Claim + SCPI-verify an OWON raw-USB device. Commits the transport only
+  // when the meter answers the handshake; a silent device (asleep, wedged,
+  // or the wrong unit behind the shared 5345:1234 VID:PID) is closed and
+  // released immediately — holding the claim detaches the kernel usbserial
+  // driver and hides the meter from the serial port picker (v6.0.20).
+  // emitOpenErrors: the user-facing path reports claim failures, the
+  // pre-probe path stays silent and falls through to the serial transport.
+  async _claimOWONUSB(dev, emitOpenErrors = false) {
+    try {
+      await dev.open();
+      if (!dev.configuration) await dev.selectConfiguration(1);
+      await dev.claimInterface(0);
+    } catch (err) {
+      if (emitOpenErrors) {
+        this._emit('error', 'OWON USB open failed: ' + err.message +
+          (/Linux/.test(navigator.userAgent) && !/Android|CrOS/.test(navigator.userAgent)
+            ? ' — if you previously bound usbserial to the meter, remove it: sudo modprobe -r usbserial'
+            : ''));
+      }
+      return null;
+    }
+    this._usbDev = dev;
+    this._transport = 'usb';
+    this._buffer = [];
+    this._running = true;
+    if (!(await this._scpiHandshake())) {
+      this._running = false;
+      this._transport = 'serial';
+      this._usbDev = null;
+      try { await dev.close(); } catch (_) { }
+      return null;
+    }
+    return dev;
+  }
+
+  _finishOWONUSBConnect() {
+    this.connected = true;
+    this._detectedProtocol = 'owon-hds';
+    this._startRateTimer();
+    this._emit('status', 'Connected — OWON HDS over USB');
+    this._initSCPISession();
+  }
+
   async _openOWONUSB() {
     if (!('usb' in navigator)) return false;
     let dev;
@@ -405,28 +466,45 @@ class Multimeter {
     } catch (_) {
       return false; // no OWON USB device present, or user cancelled
     }
-    try {
-      await dev.open();
-      if (!dev.configuration) await dev.selectConfiguration(1);
-      await dev.claimInterface(0);
-    } catch (err) {
-      this._emit('error', 'OWON USB open failed: ' + err.message +
-        (/Linux/.test(navigator.userAgent) && !/Android|CrOS/.test(navigator.userAgent)
-          ? ' — if you previously bound usbserial to the meter, remove it: sudo modprobe -r usbserial'
-          : ''));
-      try { await dev.close(); } catch (_) { }
-      return false;
-    }
-    this._usbDev = dev;
-    this._transport = 'usb';
-    this.connected = true;
-    this._detectedProtocol = 'owon-hds';
-    this._running = true;
-    this._buffer = [];
-    this._startRateTimer();
-    this._emit('status', 'Connected — OWON HDS over USB');
-    this._initSCPISession();
+    if (!(await this._claimOWONUSB(dev, true))) return false;
+    this._finishOWONUSBConnect();
     return true;
+  }
+
+  // SCPI liveness probe used before committing to a connection: the HDS
+  // answers ':SCPI:DISP?' when it's on its DMM screen, otherwise one of the
+  // two read dialects. Silence on all three means the meter is asleep,
+  // powered off, or wedged — the caller must NOT keep the device claimed.
+  async _scpiHandshake() {
+    if (await this._querySCPI(':SCPI:DISP?', 800) !== null) return true;
+    if (await this._querySCPI(':READ?', 1200) !== null) return true;
+    return (await this._querySCPI(':DMM:MEAS?', 1200)) !== null;
+  }
+
+  // Full teardown after a reconnect cycle or detection deadline gives up:
+  // everything back to the pre-CONNECT state so the replug listeners go
+  // dormant and the user's next CONNECT click starts clean. v6.0.20 left
+  // _running=true here, so every USB re-enumeration re-grabbed the device —
+  // while a WebUSB claim is held, the kernel usbserial driver is detached
+  // and the meter VANISHES from the serial port picker (tester, v6.0.20).
+  async _fullResetSession(msg) {
+    this._resetSCPISession();
+    this._running = false;
+    this._reconnecting = false;
+    this.connected = false;
+    this._transport = 'serial';
+    if (this.reader) {
+      try { await this.reader.cancel(); } catch (_) { }
+      try { await this.reader.releaseLock(); } catch (_) { }
+      this.reader = null;
+    }
+    if (this._writer) {
+      try { await this._writer.releaseLock(); } catch (_) { }
+      this._writer = null;
+    }
+    if (this.port) { try { await this.port.close(); } catch (_) { } this.port = null; }
+    if (this._usbDev) { try { await this._usbDev.close(); } catch (_) { } this._usbDev = null; }
+    if (msg) this._emit('error', msg);
   }
 
   // Desktop pre-probe: claim the OWON raw-USB device and verify it speaks
@@ -444,39 +522,12 @@ class Multimeter {
       // No chooser UI flashes here: in the desktop app select-usb-device
       // auto-picks the OWON, or rejects silently when none is plugged in.
       dev = granted || await navigator.usb.requestDevice({ filters: [Multimeter.OWON_USB] });
-      await dev.open();
-      if (!dev.configuration) await dev.selectConfiguration(1);
-      await dev.claimInterface(0);
     } catch (_) {
       return false; // no OWON present, or the OS refuses access (udev/uaccess)
     }
-    try {
-      this._usbDev = dev;
-      this._transport = 'usb';
-      this._buffer = [];
-      this._running = true;
-      // ':SCPI:DISP?' activates DMM SCPI and replies 'scpion' — but only
-      // once the meter is on its DMM screen. If it stays silent, probe
-      // both known firmware dialects before concluding it's not an HDS.
-      if (await this._querySCPI(':SCPI:DISP?', 800) === null) {
-        const a = await this._querySCPI(':READ?', 1200);
-        if (a === null && await this._querySCPI(':DMM:MEAS?', 1200) === null) {
-          throw new Error('no SCPI response');
-        }
-      }
-      this.connected = true;
-      this._detectedProtocol = 'owon-hds';
-      this._startRateTimer();
-      this._emit('status', 'Connected — OWON HDS over USB');
-      this._initSCPISession();
-      return true;
-    } catch (_) {
-      this._running = false;
-      this._transport = 'serial';
-      this._usbDev = null;
-      try { await dev.close(); } catch (_) { }
-      return false;
-    }
+    if (!(await this._claimOWONUSB(dev))) return false;
+    this._finishOWONUSBConnect();
+    return true;
   }
 
   // Is the data link (serial port or USB device) currently usable?
@@ -502,10 +553,15 @@ class Multimeter {
 
     while (this._running && this.port && this.port.readable) {
       this.reader = this.port.readable.getReader();
+      // done:true per the Web Serial spec means the port was closed or hit a
+      // fatal error — reading is OVER. The outer loop must exit too: re-entering
+      // while readable is still truthy spin-loops on instantly-resolved reads
+      // and starves every timer in the app (found via the v6.0.21 mock suite).
+      let linkDown = false;
       try {
         while (this._running) {
           const { value, done } = await this.reader.read();
-          if (done) break;
+          if (done) { linkDown = true; break; }
           if (value) {
             for (let i = 0; i < value.length; i++) {
               this._buffer.push(value[i]);
@@ -521,6 +577,7 @@ class Multimeter {
         try { this.reader.releaseLock(); } catch (_) { }
         this.reader = null;
       }
+      if (linkDown) break;
     }
     if (this._readingTimer) clearInterval(this._readingTimer);
 
@@ -733,6 +790,7 @@ class Multimeter {
   _resetSCPISession() {
     if (this._scpiPollTimer) { clearInterval(this._scpiPollTimer); this._scpiPollTimer = null; }
     if (this._scpiProbeTimer) { clearTimeout(this._scpiProbeTimer); this._scpiProbeTimer = null; }
+    if (this._detectTimer) { clearTimeout(this._detectTimer); this._detectTimer = null; }
     if (this._scpiPending) { const p = this._scpiPending; this._scpiPending = null; p.resolve(null); }
     this._scpiProbeCount = 0;
     this._probeSentAt = 0;
@@ -740,6 +798,7 @@ class Multimeter {
     this._scpiFails = 0;
     this._scpiHintShown = false;
     this._scpiReadCmd = null;
+    this._scpiGarbage = 0;
     this._scpiConfTicks = 0;
     this._lastGoodPollAt = 0;
   }
@@ -845,6 +904,11 @@ class Multimeter {
 
   _initSCPISession() {
     if (this._scpiPollTimer) clearInterval(this._scpiPollTimer);
+    if (this._detectTimer) { clearTimeout(this._detectTimer); this._detectTimer = null; }
+    // Fresh dialect probe every session: a previous session may have locked
+    // onto a dialect the current meter state doesn't answer.
+    this._scpiReadCmd = null;
+    this._scpiGarbage = 0;
     this._emit('status', 'OWON HDS — activating DMM SCPI mode');
     (async () => {
       await this._querySCPI(':SCPI:DISP?', 600); // activates DMM SCPI; reply "scpion"
@@ -888,6 +952,7 @@ class Multimeter {
       const reading = line !== null ? this._parseOWONHDS(line) : null;
       if (reading) {
         this._scpiFails = 0;
+        this._scpiGarbage = 0;
         this._lastGoodPollAt = Date.now();
         this._dispatchReading(this._applyCalibration(reading));
         // ':DMM:MEAS?' replies are bare numbers with no unit — sync the
@@ -899,6 +964,17 @@ class Multimeter {
           this._scpiConfTicks = 0;
           const conf = await this._querySCPI(':DMM:CONFigure?', 600);
           if (conf) this._syncModeFromConfig(conf);
+        }
+      } else if (line !== null) {
+        // Non-null but unparseable — the locked dialect answers with
+        // something this firmware state doesn't describe as a reading
+        // (e.g. a CSV-style reply). Switch to the other dialect; a locked
+        // dialect that goes fully silent (null) is handled by the idle
+        // timer below. Resetting to null here would NOT re-probe: the
+        // null-reply fallback only fires when unlocked.
+        if (++this._scpiGarbage >= 5) {
+          this._scpiGarbage = 0;
+          this._scpiReadCmd = (this._scpiReadCmd === SLOW) ? FAST : SLOW;
         }
       } else {
         this._scpiFails++;
@@ -922,11 +998,15 @@ class Multimeter {
   // The firmware drops the USB link on idle — recover by re-opening the
   // (re-enumerated) OWON device without bothering the user again. Also
   // invoked from the navigator.usb/serial 'connect' listeners on replug.
+  // Every attempt PROBES before committing: a claimed-but-silent device is
+  // released again immediately, because holding the raw-USB claim detaches
+  // the kernel usbserial driver and makes the meter vanish from the serial
+  // port picker (exactly what v6.0.20's blind claim did — tester report).
   async _tryReconnectHDS() {
     if (this._reconnecting || !this._running) return;
     this._reconnecting = true;
-    for (let attempt = 1; attempt <= 5; attempt++) {
-      await new Promise(r => setTimeout(r, 2000));
+    for (let attempt = 1; attempt <= this._reconnectAttempts; attempt++) {
+      await new Promise(r => setTimeout(r, this._reconnectDelayMs));
       if (!this._running) { this._reconnecting = false; return; }
       try {
         if (this._transport === 'usb') {
@@ -935,10 +1015,27 @@ class Multimeter {
             d.vendorId === Multimeter.OWON_USB.vendorId &&
             d.productId === Multimeter.OWON_USB.productId);
           if (!owon) continue;
+          // The dropped session's handle may still be open (the link died,
+          // we never closed it) — open() on it would reject and burn an
+          // attempt. Close the stale handle first, deterministically.
+          if (this._usbDev) { try { await this._usbDev.close(); } catch (_) { } this._usbDev = null; }
           await owon.open();
           if (!owon.configuration) await owon.selectConfiguration(1);
           await owon.claimInterface(0);
+          if (!this._running) { // disconnect() ran while we were opening
+            try { await owon.close(); } catch (_) { }
+            this._reconnecting = false;
+            return;
+          }
           this._usbDev = owon;
+          this._transport = 'usb';
+          this._buffer = [];
+          this._running = true;
+          // Probe before committing — never hold a silent (asleep/wedged)
+          // meter hostage.
+          if (!(await this._scpiHandshake())) {
+            throw new Error('silent');
+          }
           this._buffer = [];
           this._scpiFails = 0;
           this._lastGoodPollAt = Date.now();
@@ -959,7 +1056,15 @@ class Multimeter {
         // on a port we demonstrably own.
         const owon = byVid || (ports.length === 1 ? ports[0] : null);
         if (!owon) continue;
+        // Same stale-handle treatment as the USB branch: the dropped port
+        // is still open — open() would reject with InvalidStateError.
+        if (this.port) { try { await this.port.close(); } catch (_) { } this.port = null; }
         await owon.open({ baudRate: 115200, dataBits: 8, stopBits: 1, parity: 'none' });
+        if (!this._running) { // disconnect() ran while we were opening
+          try { await owon.close(); } catch (_) { }
+          this._reconnecting = false;
+          return;
+        }
         this.port = owon;
         this._writer = null;
         this._buffer = [];
@@ -971,20 +1076,27 @@ class Multimeter {
         this._startReading();
         this._initSCPISession();
         return;
-      } catch (_) { /* device not back yet — keep trying */ }
+      } catch (_) {
+        // Probe failed or device not back yet — release whatever we grabbed
+        // so the OS/driver keeps the port visible, and try again later.
+        if (this._usbDev && this._transport === 'usb') {
+          try { await this._usbDev.close(); } catch (_) { }
+          this._usbDev = null;
+        }
+        if (this.port) {
+          try { await this.port.close(); } catch (_) { }
+          this.port = null;
+        }
+      }
     }
     this._reconnecting = false;
     if (this._running) {
-      this.connected = false;
-      // Stop polling the dead link and drop the stale handles — the
-      // navigator.usb/serial 'connect' listeners fire on replug and call
-      // this method again, so recovery needs no CONNECT click.
-      if (this._scpiPollTimer) { clearInterval(this._scpiPollTimer); this._scpiPollTimer = null; }
-      if (this.port) { try { await this.port.close(); } catch (_) { } this.port = null; }
-      if (this._usbDev) { try { await this._usbDev.close(); } catch (_) { } this._usbDev = null; }
-      this._emit('error', 'OWON HDS connection lost — unplug/replug the meter and it reconnects ' +
-        'automatically. If it never comes back, check the meter\'s own AUTO-OFF setting ' +
-        '(its sleep timer ignores SCPI polling).');
+      // Full reset: replug listeners must go dormant — otherwise every USB
+      // re-enumeration re-grabs the meter and it never shows up in the
+      // picker again (v6.0.20 regression). The user presses CONNECT.
+      await this._fullResetSession(
+        'Lost the meter and it stopped answering (its AUTO-OFF may have powered it down — ' +
+        'turn the meter on, then CONNECT again.)');
     }
   }
 

@@ -301,6 +301,127 @@ Object.defineProperty(globalThis, 'navigator', {
     check('fast meter disconnected', meter2.connected === false);
   }
 
+  /* ── 8. v6.0.21 — silent-meter recovery (tester regression round 3) ── */
+  console.log('8) v6.0.21 — silent meter: probe-before-commit, detect deadline, full reset');
+  {
+    // USB device that opens fine but never answers SCPI (meter asleep/wedged)
+    class MockSilentUSB {
+      constructor() {
+        this.vendorId = 0x5345;
+        this.productId = 0x1234;
+        this.opened = false;
+        this.closeCount = 0;
+        this.claimed = false;
+      }
+      async open() { this.opened = true; }
+      async close() { this.opened = false; this.closeCount++; }
+      async selectConfiguration() { }
+      async claimInterface() { this.claimed = true; }
+      async transferOut() { return { status: 'ok' }; }
+      async transferIn() { return { status: 'stall', data: null }; } // silence, instantly
+    }
+    const silentUsb = new MockSilentUSB();
+    navigator.usb = {
+      getDevices: async () => [silentUsb],
+      requestDevice: async () => silentUsb,
+      addEventListener: () => { },
+    };
+
+    // A) probe-before-commit: connect() must NOT hold the silent device
+    navigator.serial.requestPort = async () => { const e = new Error('no port chosen'); e.name = 'NotFoundError'; throw e; };
+    const m3 = new Multimeter();
+    const okProbe = await m3.connect();
+    check('silent USB device → connect() fails cleanly', okProbe === false);
+    check('probe released the silent device (no hostage claim)', silentUsb.closeCount >= 1,
+      `closeCount=${silentUsb.closeCount}`);
+    check('no session left running after failed connect', m3._running === false && m3.connected === false);
+
+    // B) reconnect loop on a dropped USB session: probes before committing,
+    //    releases the device every attempt, and gives up with a FULL reset
+    //    (_running=false → replug listeners go dormant → picker sees the meter)
+    const m4 = new Multimeter();
+    const closeBefore = silentUsb.closeCount;
+    m4._transport = 'usb';
+    m4._running = true;      // session that lost its link
+    m4.connected = false;
+    m4._reconnectAttempts = 2;
+    m4._reconnectDelayMs = 30;
+    const m4errors = [];
+    m4.on('error', e => m4errors.push(e));
+    await m4._tryReconnectHDS();
+    check('reconnect gave up with error message', m4errors.length === 1 && /stopped answering/.test(m4errors[0]),
+      m4errors[0] || 'no error');
+    check('give-up fully resets _running (listeners dormant)', m4._running === false);
+    check('give-up resets transport to serial', m4._transport === 'serial');
+    check('give-up drops the USB device handle', m4._usbDev === null);
+    check('silent device released on EVERY attempt', silentUsb.closeCount >= closeBefore + 2,
+      `closeCount=${silentUsb.closeCount} (was ${closeBefore})`);
+  }
+  {
+    // C) serial auto-detect deadline: a connected-but-silent port must not
+    //    sit at "DISCONNECT + no data + no name" forever (tester, v6.0.20)
+    class MockSilentPort {
+      constructor() { this.opened = false; }
+      async open() { this.opened = true; }
+      async close() { this.opened = false; }
+      getInfo() { return { usbVendorId: 0x5345, usbProductId: 0x1234 }; }
+      get readable() {
+        return {
+          getReader: () => ({
+            read: async () => ({ value: undefined, done: true }),
+            releaseLock: () => { },
+            cancel: async () => { },
+          }),
+        };
+      }
+      get writable() { return { getWriter: () => ({ write: async () => { }, releaseLock: () => { } }) }; }
+    }
+    const silentPort = new MockSilentPort();
+    navigator.serial.requestPort = async () => silentPort;
+    navigator.serial.getPorts = async () => [silentPort];
+    const m5 = new Multimeter();
+    m5._detectTimeoutMs = 600;
+    const m5errors = [];
+    m5.on('error', e => m5errors.push(e));
+    const ok5 = await m5.connect();
+    check('silent serial port "connects" (button would say DISCONNECT)', ok5 === true);
+    await sleep(1300);
+    check('detect deadline fired with actionable error',
+      m5errors.some(e => /No response from the meter/.test(e)), m5errors.join(' | '));
+    check('deadline fully reset the session (CONNECT works again)',
+      m5.connected === false && m5._running === false && m5.port === null);
+  }
+  {
+    // D) dialect rotation: firmware that answers ':DMM:MEAS?' with a
+    //    CSV-style line the parser rejects must rotate to ':READ?' instead
+    //    of hammering garbage forever (v6.0.20 lock-in trap)
+    class MockCSVMeter extends MockHDS {
+      _respond(cmd) {
+        let resp = null;
+        if (cmd === '*IDN?') resp = 'OWON,HDS242,26190843,V8.5.0';
+        else if (cmd === ':SCPI:DISP?') resp = 'scpiON';
+        else if (cmd === ':DMM:MEAS?') resp = 'VOLT,3.2800E+00'; // parser-rejecting reply
+        else if (cmd === ':READ?') resp = 'V=9.99V';
+        if (resp !== null) setTimeout(() => this._chunks.push(new TextEncoder().encode(resp + '\r\n')), 15);
+      }
+    }
+    const csvPort = new MockCSVMeter();
+    navigator.serial.requestPort = async () => csvPort;
+    navigator.serial.getPorts = async () => [csvPort];
+    const m6 = new Multimeter();
+    m6.setPollInterval(60);
+    const readings6 = [];
+    m6.on('reading', r => readings6.push(r));
+    const ok6 = await m6.connect(null, 'owon-hds');
+    check('CSV-dialect meter connected', ok6 === true);
+    await sleep(2600); // session init (~700ms) + 5 garbage polls + rotation
+    check('rotated from garbage dialect to :READ?', m6._scpiReadCmd === ':READ?',
+      `cmd=${m6._scpiReadCmd}`);
+    check('readings flow after rotation', readings6.some(r => Math.abs(r.value - 9.99) < 1e-9),
+      `got ${readings6.length} readings`);
+    await m6.disconnect();
+  }
+
   console.log(`\n${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);
 })();

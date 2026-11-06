@@ -610,7 +610,11 @@ function setupDeviceAccess(ses) {
     // ttyS0–31 ports (tester report, v6.0.19). Keep only USB-looking ports:
     // Chromium stamps vendorId/productId on ports served by its own
     // usbserial driver, but some builds expose just a displayName or a
-    // ttyUSB/ttyACM name — accept any of the three signals.
+    // ttyUSB/ttyACM name — accept any of the three signals. No lone-port
+    // auto-pick here: an auto-picked wrong/silent port used to sit at
+    // "detecting…" forever, and v6.0.20's variant auto-opened ports while
+    // our own reconnect logic held the meter — the short list is the
+    // predictable behavior.
     const usbLike = (p) => (p.vendorId && p.productId) || p.displayName ||
       /^tty(USB|ACM)\d+$/.test(p.portName || '');
     let shown = portList.filter(usbLike);
@@ -624,7 +628,6 @@ function setupDeviceAccess(ses) {
       seenLabels.add(label);
       return true;
     });
-    if (shown.length === 1) { callback(shown[0].portId); return; }
     const wc = mainWindow.webContents;
     if (pendingPortPick) pendingPortPick.finish('');
     let settled = false;
@@ -644,7 +647,7 @@ function setupDeviceAccess(ses) {
       },
     };
     ipcMain.on('serial-port-pick', onPick);
-    wc.send('serial-port-choice', portList.map(p => ({
+    wc.send('serial-port-choice', shown.map(p => ({
       portId: p.portId,
       label: (p.displayName ? p.displayName + ' — ' : '') + (p.portName || p.portId),
     })));
