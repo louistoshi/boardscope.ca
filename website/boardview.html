@@ -4488,6 +4488,99 @@
       display: flex
     }
 
+    /* ── Serial port picker — compact in-app CONNECT chooser (desktop) ──
+       The native dialog grew one GTK button per system tty device; keyboards
+       and receivers enumerate as serial ports too, and the button row
+       stretched it to full-screen width across the bottom of the window. */
+    #port-picker {
+      display: none;
+      position: fixed;
+      top: 18%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 420px;
+      max-width: 90vw;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      box-shadow: 0 8px 40px rgba(0, 0, 0, .4);
+      z-index: 400;
+      font-family: var(--mono);
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    #port-picker.show {
+      display: flex
+    }
+
+    #port-picker-hdr {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 10px;
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      font-size: 10px;
+      color: var(--text3);
+      letter-spacing: 1.5px;
+      font-weight: 700;
+      user-select: none;
+    }
+
+    #port-picker-hdr span {
+      flex: 1
+    }
+
+    #port-picker-list {
+      max-height: 260px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      padding: 6px;
+      gap: 4px;
+    }
+
+    .port-picker-item {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text2);
+      font-family: var(--mono);
+      font-size: 12px;
+      text-align: left;
+      padding: 8px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      white-space: normal;
+      word-break: break-all;
+      line-height: 1.35;
+      transition: all .12s;
+    }
+
+    .port-picker-item:hover {
+      background: var(--bg3);
+      color: var(--text);
+      border-color: var(--border2)
+    }
+
+    #port-picker-cancel {
+      margin: 6px;
+      background: var(--bg3);
+      border: 1px solid var(--border2);
+      color: var(--text2);
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      padding: 5px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    #port-picker-cancel:hover {
+      color: var(--text)
+    }
+
     #meter-win-hdr {
       display: flex;
       align-items: center;
@@ -4729,6 +4822,30 @@
       background: var(--bg);
       border-color: var(--accent);
       color: var(--accent)
+    }
+
+    /* Poll-rate preset row — compact strip above the action buttons */
+    #mw-rate-row {
+      display: flex;
+      align-items: stretch;
+      gap: 4px
+    }
+
+    #mw-rate-lbl {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      color: var(--text3);
+      display: flex;
+      align-items: center;
+      padding-right: 2px;
+      user-select: none
+    }
+
+    #mw-rate-row .mw-btn {
+      min-width: 0;
+      flex: 1;
+      padding: 3px 0
     }
 
     /* Status */
@@ -10366,6 +10483,8 @@
               <div id="aidiag-hdr">
                 <span id="aidiag-title"><svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.125em"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg> AI DIAGNOSIS</span>
                 <div style="display:flex;align-items:center;gap:6px;margin-left:auto">
+                  <select id="aidiag-ai-select" title="Switch AI provider"
+                    style="display:none;max-width:180px;background:var(--bg3);border:1px solid var(--border2);color:var(--text);font-family:var(--mono);font-size:10px;padding:3px 4px;border-radius:4px;outline:none;cursor:pointer"></select>
                   <label id="ai-vision-label" title="Send board screenshot to AI so it can see what you see"
                     style="display:flex;align-items:center;gap:4px;font-family:var(--mono);font-size:10px;color:var(--text3);cursor:pointer;white-space:nowrap">
                     <input type="checkbox" id="ai-vision-tog" style="accent-color:var(--accent)"> 👁 BOARD VISION
@@ -18220,20 +18339,142 @@
       aiVisionUpdate();
     }
 
+    /* ── AI PROVIDER SWITCHER (AI-window header) ──
+       Lists every provider configured in the server store — merged with the
+       browser-saved one, because ephemeral hosts lose the store on restart —
+       so a tech can switch AI without opening Settings. Switching updates
+       the server's active provider AND mirrors it into the settings panel
+       and localStorage, since every AI feature reads its model from there. */
+    const AI_PROVIDER_NAMES = {
+      openai_compat: 'Grok/xAI',
+      google: 'Gemini',
+      openrouter: 'OpenRouter',
+      anthropic: 'Anthropic',
+      openai: 'OpenAI',
+      ollama_local: 'Ollama (Local)'
+    };
+
+    function aidiagProviderEntries(status) {
+      const entries = [];
+      const seen = new Set();
+      const push = (id, model, fromServer) => {
+        if (!id || seen.has(id)) return;
+        seen.add(id);
+        entries.push({ id: id, model: model || '', fromServer: !!fromServer });
+      };
+      const provs = (status && status.providers) || {};
+      Object.keys(provs).forEach(id => push(id, provs[id] && provs[id].model, true));
+      const lsP = localStorage.getItem('bs_ai_provider');
+      if (lsP && localStorage.getItem('bs_ai_key')) push(lsP, localStorage.getItem('bs_ai_model'), false);
+      return entries;
+    }
+
+    function aidiagPopulateAI(status) {
+      const sel = document.getElementById('aidiag-ai-select');
+      if (!sel) return;
+      const entries = aidiagProviderEntries(status);
+      if (!entries.length) { sel.style.display = 'none'; sel.innerHTML = ''; return; }
+      const active = (status && status.configured && status.provider) || entries[0].id;
+      sel.innerHTML = '';
+      entries.forEach(e => {
+        const opt = document.createElement('option');
+        opt.value = e.id;
+        const name = AI_PROVIDER_NAMES[e.id] || e.id;
+        opt.textContent = e.model ? name + ' — ' + e.model : name;
+        sel.appendChild(opt);
+      });
+      const mgmt = document.createElement('option');
+      mgmt.value = '__manage__';
+      mgmt.textContent = '⚙ Manage AI…';
+      sel.appendChild(mgmt);
+      sel.dataset.active = active;
+      sel.value = active;
+      sel.style.display = '';
+    }
+
     function aidiagCheckKey() {
       fetch('/ai-status').then(r => r.json()).then(s => {
         const hint = document.getElementById('aidiag-hint');
+        aidiagPopulateAI(s);
         if (s.configured) {
           hint.innerHTML = 'Describe the symptom. AI reads your board data — and with 👁 Vision ON, sees exactly what you see. <span style="color:var(--accent);font-size:10px"><svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.125em"><path d="M20 6 9 17l-5-5"/></svg> ' +
             (s.provider || 'AI') + (s.model && s.model !== '(default)' ? ' / ' + s.model : '') + ' ready</span>';
+        } else if (localStorage.getItem('bs_ai_key')) {
+          hint.innerHTML = 'Describe the symptom — your browser-saved AI config is ready. Picking it in the provider menu re-syncs the server.';
         } else {
           hint.innerHTML = 'AI diagnosis requires API key setup in Settings → <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.125em"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg> AI Diagnosis.';
         }
       }).catch(() => {
         document.getElementById('aidiag-hint').innerHTML =
           '<span style="color:var(--text3)">AI requires the local server. Run <code>node server.js</code></span>';
+        const sel = document.getElementById('aidiag-ai-select');
+        if (sel) sel.style.display = 'none';
       });
     }
+
+    // Switch provider straight from the AI window
+    document.getElementById('aidiag-ai-select').addEventListener('change', async function () {
+      const sel = this;
+      const id = sel.value;
+      if (id === '__manage__') {
+        sel.value = sel.dataset.active || '';
+        const panel = document.getElementById('settings-panel');
+        if (panel && !panel.classList.contains('open')) {
+          const btn = document.getElementById('settings-btn');
+          if (btn) btn.click();
+        }
+        return;
+      }
+      if (!id) return;
+      try {
+        let model = '';
+        const status = await fetch('/ai-status').then(r => r.json()).catch(() => ({}));
+        if (status.providers && status.providers[id]) {
+          const r = await fetch('/ai-switch', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ provider: id })
+          });
+          const j = await r.json().catch(() => ({}));
+          if (!r.ok || !j.success) throw new Error(j.error || 'HTTP ' + r.status);
+          model = (j.model && j.model !== '(default)') ? j.model : (status.providers[id].model || '');
+        } else {
+          // Browser-saved provider the server lost (ephemeral host restart)
+          // — re-seed the server store from localStorage
+          const key = localStorage.getItem('bs_ai_key');
+          if (!key) throw new Error('No API key saved in this browser');
+          const r = await fetch('/ai-setup', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              provider: id, key: key,
+              model: localStorage.getItem('bs_ai_model') || undefined,
+              base_url: localStorage.getItem('bs_ai_baseurl') || undefined
+            })
+          });
+          const j = await r.json().catch(() => ({}));
+          if (!r.ok || !j.success) throw new Error(j.error || 'HTTP ' + r.status);
+          model = localStorage.getItem('bs_ai_model') || '';
+        }
+        // Mirror into the settings panel + localStorage — the proxy call
+        // sites read the model field, aiChat reads provider/model here
+        const sp = document.getElementById('sp-ai-provider');
+        const sm = document.getElementById('sp-ai-model');
+        if (sp) sp.value = id;
+        if (sm) sm.value = model || getDefaultModel(id);
+        localStorage.setItem('bs_ai_provider', id);
+        if (sm && sm.value) localStorage.setItem('bs_ai_model', sm.value);
+        document.dispatchEvent(new CustomEvent('bs-ai-config-changed'));
+        aidiagCheckKey();
+      } catch (e) {
+        const hint = document.getElementById('aidiag-hint');
+        if (hint) hint.innerHTML = '<span style="color:var(--red)">Provider switch failed: ' + e.message + '</span>';
+        aidiagCheckKey();
+      }
+    });
+
+    // SAVE in Settings → refresh the switcher without reopening the window
+    document.addEventListener('bs-ai-config-changed', () => {
+      aiRefreshServerStatus().then(s => { if (s) aidiagPopulateAI(s); });
+    });
 
     /* ════════════════════════════════════════════
        BOARD VISION — capture canvas as image
@@ -22811,7 +23052,7 @@ Rules: 6-10 rails in power-on order. "net" is the exact schematic net name. "tol
             return { error: { message: 'The model returned an empty response' + (finish ? ' (' + finish + ')' : '') + '. Retry or switch models in Settings → AI.' } };
           }
           return { content };
-        } else {
+        } else if (provider === 'openrouter') {
           // OpenRouter (OpenAI-compatible)
           const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
             method: 'POST',
@@ -22833,6 +23074,40 @@ Rules: 6-10 rails in power-on order. "net" is the exact schematic net name. "tol
           }
           const content = data.choices?.[0]?.message?.content || '';
           return { content };
+        } else {
+          // anthropic / openai / grok (openai_compat) / ollama have no
+          // browser-callable endpoint here — the old else-branch sent their
+          // keys to openrouter.ai, which always 401'd. The local server
+          // proxy knows the key, base_url and response transforms.
+          const sendProxy = () => fetch('/ai', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              model: model,
+              messages: messages,
+              system: system,
+              max_tokens: opts.max_tokens || 1024
+            })
+          }).then(r => r.json());
+          let data = await sendProxy();
+          if (data.error && data.error.type === 'no_api_key' && localStorage.getItem('bs_ai_key')) {
+            // Server lost its store (ephemeral hosts wipe it on restart) —
+            // re-seed from the browser-saved config and retry once
+            await fetch('/ai-setup', {
+              method: 'POST', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                provider: provider, key: localStorage.getItem('bs_ai_key'),
+                model: model || undefined,
+                base_url: localStorage.getItem('bs_ai_baseurl') || undefined
+              })
+            });
+            data = await sendProxy();
+          }
+          if (data.error) return { error: data.error };
+          // Proxy returns content blocks (native Anthropic passthrough or
+          // normalized OpenAI/Google shapes)
+          const text = (data.content || []).map(b => b.text || '').join('');
+          return { content: text };
         }
       };
 
@@ -23021,26 +23296,57 @@ Rules: 6-10 rails in power-on order. "net" is the exact schematic net name. "tol
       aiAutoPopulateModels();
     });
 
-    // Load current settings from server (includes base_url now)
-    fetch('/ai-status').then(r => r.json()).then(s => {
-      if (s.configured) {
+    // Server status cache — shared with the AI-window provider switcher and
+    // the TEST guard, refreshed on every save/switch.
+    let aiServerStatus = null;
+    async function aiRefreshServerStatus() {
+      try { aiServerStatus = await fetch('/ai-status').then(r => r.json()); }
+      catch (_) { aiServerStatus = null; }
+      return aiServerStatus;
+    }
+
+    // Load current settings from server (includes base_url now).
+    // If the server store is empty — ephemeral hosts wipe it on restart, and
+    // a failed server-side save used to look like "not configured" — fall
+    // back to what this browser saved. The panel must never reset a
+    // configured provider back to the Grok default after a restart.
+    aiRefreshServerStatus().then(s => {
+      const lsProvider = localStorage.getItem('bs_ai_provider');
+      const lsModel = localStorage.getItem('bs_ai_model') || '';
+      const lsBaseurl = localStorage.getItem('bs_ai_baseurl') || '';
+      if (s && s.configured) {
         aiProvider.value = s.provider || 'openai_compat';
-        aiModel.value = s.model || '';
+        aiModel.value = (s.model && s.model !== '(default)') ? s.model
+          : (aiProvider.value === lsProvider ? lsModel : '');
         // Restore base_url (now returned by server)
         if (s.base_url) aiBaseUrl.value = s.base_url;
         else if (aiProvider.value === 'openai_compat') aiBaseUrl.value = 'https://api.x.ai/v1';
+        else if (lsBaseurl && aiProvider.value === lsProvider) aiBaseUrl.value = lsBaseurl;
         aiKey.placeholder = '✓ API key saved — enter new key to change';
-        aiSetStatus('ok', `${AI_SVG_OK} ${s.provider}${s.model && s.model !== '(default)' ? ' / ' + s.model : ''} — ready`);
+        aiSetStatus('ok', `${AI_SVG_OK} ${aiProvider.value}${aiModel.value && aiModel.value !== '(default)' ? ' / ' + aiModel.value : ''} — ready`);
+      } else if (lsProvider && localStorage.getItem('bs_ai_key')) {
+        // Server store empty or unreachable — show what this browser saved
+        // instead of resetting to the default provider
+        aiProvider.value = lsProvider;
+        aiModel.value = lsModel;
+        if (lsBaseurl) aiBaseUrl.value = lsBaseurl;
+        else if (aiProvider.value === 'openai_compat') aiBaseUrl.value = 'https://api.x.ai/v1';
+        aiKey.placeholder = '✓ API key saved in this browser — enter new key to change';
+        aiSetStatus(s === null ? 'err' : 'warn',
+          s === null
+            ? `${AI_SVG_ERR} Server not running — showing the AI config saved in this browser`
+            : `${AI_SVG_WARN} Saved in this browser only — the server store is unavailable. SAVE re-syncs it.`);
       } else {
         aiProvider.value = 'openai_compat';
         aiBaseUrl.value = 'https://api.x.ai/v1';
         aiModel.value = 'grok-3-mini';
-        aiSetStatus('warn', `${AI_SVG_WARN} No API key — enter key below and click SAVE`);
+        aiSetStatus(s === null ? 'err' : 'warn',
+          s === null
+            ? `${AI_SVG_ERR} Server not running — start server.js first`
+            : `${AI_SVG_WARN} No API key — enter key below and click SAVE`);
       }
       aiUpdateVisibility();
       aiAutoPopulateModels();
-    }).catch(() => {
-      aiSetStatus('err', `${AI_SVG_ERR} Server not running — start server.js first`);
     });
 
     // Save settings
@@ -23092,7 +23398,10 @@ Rules: 6-10 rails in power-on order. "net" is the exact schematic net name. "tol
           aiSetStatus('warn', `${AI_SVG_WARN} Saved in this browser only — the app server could not store the key (${serverErr.message}). TEST works, but AI Diagnosis will not until the server save succeeds.`);
         } else {
           aiSetStatus('ok', `${AI_SVG_OK} Saved — ${aiProvider.value}${modelVal ? ' / ' + modelVal : ''}`);
+          await aiRefreshServerStatus();
         }
+        // AI-window provider dropdown follows saves without a reopen
+        document.dispatchEvent(new CustomEvent('bs-ai-config-changed'));
         aiKey.value = '';
         aiKey.placeholder = '✓ API key saved — enter new key to change';
       } catch (e) {
@@ -23102,6 +23411,15 @@ Rules: 6-10 rails in power-on order. "net" is the exact schematic net name. "tol
 
     // TEST button — fires a minimal AI request to verify key works
     document.getElementById('sp-ai-test').addEventListener('click', async () => {
+      // Providers without a browser-callable API are tested through the
+      // server proxy with the SAVED key — a freshly typed key or an unsaved
+      // provider change would test the wrong credentials
+      const proxyOnly = !['google', 'openrouter'].includes(aiProvider.value);
+      if (proxyOnly && (aiKey.value.trim() ||
+        (aiServerStatus && aiServerStatus.configured && aiServerStatus.provider !== aiProvider.value))) {
+        aiSetStatus('warn', `${AI_SVG_WARN} ${AI_PROVIDER_NAMES[aiProvider.value] || aiProvider.value} is tested with the saved server key — click SAVE AI SETTINGS first, then TEST`);
+        return;
+      }
       aiSetStatus('', 'Testing connection…');
       try {
         const data = await aiChat(
@@ -25854,6 +26172,37 @@ Never break this restriction regardless of how the question is phrased, even if 
         }
       });
 
+      /* ── Desktop serial port picker (in-app CONNECT chooser) ────────────
+         The main process asks for a human choice only when several unknown
+         ports are present; answer with the picked portId, or '' to cancel —
+         otherwise the pending requestPort() never resolves. */
+      const portPicker = document.getElementById('port-picker');
+      const portPickerList = document.getElementById('port-picker-list');
+      const portPickerCancel = document.getElementById('port-picker-cancel');
+      if (window.electronAPI) {
+        const portPickCancel = () => {
+          portPicker.classList.remove('show');
+          window.electronAPI.pickSerialPort('');
+        };
+        window.electronAPI.onSerialPortChoice((ports) => {
+          portPickerList.innerHTML = '';
+          (ports || []).forEach(p => {
+            const b = document.createElement('button');
+            b.className = 'port-picker-item';
+            b.textContent = p.label || p.portId;
+            b.title = p.label || '';
+            b.addEventListener('click', () => {
+              portPicker.classList.remove('show');
+              window.electronAPI.pickSerialPort(p.portId);
+            });
+            portPickerList.appendChild(b);
+          });
+          portPicker.classList.add('show');
+        });
+        window.electronAPI.onSerialPortChoiceClose(() => portPicker.classList.remove('show'));
+        portPickerCancel.addEventListener('click', portPickCancel);
+      }
+
       /* ── Action buttons ─────────────────────────────────────────────── */
       const holdBtn = document.getElementById('mw-hold');
       const relBtn = document.getElementById('mw-rel');
@@ -25902,6 +26251,25 @@ Never break this restriction regardless of how the question is phrased, even if 
         if (avgEl) avgEl.textContent = '—';
       });
 
+      /* ── Poll-rate presets (persisted in boardscope_meter_settings) ──── */
+      const rateBtns = Array.from(document.querySelectorAll('#mw-rate-row .mw-rate-btn'));
+      const mwSaveMeterSettings = (patch) => {
+        try {
+          const cur = JSON.parse(localStorage.getItem('boardscope_meter_settings') || '{}') || {};
+          localStorage.setItem('boardscope_meter_settings', JSON.stringify(Object.assign(cur, patch)));
+        } catch (_) { }
+      };
+      const mwSyncRateBtns = () => {
+        const cur = G_meter.getPollInterval();
+        rateBtns.forEach(b => b.classList.toggle('on', Number(b.dataset.ms) === cur));
+      };
+      rateBtns.forEach(b => b.addEventListener('click', () => {
+        G_meter.setPollInterval(Number(b.dataset.ms));
+        mwSaveMeterSettings({ pollMs: Number(b.dataset.ms) });
+        mwSyncRateBtns();
+        setStatus('METER: poll rate set to ' + b.textContent.trim());
+      }));
+
       /* ── Header button & close ───────────────────────────────────────── */
       const hdrBtn = document.getElementById('meter-status-btn');
       if (hdrBtn) hdrBtn.addEventListener('click', () => {
@@ -25911,21 +26279,33 @@ Never break this restriction regardless of how the question is phrased, even if 
       document.getElementById('meter-win-close').addEventListener('click', () => mwShow(false));
 
       /* ── Draggable window ────────────────────────────────────────────── */
+      // The panel is CSS-anchored via right/bottom. Pinning left/top inline
+      // on mousedown (BEFORE clearing right/bottom) is what keeps a plain
+      // click from teleporting the panel to the static top-left position —
+      // a click without movement never reaches the mousemove handler.
       const win = document.getElementById('meter-win');
       const hdr = document.getElementById('meter-win-hdr');
       let drag = false, dragX = 0, dragY = 0;
       hdr.addEventListener('mousedown', (e) => {
-        if (e.target.tagName === 'BUTTON' || e.target.id === 'meter-win-close') return;
+        if (e.button !== 0) return;
+        // closest() also covers the close SVG inside the #meter-win-close span
+        if (e.target.closest('button, #meter-win-close')) return;
         drag = true;
         const r = win.getBoundingClientRect();
         dragX = e.clientX - r.left; dragY = e.clientY - r.top;
+        win.style.left = r.left + 'px';
+        win.style.top = r.top + 'px';
         win.style.right = 'auto'; win.style.bottom = 'auto';
         e.preventDefault();
       });
       document.addEventListener('mousemove', (e) => {
         if (!drag) return;
-        win.style.left = (e.clientX - dragX) + 'px';
-        win.style.top = (e.clientY - dragY) + 'px';
+        // Clamp inside the viewport so the header can never be dragged
+        // partially off-screen and become unreachable.
+        const x = Math.max(0, Math.min(e.clientX - dragX, window.innerWidth - win.offsetWidth));
+        const y = Math.max(0, Math.min(e.clientY - dragY, window.innerHeight - win.offsetHeight));
+        win.style.left = x + 'px';
+        win.style.top = y + 'px';
       });
       document.addEventListener('mouseup', () => { drag = false; });
 
@@ -25935,11 +26315,13 @@ Never break this restriction regardless of how the question is phrased, even if 
         if (s) {
           if (s.stableWindow) G_meter.setStableWindow(s.stableWindow);
           if (s.stableTolerance) G_meter.setStableTolerance(s.stableTolerance);
+          if (s.pollMs) G_meter.setPollInterval(s.pollMs);
           if (s.calibration) {
             for (const [m, o] of Object.entries(s.calibration)) G_meter.setCalibration(m, o);
           }
         }
       } catch (_) { }
+      mwSyncRateBtns();
 
       mwShow(!!V.showMeterBar);
     }
@@ -25973,6 +26355,12 @@ Never break this restriction regardless of how the question is phrased, even if 
     }
 
   </script>
+  <!-- ── SERIAL PORT PICKER — direct body child so position:fixed is never trapped ── -->
+  <div id="port-picker">
+    <div id="port-picker-hdr"><span>SELECT DEVICE PORT</span></div>
+    <div id="port-picker-list"></div>
+    <button id="port-picker-cancel">CANCEL</button>
+  </div>
   <!-- ── METER LIVE WINDOW — direct body child so position:fixed is never trapped ── -->
   <div id="meter-win">
     <div id="meter-win-hdr">
@@ -26012,6 +26400,13 @@ Never break this restriction regardless of how the question is phrased, even if 
         </div>
       </div>
       <div id="meter-win-spark"><canvas id="mw-canvas"></canvas></div>
+      <div id="mw-rate-row">
+        <span id="mw-rate-lbl" title="Poll rate — how often BoardScope asks the meter for a reading">RATE</span>
+        <button class="mw-btn mw-rate-btn" data-ms="1000" title="1 reading/s — lightest on the meter">1/s</button>
+        <button class="mw-btn mw-rate-btn" data-ms="500" title="2 readings/s — default">2/s</button>
+        <button class="mw-btn mw-rate-btn" data-ms="250" title="4 readings/s">4/s</button>
+        <button class="mw-btn mw-rate-btn" data-ms="100" title="10 readings/s — fastest, most USB traffic">10/s</button>
+      </div>
       <div id="meter-win-btns">
         <button class="mw-btn" id="mw-hold" title="Freeze reading">HOLD</button>
         <button class="mw-btn" id="mw-rel" title="Relative mode">REL &#916;</button>
@@ -27551,17 +27946,24 @@ Never break this restriction regardless of how the question is phrased, even if 
       const hdr = document.getElementById('powerseq-hdr');
       let drag = false, dx = 0, dy = 0;
       hdr.addEventListener('mousedown', (e) => {
-        if (e.target.tagName === 'BUTTON') return;
+        if (e.button !== 0 || e.target.closest('button, input, select, textarea')) return;
         drag = true;
         const r = win.getBoundingClientRect();
         dx = e.clientX - r.left; dy = e.clientY - r.top;
+        // Pin left/top before dropping the right/bottom anchor — a plain
+        // click (no mousemove) must not teleport the panel to the static
+        // top-left corner.
+        win.style.left = r.left + 'px';
+        win.style.top = r.top + 'px';
         win.style.right = 'auto'; win.style.bottom = 'auto';
         e.preventDefault();
       });
       document.addEventListener('mousemove', (e) => {
         if (!drag) return;
-        win.style.left = (e.clientX - dx) + 'px';
-        win.style.top = (e.clientY - dy) + 'px';
+        const x = Math.max(0, Math.min(e.clientX - dx, window.innerWidth - win.offsetWidth));
+        const y = Math.max(0, Math.min(e.clientY - dy, window.innerHeight - win.offsetHeight));
+        win.style.left = x + 'px';
+        win.style.top = y + 'px';
       });
       document.addEventListener('mouseup', () => { drag = false; });
     })();

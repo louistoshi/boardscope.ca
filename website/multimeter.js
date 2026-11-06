@@ -82,9 +82,11 @@ class Multimeter {
     // serial port on stock Linux, so Web Serial alone can't reach it there.
     this._transport = 'serial';
     this._usbDev = null;              // navigator.usb device when _transport === 'usb'
-    this._scpiReadCmd = null;         // ':READ?' or ':DMM:MEAS?' — firmware-dependent
+    this._scpiReadCmd = null;         // ':DMM:MEAS?' or ':READ?' — firmware-dependent
     this._scpiConfTicks = 0;          // mode-sync cadence on the ':DMM:MEAS?' dialect
     this._reconnecting = false;       // guards the HDS reconnect loop
+    this._pollIntervalMs = 500;       // SCPI poll cadence — RATE presets in the meter window
+    this._lastGoodPollAt = 0;         // timestamp of last successful poll reading
 
     // Event bus
     this._listeners = {};
@@ -175,6 +177,37 @@ class Multimeter {
     };
     this._shortThreshold = 0.050;
     this._openThreshold = 2.0;
+
+    // Self-healing: the HDS firmware tears its USB link down without notice
+    // (idle, mode switch, auto-off sleep). Chromium re-enumerates the device
+    // on replug, and these events fire — revive the session automatically
+    // instead of asking the user to hit CONNECT again.
+    if (typeof navigator !== 'undefined') {
+      const owonReplug = () => {
+        if (this._running && !this.connected && !this._reconnecting) this._tryReconnectHDS();
+      };
+      if (navigator.usb && navigator.usb.addEventListener) {
+        navigator.usb.addEventListener('connect', (e) => {
+          if (e.device && e.device.vendorId === Multimeter.OWON_USB.vendorId &&
+            e.device.productId === Multimeter.OWON_USB.productId) owonReplug();
+        });
+      }
+      if (navigator.serial && navigator.serial.addEventListener) {
+        // Web Serial connect events carry no port — enumerate the granted
+        // ports instead. Chromium's internal usbserial driver can omit the
+        // USB IDs from getInfo(), so a lone granted port counts as ours.
+        navigator.serial.addEventListener('connect', () => {
+          navigator.serial.getPorts().then((ports) => {
+            const hit = ports.find(p => {
+              const info = (p.getInfo && p.getInfo()) || {};
+              return info.usbVendorId === Multimeter.OWON_USB.vendorId &&
+                info.usbProductId === Multimeter.OWON_USB.productId;
+            });
+            if (hit || ports.length === 1) owonReplug();
+          }).catch(() => { });
+        });
+      }
+    }
   }
 
   /* ── Event Bus ─────────────────────────────────────────────────── */
@@ -245,6 +278,21 @@ class Multimeter {
 
     // Baud rate: explicit arg > protocol default > 2400
     const baud = baudRate || Multimeter.PROTOCOLS[protocol]?.baud || 2400;
+
+    // In the desktop app, probe the OWON raw-USB transport before showing
+    // any port picker: the HDS is a bulk device that never appears as a
+    // serial port, so serial-first meant every CONNECT popped a wall of
+    // unrelated system tty devices (keyboards, receivers, rfcomm junk) —
+    // and picking one of those made the meter never connect, because the
+    // WebUSB fallback only ran after a cancel. Electron's select-usb-device
+    // handler resolves the filtered request silently; if nothing answers
+    // SCPI (serial-only OWON gear shares the same VID:PID) we fall through
+    // to the serial picker below. The web build keeps serial-first —
+    // Chrome's chooser is filtered and most meters are serial there.
+    const inDesktop = typeof window !== 'undefined' && window.electronAPI && window.electronAPI.isElectron;
+    if (inDesktop && 'usb' in navigator && (protocol === 'auto' || protocol === 'owon-hds')) {
+      if (await this._probeOWONUSB()) return true;
+    }
 
     try {
       this.port = await navigator.serial.requestPort();
@@ -379,6 +427,56 @@ class Multimeter {
     this._emit('status', 'Connected — OWON HDS over USB');
     this._initSCPISession();
     return true;
+  }
+
+  // Desktop pre-probe: claim the OWON raw-USB device and verify it speaks
+  // SCPI before committing. Returns true only when the meter answers, so
+  // serial-only OWON gear (which shares the generic 5345:1234 VID:PID)
+  // falls through to the serial transport. Every failure path is silent —
+  // the caller continues with navigator.serial.requestPort().
+  async _probeOWONUSB() {
+    if (!('usb' in navigator)) return false;
+    let dev;
+    try {
+      const granted = (await navigator.usb.getDevices()).find(d =>
+        d.vendorId === Multimeter.OWON_USB.vendorId &&
+        d.productId === Multimeter.OWON_USB.productId);
+      // No chooser UI flashes here: in the desktop app select-usb-device
+      // auto-picks the OWON, or rejects silently when none is plugged in.
+      dev = granted || await navigator.usb.requestDevice({ filters: [Multimeter.OWON_USB] });
+      await dev.open();
+      if (!dev.configuration) await dev.selectConfiguration(1);
+      await dev.claimInterface(0);
+    } catch (_) {
+      return false; // no OWON present, or the OS refuses access (udev/uaccess)
+    }
+    try {
+      this._usbDev = dev;
+      this._transport = 'usb';
+      this._buffer = [];
+      this._running = true;
+      // ':SCPI:DISP?' activates DMM SCPI and replies 'scpion' — but only
+      // once the meter is on its DMM screen. If it stays silent, probe
+      // both known firmware dialects before concluding it's not an HDS.
+      if (await this._querySCPI(':SCPI:DISP?', 800) === null) {
+        const a = await this._querySCPI(':READ?', 1200);
+        if (a === null && await this._querySCPI(':DMM:MEAS?', 1200) === null) {
+          throw new Error('no SCPI response');
+        }
+      }
+      this.connected = true;
+      this._detectedProtocol = 'owon-hds';
+      this._startRateTimer();
+      this._emit('status', 'Connected — OWON HDS over USB');
+      this._initSCPISession();
+      return true;
+    } catch (_) {
+      this._running = false;
+      this._transport = 'serial';
+      this._usbDev = null;
+      try { await dev.close(); } catch (_) { }
+      return false;
+    }
   }
 
   // Is the data link (serial port or USB device) currently usable?
@@ -624,11 +722,13 @@ class Multimeter {
 
   /* ── OWON HDS SCPI Protocol (HDS200 series: HDS242, HO5xS, …) ──── */
   // USB ID 5345:1234, ASCII SCPI lines over USB serial. The device sends
-  // nothing on its own — every reading must be polled with ':READ?'.
+  // nothing on its own — every reading must be polled (':DMM:MEAS?' fast
+  // dialect, ':READ?' slow fallback).
   // Session per OWON's HDS200 DMM SCPI document:
   //   *IDN?            → "OWON,HDS242,26190843,V8.5.0"
   //   :SCPI:DISP?      → "scpion"  (activates DMM SCPI; meter must be in DMM mode)
   //   :READ? (poll)    → "V=28.00mV" / "F=60.96kHz" / "R=4.7kΩ" / "OL" / "3.28"
+  //   :DMM:MEAS? (alt) → bare number — some firmware answers only this one
 
   _resetSCPISession() {
     if (this._scpiPollTimer) { clearInterval(this._scpiPollTimer); this._scpiPollTimer = null; }
@@ -641,6 +741,7 @@ class Multimeter {
     this._scpiHintShown = false;
     this._scpiReadCmd = null;
     this._scpiConfTicks = 0;
+    this._lastGoodPollAt = 0;
   }
 
   // Map a ':DMM:CONFigure?' reply (e.g. 'VOLTage DC', 'RESistance') to a
@@ -703,8 +804,14 @@ class Multimeter {
   }
 
   // USB query: one transferIn per response (64-byte bulk packets, same
-  // shape as the pyusb reference). A timed-out read is simply dropped —
-  // responses arrive in order, so it can't desync the next poll.
+  // shape as the pyusb reference). WebUSB transfers cannot be cancelled,
+  // so a read that loses its race against the timeout leaves that
+  // transferIn queued — the abandoned transfer then consumes exactly the
+  // late packet, which is what keeps the request/response stream synced.
+  // Do NOT add a pyusb-style pre-read flush here (draining "stale"
+  // packets first): those extra queued transfers would swallow fresh
+  // responses instead — every consumer stays paired one-to-one with a
+  // command.
   async _queryUSB(cmd, timeout = 1000) {
     const sent = await this._writeSCPI(cmd);
     if (!sent) return null;
@@ -742,8 +849,20 @@ class Multimeter {
     (async () => {
       await this._querySCPI(':SCPI:DISP?', 600); // activates DMM SCPI; reply "scpion"
       await new Promise(r => setTimeout(r, 400));
-      if (!this._running || this._detectedProtocol !== 'owon-hds' || !this.port) return;
-      this._scpiPollTimer = setInterval(() => this._pollREAD(), 500);
+      // _linkUp() covers both transports — this.port is null on the USB
+      // transport, and a plain port check silently killed the poll timer
+      // there: the meter reported "Connected" over WebUSB but never read.
+      if (!this._running || this._detectedProtocol !== 'owon-hds' || !this._linkUp()) return;
+      // Model ID — best effort, same as the pyusb reference's identify():
+      // *IDN? names the exact model (HDS242, HO5xS, …). Silence just keeps
+      // the generic label; the reading poll is not gated on it.
+      const idn = await this._querySCPI('*IDN?', 800);
+      if (idn) {
+        const model = (idn.toUpperCase().match(/\b[A-Z]{2,4}\d{2,4}[A-Z]{0,2}\b/) || [])[0];
+        if (model) this._emit('status', 'OWON ' + model + ' — SCPI active');
+      }
+      this._lastGoodPollAt = Date.now();
+      this._scpiPollTimer = setInterval(() => this._pollREAD(), this._pollIntervalMs);
       this._pollREAD();
     })();
   }
@@ -752,40 +871,48 @@ class Multimeter {
     if (this._scpiBusy || this._reconnecting || !this._running || !this._linkUp()) return;
     this._scpiBusy = true;
     try {
-      // ':READ?' per OWON's HDS200 DMM document — but some firmware (verified
-      // against a user's HDS242 over USB) only answers ':DMM:MEAS?'. Probe
-      // the alternate once a timeout hits and stay on whichever replies.
-      const cmd = this._scpiReadCmd || ':READ?';
+      // ':READ?' is OWON's documented poll command, but it blocks until the
+      // meter's NEXT conversion completes (~1 s at 1 Hz — the tester's HDS242
+      // crawled at 1 reading/s because of this). ':DMM:MEAS?' replies
+      // instantly with the last conversion and is supported by the same
+      // firmware family (some units answer ONLY that one), so probe the fast
+      // dialect first and lock onto whichever replies.
+      const FAST = ':DMM:MEAS?', SLOW = ':READ?';
+      const cmd = this._scpiReadCmd || FAST;
       let line = await this._querySCPI(cmd, this._transport === 'usb' ? 1000 : 800);
       if (line === null && !this._scpiReadCmd) {
-        this._scpiReadCmd = ':DMM:MEAS?';
+        this._scpiReadCmd = SLOW;
         line = await this._querySCPI(this._scpiReadCmd, 1000);
-        if (line === null) this._scpiReadCmd = null; // neither dialect — keep probing ':READ?'
+        if (line === null) this._scpiReadCmd = null; // neither dialect — keep probing
       }
       const reading = line !== null ? this._parseOWONHDS(line) : null;
       if (reading) {
         this._scpiFails = 0;
+        this._lastGoodPollAt = Date.now();
         this._dispatchReading(this._applyCalibration(reading));
         // ':DMM:MEAS?' replies are bare numbers with no unit — sync the
-        // active function from ':DMM:CONFigure?' every few seconds so mode
-        // tracking survives knob turns on that firmware.
-        if (this._scpiReadCmd === ':DMM:MEAS?' && ++this._scpiConfTicks >= 10) {
+        // active function from ':DMM:CONFigure?' roughly every 5 s so mode
+        // tracking survives knob turns on that firmware (cadence scales
+        // with the poll rate instead of a fixed tick count).
+        const confEvery = Math.max(10, Math.round(5000 / this._pollIntervalMs));
+        if (this._scpiReadCmd === ':DMM:MEAS?' && ++this._scpiConfTicks >= confEvery) {
           this._scpiConfTicks = 0;
           const conf = await this._querySCPI(':DMM:CONFigure?', 600);
           if (conf) this._syncModeFromConfig(conf);
         }
       } else {
         this._scpiFails++;
-        if (this._scpiFails === 6 && !this._scpiHintShown) {
+        // Judge the link by time since the last good reading, not by poll
+        // count — at a 100 ms poll rate a slow-but-alive meter would rack
+        // up 10 "fails" in one second and trip a bogus reconnect.
+        const idleMs = Date.now() - (this._lastGoodPollAt || Date.now());
+        if (idleMs > 5000 && !this._scpiHintShown) {
           this._scpiHintShown = true;
           this._emit('status', 'No DMM data — press Mode on the HDS until it shows the Multimeter screen');
         }
         // USB transport has no read-loop to notice the teardown — detect it
         // here and hand off to the reconnect loop.
-        if (this._transport === 'usb' && this._scpiFails >= 10 && !this._reconnecting) {
-          this._reconnecting = true;
-          this._tryReconnectHDS();
-        }
+        if (this._transport === 'usb' && idleMs >= 10000) this._tryReconnectHDS();
       }
     } finally {
       this._scpiBusy = false;
@@ -793,8 +920,11 @@ class Multimeter {
   }
 
   // The firmware drops the USB link on idle — recover by re-opening the
-  // (re-enumerated) OWON device without bothering the user again.
+  // (re-enumerated) OWON device without bothering the user again. Also
+  // invoked from the navigator.usb/serial 'connect' listeners on replug.
   async _tryReconnectHDS() {
+    if (this._reconnecting || !this._running) return;
+    this._reconnecting = true;
     for (let attempt = 1; attempt <= 5; attempt++) {
       await new Promise(r => setTimeout(r, 2000));
       if (!this._running) { this._reconnecting = false; return; }
@@ -811,23 +941,32 @@ class Multimeter {
           this._usbDev = owon;
           this._buffer = [];
           this._scpiFails = 0;
+          this._lastGoodPollAt = Date.now();
           this._reconnecting = false;
+          this.connected = true;
           this._emit('status', 'OWON HDS reconnected over USB (attempt ' + attempt + ')');
           this._initSCPISession();
           return;
         }
         const ports = await navigator.serial.getPorts();
-        const owon = ports.find(p => {
+        const byVid = ports.find(p => {
           const info = (p.getInfo && p.getInfo()) || {};
           return info.usbVendorId === Multimeter.OWON_USB.vendorId &&
-                 info.usbProductId === Multimeter.OWON_USB.productId;
+            info.usbProductId === Multimeter.OWON_USB.productId;
         });
+        // Chromium's internal usbserial driver can omit the USB IDs from
+        // getInfo() — fall back to a lone granted port rather than giving up
+        // on a port we demonstrably own.
+        const owon = byVid || (ports.length === 1 ? ports[0] : null);
         if (!owon) continue;
         await owon.open({ baudRate: 115200, dataBits: 8, stopBits: 1, parity: 'none' });
         this.port = owon;
         this._writer = null;
         this._buffer = [];
+        this._scpiFails = 0;
+        this._lastGoodPollAt = Date.now();
         this._reconnecting = false;
+        this.connected = true;
         this._emit('status', 'OWON HDS reconnected (attempt ' + attempt + ')');
         this._startReading();
         this._initSCPISession();
@@ -837,9 +976,15 @@ class Multimeter {
     this._reconnecting = false;
     if (this._running) {
       this.connected = false;
-      this._emit('error', 'OWON HDS connection lost — unplug/replug the meter, then CONNECT again. ' +
-        'On Linux, if this keeps happening, tell ModemManager to leave the port alone ' +
-        '(udev rule with ID_MM_DEVICE_IGNORE=1 for 5345:1234).');
+      // Stop polling the dead link and drop the stale handles — the
+      // navigator.usb/serial 'connect' listeners fire on replug and call
+      // this method again, so recovery needs no CONNECT click.
+      if (this._scpiPollTimer) { clearInterval(this._scpiPollTimer); this._scpiPollTimer = null; }
+      if (this.port) { try { await this.port.close(); } catch (_) { } this.port = null; }
+      if (this._usbDev) { try { await this._usbDev.close(); } catch (_) { } this._usbDev = null; }
+      this._emit('error', 'OWON HDS connection lost — unplug/replug the meter and it reconnects ' +
+        'automatically. If it never comes back, check the meter\'s own AUTO-OFF setting ' +
+        '(its sleep timer ignores SCPI polling).');
     }
   }
 
@@ -925,6 +1070,16 @@ class Multimeter {
     else if (unit === '%') mode = 'DUTY';
     else mode = this._lastSCPIMode || 'DCV'; // bare number — function unchanged
     this._lastSCPIMode = mode;
+
+    // Numeric overload — some firmware replies with a huge value (≥ 9.9e37)
+    // instead of the string 'OL' (threshold per Lab1717/owon-hds-usb_streamer,
+    // verified against an HDS242)
+    if (Math.abs(value) >= 9.9e37) {
+      return {
+        value: Infinity, mode, unit: this._scpiUnitFor(mode), ol: true, negative: false,
+        timestamp: Date.now(), stable: false, display: 'OL', protocol: 'owon-hds',
+      };
+    }
 
     const outUnit = this._scpiUnitFor(mode);
     const negative = value < 0;
@@ -1174,6 +1329,22 @@ class Multimeter {
 
   setStableWindow(ms) { this._stableWindow = ms; }
   setStableTolerance(pct) { this._stableTolerance = pct; }
+
+  /* ── SCPI poll rate (RATE presets in the meter window) ─────────── */
+  getPollInterval() { return this._pollIntervalMs; }
+
+  // Re-arms the live poll timer so a rate change lands without a reconnect.
+  // Clamped to a sane window: below 50 ms the transfers just queue up, above
+  // 2 s the keepalive gets too lazy for the idle-dropping HDS firmware.
+  setPollInterval(ms) {
+    const v = Math.max(50, Math.min(2000, Math.round(Number(ms)) || 500));
+    this._pollIntervalMs = v;
+    if (this._scpiPollTimer) {
+      clearInterval(this._scpiPollTimer);
+      this._scpiPollTimer = setInterval(() => this._pollREAD(), v);
+    }
+    return v;
+  }
 
   /* ── Phase 2.1: Min/Max/Avg Statistics ─────────────────────────── */
 
