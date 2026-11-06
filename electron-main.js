@@ -513,6 +513,17 @@ function proxyOBD(res, targetUrl) {
 }
 
 // ── CREATE WINDOW ──────────────────────────────────────────────────
+// Linux WMs scale the 1024×1024 non-alpha source PNG badly into the
+// X11 _NET_WM_ICON property (minimized/taskbar entry renders as a blank
+// sliver — tester report, v6.0.19). Hand Linux a 256px render instead.
+function resolveWindowIcon() {
+  if (process.platform === 'linux') {
+    const p = path.join(__dirname, 'assets', 'icons', '256x256.png');
+    if (fs.existsSync(p)) return p;
+  }
+  return path.join(__dirname, 'assets', 'icon.png');
+}
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1400,
@@ -527,7 +538,7 @@ function createWindow() {
       nodeIntegration: false,
       webSecurity: false,
     },
-    icon: path.join(__dirname, 'assets', 'icon.png'),
+    icon: resolveWindowIcon(),
   });
 
   buildMenu();
@@ -595,6 +606,25 @@ function setupDeviceAccess(ses) {
     // picker is a compact scrollable list; resolving the callback after
     // the user answers is exactly how Electron custom choosers work.
     if (!mainWindow || mainWindow.isDestroyed()) { callback(''); return; }
+    // The picker also used to drown the meter in a 30-row scroll of legacy
+    // ttyS0–31 ports (tester report, v6.0.19). Keep only USB-looking ports:
+    // Chromium stamps vendorId/productId on ports served by its own
+    // usbserial driver, but some builds expose just a displayName or a
+    // ttyUSB/ttyACM name — accept any of the three signals.
+    const usbLike = (p) => (p.vendorId && p.productId) || p.displayName ||
+      /^tty(USB|ACM)\d+$/.test(p.portName || '');
+    let shown = portList.filter(usbLike);
+    if (shown.length === 0) shown = portList.slice(); // legacy-only system — show everything
+    // A device exposing several interfaces appears once per label; keep the
+    // first occurrence so one physical port is one button.
+    const seenLabels = new Set();
+    shown = shown.filter(p => {
+      const label = (p.displayName ? p.displayName + ' — ' : '') + (p.portName || p.portId);
+      if (seenLabels.has(label)) return false;
+      seenLabels.add(label);
+      return true;
+    });
+    if (shown.length === 1) { callback(shown[0].portId); return; }
     const wc = mainWindow.webContents;
     if (pendingPortPick) pendingPortPick.finish('');
     let settled = false;

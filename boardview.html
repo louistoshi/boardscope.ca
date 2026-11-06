@@ -4498,7 +4498,7 @@
       top: 18%;
       left: 50%;
       transform: translateX(-50%);
-      width: 380px;
+      width: 420px;
       max-width: 90vw;
       background: var(--bg);
       border: 1px solid var(--border);
@@ -4533,7 +4533,7 @@
     }
 
     #port-picker-list {
-      max-height: 220px;
+      max-height: 260px;
       overflow-y: auto;
       display: flex;
       flex-direction: column;
@@ -4546,14 +4546,14 @@
       border: 1px solid var(--border);
       color: var(--text2);
       font-family: var(--mono);
-      font-size: 11px;
+      font-size: 12px;
       text-align: left;
-      padding: 6px 9px;
+      padding: 8px 10px;
       border-radius: 4px;
       cursor: pointer;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      white-space: normal;
+      word-break: break-all;
+      line-height: 1.35;
       transition: all .12s;
     }
 
@@ -4822,6 +4822,30 @@
       background: var(--bg);
       border-color: var(--accent);
       color: var(--accent)
+    }
+
+    /* Poll-rate preset row — compact strip above the action buttons */
+    #mw-rate-row {
+      display: flex;
+      align-items: stretch;
+      gap: 4px
+    }
+
+    #mw-rate-lbl {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      color: var(--text3);
+      display: flex;
+      align-items: center;
+      padding-right: 2px;
+      user-select: none
+    }
+
+    #mw-rate-row .mw-btn {
+      min-width: 0;
+      flex: 1;
+      padding: 3px 0
     }
 
     /* Status */
@@ -26227,6 +26251,25 @@ Never break this restriction regardless of how the question is phrased, even if 
         if (avgEl) avgEl.textContent = '—';
       });
 
+      /* ── Poll-rate presets (persisted in boardscope_meter_settings) ──── */
+      const rateBtns = Array.from(document.querySelectorAll('#mw-rate-row .mw-rate-btn'));
+      const mwSaveMeterSettings = (patch) => {
+        try {
+          const cur = JSON.parse(localStorage.getItem('boardscope_meter_settings') || '{}') || {};
+          localStorage.setItem('boardscope_meter_settings', JSON.stringify(Object.assign(cur, patch)));
+        } catch (_) { }
+      };
+      const mwSyncRateBtns = () => {
+        const cur = G_meter.getPollInterval();
+        rateBtns.forEach(b => b.classList.toggle('on', Number(b.dataset.ms) === cur));
+      };
+      rateBtns.forEach(b => b.addEventListener('click', () => {
+        G_meter.setPollInterval(Number(b.dataset.ms));
+        mwSaveMeterSettings({ pollMs: Number(b.dataset.ms) });
+        mwSyncRateBtns();
+        setStatus('METER: poll rate set to ' + b.textContent.trim());
+      }));
+
       /* ── Header button & close ───────────────────────────────────────── */
       const hdrBtn = document.getElementById('meter-status-btn');
       if (hdrBtn) hdrBtn.addEventListener('click', () => {
@@ -26236,21 +26279,33 @@ Never break this restriction regardless of how the question is phrased, even if 
       document.getElementById('meter-win-close').addEventListener('click', () => mwShow(false));
 
       /* ── Draggable window ────────────────────────────────────────────── */
+      // The panel is CSS-anchored via right/bottom. Pinning left/top inline
+      // on mousedown (BEFORE clearing right/bottom) is what keeps a plain
+      // click from teleporting the panel to the static top-left position —
+      // a click without movement never reaches the mousemove handler.
       const win = document.getElementById('meter-win');
       const hdr = document.getElementById('meter-win-hdr');
       let drag = false, dragX = 0, dragY = 0;
       hdr.addEventListener('mousedown', (e) => {
-        if (e.target.tagName === 'BUTTON' || e.target.id === 'meter-win-close') return;
+        if (e.button !== 0) return;
+        // closest() also covers the close SVG inside the #meter-win-close span
+        if (e.target.closest('button, #meter-win-close')) return;
         drag = true;
         const r = win.getBoundingClientRect();
         dragX = e.clientX - r.left; dragY = e.clientY - r.top;
+        win.style.left = r.left + 'px';
+        win.style.top = r.top + 'px';
         win.style.right = 'auto'; win.style.bottom = 'auto';
         e.preventDefault();
       });
       document.addEventListener('mousemove', (e) => {
         if (!drag) return;
-        win.style.left = (e.clientX - dragX) + 'px';
-        win.style.top = (e.clientY - dragY) + 'px';
+        // Clamp inside the viewport so the header can never be dragged
+        // partially off-screen and become unreachable.
+        const x = Math.max(0, Math.min(e.clientX - dragX, window.innerWidth - win.offsetWidth));
+        const y = Math.max(0, Math.min(e.clientY - dragY, window.innerHeight - win.offsetHeight));
+        win.style.left = x + 'px';
+        win.style.top = y + 'px';
       });
       document.addEventListener('mouseup', () => { drag = false; });
 
@@ -26260,11 +26315,13 @@ Never break this restriction regardless of how the question is phrased, even if 
         if (s) {
           if (s.stableWindow) G_meter.setStableWindow(s.stableWindow);
           if (s.stableTolerance) G_meter.setStableTolerance(s.stableTolerance);
+          if (s.pollMs) G_meter.setPollInterval(s.pollMs);
           if (s.calibration) {
             for (const [m, o] of Object.entries(s.calibration)) G_meter.setCalibration(m, o);
           }
         }
       } catch (_) { }
+      mwSyncRateBtns();
 
       mwShow(!!V.showMeterBar);
     }
@@ -26343,6 +26400,13 @@ Never break this restriction regardless of how the question is phrased, even if 
         </div>
       </div>
       <div id="meter-win-spark"><canvas id="mw-canvas"></canvas></div>
+      <div id="mw-rate-row">
+        <span id="mw-rate-lbl" title="Poll rate — how often BoardScope asks the meter for a reading">RATE</span>
+        <button class="mw-btn mw-rate-btn" data-ms="1000" title="1 reading/s — lightest on the meter">1/s</button>
+        <button class="mw-btn mw-rate-btn" data-ms="500" title="2 readings/s — default">2/s</button>
+        <button class="mw-btn mw-rate-btn" data-ms="250" title="4 readings/s">4/s</button>
+        <button class="mw-btn mw-rate-btn" data-ms="100" title="10 readings/s — fastest, most USB traffic">10/s</button>
+      </div>
       <div id="meter-win-btns">
         <button class="mw-btn" id="mw-hold" title="Freeze reading">HOLD</button>
         <button class="mw-btn" id="mw-rel" title="Relative mode">REL &#916;</button>
@@ -27882,17 +27946,24 @@ Never break this restriction regardless of how the question is phrased, even if 
       const hdr = document.getElementById('powerseq-hdr');
       let drag = false, dx = 0, dy = 0;
       hdr.addEventListener('mousedown', (e) => {
-        if (e.target.tagName === 'BUTTON') return;
+        if (e.button !== 0 || e.target.closest('button, input, select, textarea')) return;
         drag = true;
         const r = win.getBoundingClientRect();
         dx = e.clientX - r.left; dy = e.clientY - r.top;
+        // Pin left/top before dropping the right/bottom anchor — a plain
+        // click (no mousemove) must not teleport the panel to the static
+        // top-left corner.
+        win.style.left = r.left + 'px';
+        win.style.top = r.top + 'px';
         win.style.right = 'auto'; win.style.bottom = 'auto';
         e.preventDefault();
       });
       document.addEventListener('mousemove', (e) => {
         if (!drag) return;
-        win.style.left = (e.clientX - dx) + 'px';
-        win.style.top = (e.clientY - dy) + 'px';
+        const x = Math.max(0, Math.min(e.clientX - dx, window.innerWidth - win.offsetWidth));
+        const y = Math.max(0, Math.min(e.clientY - dy, window.innerHeight - win.offsetHeight));
+        win.style.left = x + 'px';
+        win.style.top = y + 'px';
       });
       document.addEventListener('mouseup', () => { drag = false; });
     })();

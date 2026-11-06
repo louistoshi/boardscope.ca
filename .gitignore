@@ -49,7 +49,11 @@ Thumbs.db
 .DS_Store
 .AppleDouble
 .LSOverride
+# macOS custom-icon file ("Icon" + CR). On case-insensitive filesystems the
+# wildcard also matches our icon ASSET directories, so re-include them.
 Icon?
+!assets/icons/
+!build/icons/
 
 # Electron
 electron/dist

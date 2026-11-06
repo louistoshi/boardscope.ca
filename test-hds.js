@@ -245,6 +245,62 @@ Object.defineProperty(globalThis, 'navigator', {
   check('poll timer stopped', meter._scpiPollTimer === null);
   check('disconnected', meter.connected === false);
 
+  /* ── 7. v6.0.20 tester round: fast dialect, RATE presets, reconnect ── */
+  console.log('7) v6.0.20 — :DMM:MEAS? dialect, RATE presets, reconnect fallback');
+  {
+    // Meter that answers ONLY the fast dialect (some HDS242 firmware does)
+    class MockHDSFast extends MockHDS {
+      _respond(cmd) {
+        let resp = null;
+        if (cmd === '*IDN?') resp = 'OWON,HDS242,26190843,V8.5.0';
+        else if (cmd === ':SCPI:DISP?') resp = 'scpiON';
+        else if (cmd === ':DMM:MEAS?') { this.measCount = (this.measCount || 0) + 1; resp = '3.30'; }
+        if (resp !== null) setTimeout(() => this._chunks.push(new TextEncoder().encode(resp + '\r\n')), 30);
+      }
+    }
+    const fastPort = new MockHDSFast();
+    navigator.serial.requestPort = async () => fastPort;
+    const meter2 = new Multimeter();
+    const readings2 = [];
+    meter2.on('reading', r => readings2.push(r));
+    const ok2 = await meter2.connect(null, 'owon-hds');
+    check('fast-dialect meter connected', ok2 === true);
+    await sleep(2200); // session init (400 ms gap) + a few polls
+    check('polls the fast :DMM:MEAS? dialect',
+      fastPort.measCount >= 3 && (meter2._scpiReadCmd || ':DMM:MEAS?') === ':DMM:MEAS?',
+      `meas=${fastPort.measCount} cmd=${meter2._scpiReadCmd}`);
+    check('fast readings arrive', readings2.length >= 3, `got ${readings2.length}`);
+
+    // RATE presets: clamped, and live re-armed on a running session
+    meter2.setPollInterval(100);
+    check('setPollInterval live while connected',
+      meter2.getPollInterval() === 100 && meter2._scpiPollTimer !== null);
+    meter2.setPollInterval(5);
+    check('rate clamped to >= 50ms', meter2.getPollInterval() === 50);
+    meter2.setPollInterval(9999);
+    check('rate clamped to <= 2000ms', meter2.getPollInterval() === 2000);
+
+    // Reconnect fallback: a granted port whose getInfo() carries no USB IDs
+    // (Chromium's internal usbserial driver) — a lone granted port wins.
+    const anonPort = new MockHDS();
+    anonPort.getInfo = () => ({});
+    navigator.serial.getPorts = async () => [anonPort];
+    meter2._transport = 'serial';
+    meter2.port = null;                    // simulate the dropped link
+    meter2.connected = false;
+    meter2._resetSCPISession();
+    const recStatuses = [];
+    meter2.on('status', s => recStatuses.push(s));
+    await meter2._tryReconnectHDS();
+    check('serial reconnect via anonymous granted port',
+      meter2.port === anonPort && meter2.connected === true,
+      meter2.port ? 'port set' : 'port not set');
+    check('reconnect status emitted', recStatuses.some(s => /reconnected/.test(s)));
+
+    await meter2.disconnect();
+    check('fast meter disconnected', meter2.connected === false);
+  }
+
   console.log(`\n${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);
 })();
