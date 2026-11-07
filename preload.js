@@ -37,6 +37,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('serial-port-choice:close', () => callback());
   },
   pickSerialPort: (portId) => ipcRenderer.send('serial-port-pick', portId),
+
+  // Meter connection diagnostics — renderer console lines don't reach the
+  // terminal, so the multimeter driver's debug trail is forwarded here and
+  // printed by the main process (visible when BoardScope is launched from
+  // a terminal).
+  meterDebug: (msg) => ipcRenderer.send('meter:debug', msg),
   
   // Platform info
   platform: process.platform,

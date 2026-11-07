@@ -330,6 +330,8 @@ Object.defineProperty(globalThis, 'navigator', {
     // A) probe-before-commit: connect() must NOT hold the silent device
     navigator.serial.requestPort = async () => { const e = new Error('no port chosen'); e.name = 'NotFoundError'; throw e; };
     const m3 = new Multimeter();
+    m3._handshakeFirstMs = 150;
+    m3._handshakeNextMs = 100;
     const okProbe = await m3.connect();
     check('silent USB device → connect() fails cleanly', okProbe === false);
     check('probe released the silent device (no hostage claim)', silentUsb.closeCount >= 1,
@@ -346,6 +348,8 @@ Object.defineProperty(globalThis, 'navigator', {
     m4.connected = false;
     m4._reconnectAttempts = 2;
     m4._reconnectDelayMs = 30;
+    m4._reconnectHandshakeFirstMs = 100;
+    m4._reconnectHandshakeNextMs = 60;
     const m4errors = [];
     m4.on('error', e => m4errors.push(e));
     await m4._tryReconnectHDS();
@@ -420,6 +424,140 @@ Object.defineProperty(globalThis, 'navigator', {
     check('readings flow after rotation', readings6.some(r => Math.abs(r.value - 9.99) < 1e-9),
       `got ${readings6.length} readings`);
     await m6.disconnect();
+  }
+
+  /* ── 9. v6.0.22 — USB read loop vs the tester's V11-firmware HDS242 ──
+     Mirko's report: pyusb (3 s timeouts, stale-flush) talks to this meter
+     over raw bulk USB; BoardScope's per-query race pairing did not. The
+     persistent read loop + pending-slot query must match that behavior. */
+  console.log('9) v6.0.22 — USB read loop: IDN-only meter, stale packet, late reply');
+  {
+    // Raw bulk-USB meter mock: commands arrive via transferOut, replies are
+    // 64-byte-capable packets fetched by the driver's read loop via transferIn.
+    class MockUSBMeter {
+      constructor() {
+        this.vendorId = 0x5345;
+        this.productId = 0x1234;
+        this.opened = false;
+        this.closeCount = 0;
+        this._rx = [];          // queued reply packets
+        this._lastCmd = null;
+        this.writeCount = 0;
+      }
+      async open() { this.opened = true; }
+      async close() { this.opened = false; this.closeCount++; }
+      async selectConfiguration() { }
+      async claimInterface() { }
+      async transferOut(ep, data) {
+        this._lastCmd = new TextDecoder().decode(data).trim();
+        this.writeCount++;
+        this._enqueue(this._lastCmd);
+        return { status: 'ok' };
+      }
+      _enqueue(cmd) { }        // behavior hook — overridden per scenario
+      async transferIn() {
+        if (this._rx.length) {
+          const data = this._rx.shift();
+          return { status: 'ok', data: new DataView(data.buffer, data.byteOffset, data.byteLength) };
+        }
+        await sleep(20);       // nothing queued — pend briefly like real USB
+        return { status: 'ok', data: new DataView(new ArrayBuffer(0)) };
+      }
+      reply(str) { this._rx.push(new TextEncoder().encode(str + '\r\n')); }
+    }
+
+    const installUSB = (dev) => {
+      navigator.usb = {
+        getDevices: async () => [dev],
+        requestDevice: async () => dev,
+        addEventListener: () => { },
+      };
+      navigator.serial.requestPort = async () => {
+        const e = new Error('no port chosen'); e.name = 'NotFoundError'; throw e;
+      };
+    };
+
+    // A) Mirko's V11 firmware: answers ONLY *IDN? (proven working in his
+    //    pyusb test) — BoardScope must connect on the IDN handshake.
+    class MockIDNOnly extends MockUSBMeter {
+      _enqueue(cmd) {
+        if (cmd === '*IDN?') this.reply('OWON,HDS242,26190843,V11.0.0');
+        // :SCPI:DISP? / :READ? / :DMM:MEAS? — silence (pend → timeout)
+      }
+    }
+    const idnDev = new MockIDNOnly();
+    installUSB(idnDev);
+    const m7 = new Multimeter();
+    m7._handshakeFirstMs = 300;
+    m7._handshakeNextMs = 150;
+    const statuses7 = [];
+    m7.on('status', s => statuses7.push(s));
+    const ok7 = await m7.connect();
+    check('IDN-only V11 meter connects over raw USB', ok7 === true && m7.connected === true);
+    await sleep(1600); // session init: DISP timeout + *IDN? reply
+    check('instrument name shown from *IDN?', statuses7.some(s => /OWON HDS242 — SCPI active/.test(s)),
+      statuses7.join(' | ').slice(0, 120));
+    await m7.disconnect();
+
+    // B) stale packet queued at claim time — must not desync the session
+    class MockStaleUSB extends MockUSBMeter {
+      constructor() {
+        super();
+        this.reply('V=99.99V'); // leftover junk waiting on the endpoint
+      }
+      _enqueue(cmd) {
+        if (cmd === '*IDN?') this.reply('OWON,HDS242,26190843,V11.0.0');
+        else if (cmd === ':SCPI:DISP?') this.reply('scpiON');
+        else if (cmd === ':DMM:MEAS?') this.reply('3.30');
+      }
+    }
+    const staleDev = new MockStaleUSB();
+    installUSB(staleDev);
+    const m8 = new Multimeter();
+    m8._handshakeFirstMs = 300;
+    m8._handshakeNextMs = 150;
+    m8.setPollInterval(100);
+    const readings8 = [];
+    m8.on('reading', r => readings8.push(r));
+    const ok8 = await m8.connect();
+    check('connect survives a stale packet on the endpoint', ok8 === true);
+    await sleep(1800);
+    check('stale reading did not poison later replies',
+      readings8.some(r => Math.abs(r.value - 3.3) < 1e-9),
+      readings8.map(r => r.display).join(','));
+    await m8.disconnect();
+
+    // C) slow reply past the poll timeout — arrives as a reading, not lost
+    class MockSlowUSB extends MockUSBMeter {
+      _enqueue(cmd) {
+        if (cmd === '*IDN?') this.reply('OWON,HDS242,26190843,V11.0.0');
+        else if (cmd === ':SCPI:DISP?') this.reply('scpiON');
+        else if (cmd === ':DMM:MEAS?') {
+          setTimeout(() => this.reply('V=5.55V'), 500); // slower than the poll timeout
+        }
+      }
+    }
+    const slowDev = new MockSlowUSB();
+    installUSB(slowDev);
+    const m9 = new Multimeter();
+    m9._handshakeFirstMs = 300;
+    m9._handshakeNextMs = 150;
+    m9.setPollInterval(200);
+    const readings9 = [];
+    m9.on('reading', r => readings9.push(r));
+    const ok9 = await m9.connect();
+    check('slow-reply meter connected', ok9 === true);
+    await sleep(2000);
+    check('late reply still arrives as a reading',
+      readings9.some(r => Math.abs(r.value - 5.55) < 1e-9),
+      readings9.map(r => r.display).join(','));
+    await m9.disconnect();
+
+    // D) diagnostics trail exists (LOG button / terminal feed)
+    const m10 = new Multimeter();
+    m10._dbg('test line');
+    check('debug ring buffer records the trail',
+      m10.getDebugLog().some(l => /test line/.test(l)));
   }
 
   console.log(`\n${pass} passed, ${fail} failed`);

@@ -765,6 +765,13 @@ ipcMain.handle('app:getVersion', async () => {
   return app.getVersion();
 });
 
+// Multimeter connection diagnostics — the renderer's console is invisible
+// from the terminal, so the meter driver forwards its debug trail here and
+// it lands in stdout (visible when BoardScope is launched from a terminal).
+ipcMain.on('meter:debug', (event, msg) => {
+  console.log('[METER] ' + msg);
+});
+
 // ── APP LIFECYCLE ──────────────────────────────────────────────────
 app.whenReady().then(() => {
   startServer();

@@ -92,6 +92,13 @@ class Multimeter {
     this._detectTimeoutMs = 16000;    // generous: the *IDN? probe itself runs ~15 s
     this._reconnectAttempts = 5;      // HDS reconnect loop (test-tunable)
     this._reconnectDelayMs = 2000;
+    this._usbReadActive = false;      // persistent USB bulk-IN read loop
+    this._handshakeFirstMs = 3000;    // first SCPI query after claim — V11 firmware needs ~3 s
+    this._handshakeNextMs = 1200;     // subsequent handshake queries
+    this._reconnectHandshakeFirstMs = 2000;  // reconnect probe budgets (device just re-enumerated)
+    this._reconnectHandshakeNextMs = 800;
+    this._debugLog = [];              // connection diagnostics ring buffer (LOG button copies it)
+    this._dbgHadReading = false;      // "first reading" diagnostic logged this session
 
     // Event bus
     this._listeners = {};
@@ -240,6 +247,22 @@ class Multimeter {
     }
   }
 
+  /* ── Connection diagnostics ────────────────────────────────────── */
+  // Every connect/reconnect/poll step lands here: renderer console, an IPC
+  // bridge to the terminal (desktop), and a ring buffer the meter window's
+  // LOG button copies to the clipboard. Beta testers can paste the trail
+  // into a bug report without opening DevTools.
+  _dbg(msg) {
+    const line = new Date().toTimeString().slice(0, 8) + '.' +
+      String(Date.now() % 1000).padStart(3, '0') + ' ' + msg;
+    this._debugLog.push(line);
+    if (this._debugLog.length > 100) this._debugLog.shift();
+    try { console.log('[METER] ' + msg); } catch (_) { }
+    try { this._emit('debug', msg); } catch (_) { }
+  }
+
+  getDebugLog() { return this._debugLog.slice(); }
+
   /* ── Protocol Selection ────────────────────────────────────────── */
 
   // Protocol info for UI display
@@ -281,6 +304,7 @@ class Multimeter {
     this._protocol = protocol;
     this._detectedProtocol = protocol !== 'auto' ? protocol : null;
     this._transport = 'serial'; // a prior session's give-up may have left 'usb' set
+    this._dbg('CONNECT requested (protocol ' + protocol + ')');
 
     // Baud rate: explicit arg > protocol default > 2400
     const baud = baudRate || Multimeter.PROTOCOLS[protocol]?.baud || 2400;
@@ -344,6 +368,7 @@ class Multimeter {
         this._detectTimer = setTimeout(() => {
           this._detectTimer = null;
           if (this._running && !this._detectedProtocol && !this._reconnecting) {
+            this._dbg('detect deadline hit — port never answered');
             this._fullResetSession('No response from the meter — it may be asleep or powered off ' +
               '(check the meter\'s AUTO-OFF setting and press Mode until the Multimeter screen shows). ' +
               'Then CONNECT again.');
@@ -428,6 +453,7 @@ class Multimeter {
       if (!dev.configuration) await dev.selectConfiguration(1);
       await dev.claimInterface(0);
     } catch (err) {
+      this._dbg('USB open/claim failed: ' + err.message);
       if (emitOpenErrors) {
         this._emit('error', 'OWON USB open failed: ' + err.message +
           (/Linux/.test(navigator.userAgent) && !/Android|CrOS/.test(navigator.userAgent)
@@ -440,13 +466,22 @@ class Multimeter {
     this._transport = 'usb';
     this._buffer = [];
     this._running = true;
+    // Route received lines straight into the SCPI assembler while the
+    // handshake runs (reset when the handshake fails — the caller then
+    // falls through to the serial transport).
+    this._detectedProtocol = 'owon-hds';
+    this._startUSBReadLoop();
+    this._dbg('USB claimed (cfg 1, iface 0) — SCPI handshake…');
     if (!(await this._scpiHandshake())) {
+      this._dbg('handshake failed — releasing the device');
       this._running = false;
       this._transport = 'serial';
+      this._detectedProtocol = null;
       this._usbDev = null;
       try { await dev.close(); } catch (_) { }
       return null;
     }
+    this._dbg('handshake OK — committing USB transport');
     return dev;
   }
 
@@ -463,7 +498,9 @@ class Multimeter {
     let dev;
     try {
       dev = await navigator.usb.requestDevice({ filters: [Multimeter.OWON_USB] });
+      this._dbg('requestDevice granted: ' + (dev.productName || 'OWON device'));
     } catch (_) {
+      this._dbg('requestDevice: no OWON USB device / user cancelled');
       return false; // no OWON USB device present, or user cancelled
     }
     if (!(await this._claimOWONUSB(dev, true))) return false;
@@ -472,13 +509,25 @@ class Multimeter {
   }
 
   // SCPI liveness probe used before committing to a connection: the HDS
-  // answers ':SCPI:DISP?' when it's on its DMM screen, otherwise one of the
-  // two read dialects. Silence on all three means the meter is asleep,
-  // powered off, or wedged — the caller must NOT keep the device claimed.
-  async _scpiHandshake() {
-    if (await this._querySCPI(':SCPI:DISP?', 800) !== null) return true;
-    if (await this._querySCPI(':READ?', 1200) !== null) return true;
-    return (await this._querySCPI(':DMM:MEAS?', 1200)) !== null;
+  // answers '*IDN?' (verified working over raw bulk USB on a V11.0.0 HDS242
+  // by a tester running Lab1717/owon-hds-usb_streamer), ':SCPI:DISP?' when
+  // it's on its DMM screen, otherwise one of the two read dialects.
+  // Silence on all of them means the meter is asleep, powered off, or
+  // wedged — the caller must NOT keep the device claimed.
+  // The FIRST query gets the long window: a freshly-claimed meter can take
+  // ~3 s to spin its SCPI engine up (pyusb reference uses 3000 ms). After a
+  // first reply (or a first timeout), subsequent queries use the short
+  // window — if the meter is silent it stays silent.
+  async _scpiHandshake(firstMs = this._handshakeFirstMs, nextMs = this._handshakeNextMs) {
+    const probes = ['*IDN?', ':SCPI:DISP?', ':READ?', ':DMM:MEAS?'];
+    for (let i = 0; i < probes.length; i++) {
+      const t0 = Date.now();
+      const r = await this._querySCPI(probes[i], i === 0 ? firstMs : nextMs);
+      this._dbg('handshake ' + probes[i] + ' → ' +
+        (r === null ? 'timeout after ' + (Date.now() - t0) + 'ms' : JSON.stringify(r.slice(0, 48))));
+      if (r !== null) return true;
+    }
+    return false;
   }
 
   // Full teardown after a reconnect cycle or detection deadline gives up:
@@ -488,6 +537,7 @@ class Multimeter {
   // while a WebUSB claim is held, the kernel usbserial driver is detached
   // and the meter VANISHES from the serial port picker (tester, v6.0.20).
   async _fullResetSession(msg) {
+    this._dbg('full session reset' + (msg ? ' — ' + msg.slice(0, 80) : ''));
     this._resetSCPISession();
     this._running = false;
     this._reconnecting = false;
@@ -522,7 +572,10 @@ class Multimeter {
       // No chooser UI flashes here: in the desktop app select-usb-device
       // auto-picks the OWON, or rejects silently when none is plugged in.
       dev = granted || await navigator.usb.requestDevice({ filters: [Multimeter.OWON_USB] });
+      this._dbg('USB probe: device ' + (dev.productName || 'OWON device') +
+        (granted ? ' (pre-granted)' : ' (newly granted)'));
     } catch (_) {
+      this._dbg('USB probe: no OWON present or OS refused access');
       return false; // no OWON present, or the OS refuses access (udev/uaccess)
     }
     if (!(await this._claimOWONUSB(dev))) return false;
@@ -847,7 +900,6 @@ class Multimeter {
   }
 
   async _querySCPI(cmd, timeout = 800) {
-    if (this._transport === 'usb') return this._queryUSB(cmd, timeout);
     if (this._scpiPending) return null; // previous response still outstanding
     const sent = await this._writeSCPI(cmd);
     if (!sent) return null;
@@ -862,30 +914,41 @@ class Multimeter {
     });
   }
 
-  // USB query: one transferIn per response (64-byte bulk packets, same
-  // shape as the pyusb reference). WebUSB transfers cannot be cancelled,
-  // so a read that loses its race against the timeout leaves that
-  // transferIn queued — the abandoned transfer then consumes exactly the
-  // late packet, which is what keeps the request/response stream synced.
-  // Do NOT add a pyusb-style pre-read flush here (draining "stale"
-  // packets first): those extra queued transfers would swallow fresh
-  // responses instead — every consumer stays paired one-to-one with a
-  // command.
-  async _queryUSB(cmd, timeout = 1000) {
-    const sent = await this._writeSCPI(cmd);
-    if (!sent) return null;
-    try {
-      const res = await Promise.race([
-        this._usbDev.transferIn(1, 64),  // bulk IN endpoint 0x81
-        new Promise(r => setTimeout(() => r('timeout'), timeout)),
-      ]);
-      if (res === 'timeout' || res.status !== 'ok' || !res.data) return null;
-      const bytes = new Uint8Array(res.data.buffer, res.data.byteOffset, res.data.byteLength);
-      const s = this._decodeASCII(bytes).trim();
-      return s || null;
-    } catch (_) {
-      return null; // device gone — fail counter in _pollREAD triggers reconnect
-    }
+  // Persistent bulk-IN read loop (endpoint 0x81, 64-byte packets). One
+  // continuous transferIn per session feeds the shared line assembler, so
+  // BOTH transports (serial and USB) run the same request/response path:
+  // queries resolve via the _scpiPending slot, late replies arrive as
+  // pending resolutions or unsolicited readings, and stale/unsolicited
+  // packets are consumed as ordinary lines instead of desyncing a
+  // write→read pairing (the pyusb reference flushes stale IN packets
+  // before every query for exactly this reason — Lab1717/owon-hds-usb_streamer).
+  // The old per-query Promise.race design abandoned timed-out transferIns
+  // in Chromium's queue; against V11 firmware's slower/stalier replies that
+  // pairing drifted and the connect handshake never succeeded.
+  _startUSBReadLoop() {
+    if (this._usbReadActive) return;
+    this._usbReadActive = true;
+    this._dbg('USB read loop started (bulk IN 0x81, 64B packets)');
+    (async () => {
+      while (this._running && this._transport === 'usb' && this._usbDev) {
+        try {
+          const res = await this._usbDev.transferIn(1, 64);
+          if (res.status === 'ok' && res.data && res.data.byteLength) {
+            const bytes = new Uint8Array(res.data.buffer, res.data.byteOffset, res.data.byteLength);
+            for (let i = 0; i < bytes.length; i++) this._buffer.push(bytes[i]);
+            this._processBuffer();
+          } else {
+            // Empty/stall result — a real device rarely sends these; brief
+            // pause keeps a pathological device from spinning the loop.
+            await new Promise(r => setTimeout(r, 10));
+          }
+        } catch (_) {
+          break; // device closed or re-enumerated — poll idle detection takes over
+        }
+      }
+      this._usbReadActive = false;
+      this._dbg('USB read loop stopped');
+    })();
   }
 
   // Auto-detect probe: SCPI meters stay silent, so after the streaming
@@ -910,8 +973,10 @@ class Multimeter {
     this._scpiReadCmd = null;
     this._scpiGarbage = 0;
     this._emit('status', 'OWON HDS — activating DMM SCPI mode');
+    this._dbg('SCPI session init — probing :SCPI:DISP? and *IDN?');
     (async () => {
-      await this._querySCPI(':SCPI:DISP?', 600); // activates DMM SCPI; reply "scpion"
+      const disp = await this._querySCPI(':SCPI:DISP?', 600); // activates DMM SCPI; reply "scpion"
+      this._dbg(':SCPI:DISP? → ' + (disp === null ? 'timeout' : JSON.stringify(disp)));
       await new Promise(r => setTimeout(r, 400));
       // _linkUp() covers both transports — this.port is null on the USB
       // transport, and a plain port check silently killed the poll timer
@@ -923,8 +988,11 @@ class Multimeter {
       const idn = await this._querySCPI('*IDN?', 800);
       if (idn) {
         const model = (idn.toUpperCase().match(/\b[A-Z]{2,4}\d{2,4}[A-Z]{0,2}\b/) || [])[0];
+        this._dbg('*IDN? → ' + JSON.stringify(idn));
         if (model) this._emit('status', 'OWON ' + model + ' — SCPI active');
       }
+      this._dbg('poll timer started at ' + this._pollIntervalMs + 'ms');
+      this._dbgHadReading = false;
       this._lastGoodPollAt = Date.now();
       this._scpiPollTimer = setInterval(() => this._pollREAD(), this._pollIntervalMs);
       this._pollREAD();
@@ -951,6 +1019,11 @@ class Multimeter {
       }
       const reading = line !== null ? this._parseOWONHDS(line) : null;
       if (reading) {
+        if (!this._dbgHadReading) {
+          this._dbgHadReading = true;
+          this._dbg('first reading: ' + reading.display + ' ' + reading.mode +
+            (this._scpiReadCmd ? ' (dialect ' + this._scpiReadCmd + ')' : ''));
+        }
         this._scpiFails = 0;
         this._scpiGarbage = 0;
         this._lastGoodPollAt = Date.now();
@@ -975,6 +1048,8 @@ class Multimeter {
         if (++this._scpiGarbage >= 5) {
           this._scpiGarbage = 0;
           this._scpiReadCmd = (this._scpiReadCmd === SLOW) ? FAST : SLOW;
+          this._dbg('unparseable replies — rotating dialect to ' + this._scpiReadCmd +
+            ' (sample: ' + JSON.stringify(String(line).slice(0, 40)) + ')');
         }
       } else {
         this._scpiFails++;
@@ -988,7 +1063,10 @@ class Multimeter {
         }
         // USB transport has no read-loop to notice the teardown — detect it
         // here and hand off to the reconnect loop.
-        if (this._transport === 'usb' && idleMs >= 10000) this._tryReconnectHDS();
+        if (this._transport === 'usb' && idleMs >= 10000 && !this._reconnecting) {
+          this._dbg('no reading for ' + Math.round(idleMs / 1000) + 's — trying to reconnect');
+          this._tryReconnectHDS();
+        }
       }
     } finally {
       this._scpiBusy = false;
@@ -1005,6 +1083,7 @@ class Multimeter {
   async _tryReconnectHDS() {
     if (this._reconnecting || !this._running) return;
     this._reconnecting = true;
+    this._dbg('reconnect loop start (transport ' + this._transport + ')');
     for (let attempt = 1; attempt <= this._reconnectAttempts; attempt++) {
       await new Promise(r => setTimeout(r, this._reconnectDelayMs));
       if (!this._running) { this._reconnecting = false; return; }
@@ -1014,7 +1093,7 @@ class Multimeter {
           const owon = devices.find(d =>
             d.vendorId === Multimeter.OWON_USB.vendorId &&
             d.productId === Multimeter.OWON_USB.productId);
-          if (!owon) continue;
+          if (!owon) { this._dbg('reconnect #' + attempt + ': meter not on the bus yet'); continue; }
           // The dropped session's handle may still be open (the link died,
           // we never closed it) — open() on it would reject and burn an
           // attempt. Close the stale handle first, deterministically.
@@ -1032,8 +1111,9 @@ class Multimeter {
           this._buffer = [];
           this._running = true;
           // Probe before committing — never hold a silent (asleep/wedged)
-          // meter hostage.
-          if (!(await this._scpiHandshake())) {
+          // meter hostage. Shorter budget than a fresh CONNECT: the device
+          // just re-enumerated, either it answers quickly or it's asleep.
+          if (!(await this._scpiHandshake(this._reconnectHandshakeFirstMs, this._reconnectHandshakeNextMs))) {
             throw new Error('silent');
           }
           this._buffer = [];

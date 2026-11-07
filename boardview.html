@@ -26141,6 +26141,13 @@ Never break this restriction regardless of how the question is phrased, even if 
         if (psHint) psHint.style.display = 'block';
       });
 
+      // Meter debug trail — forward to the main process so launching from a
+      // terminal shows the connection steps; also mirrors to the page console.
+      if (window.electronAPI && window.electronAPI.meterDebug) {
+        G_meter.on('debug', (msg) => window.electronAPI.meterDebug(msg));
+      }
+      G_meter.on('debug', (msg) => { try { console.log('[METER] ' + msg); } catch (_) { } });
+
       // Connect / Disconnect
       connectBtn.addEventListener('click', async () => {
         if (G_meter.connected) {
@@ -26232,6 +26239,15 @@ Never break this restriction regardless of how the question is phrased, even if 
         if (!r) { setStatus('METER: No reading to copy'); return; }
         navigator.clipboard.writeText(r.display + ' ' + r.mode + (r.stable ? ' [STABLE]' : '')).catch(() => { });
         setStatus('METER: Copied — ' + r.display);
+      });
+      document.getElementById('mw-log').addEventListener('click', () => {
+        const log = G_meter.getDebugLog();
+        if (!log.length) { setStatus('METER: No diagnostics yet — press CONNECT first'); return; }
+        navigator.clipboard.writeText(log.join('\n')).then(() => {
+          setStatus('METER: Copied ' + log.length + ' diagnostic lines');
+        }).catch(() => {
+          setStatus('METER: Clipboard blocked — diagnostics are in the terminal ([METER] lines)');
+        });
       });
       document.getElementById('mw-csv').addEventListener('click', () => G_meter.downloadCSV());
       // NET MATCH toggle — remove this block to disable feature
@@ -26413,6 +26429,7 @@ Never break this restriction regardless of how the question is phrased, even if 
         <button class="mw-btn" id="mw-fill" title="Auto-fill probe mode fields">FILL</button>
         <button class="mw-btn" id="mw-cap" title="Auto-capture stable readings">CAP</button>
         <button class="mw-btn" id="mw-copy" title="Copy last reading">COPY</button>
+        <button class="mw-btn" id="mw-log" title="Copy connection diagnostics to the clipboard — paste into bug reports">LOG</button>
         <button class="mw-btn" id="mw-csv" title="Export CSV">CSV</button>
         <button class="mw-btn" id="mw-reset" title="Reset min/max/avg">RESET</button>
         <!-- NET MATCH — auto-highlight matching net when stable voltage detected. Remove this button + mmeterFindNet() to disable feature -->
