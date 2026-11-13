@@ -159,9 +159,18 @@ class SCPIDriver {
     this._closed = false;        // true after explicit disconnect() — stops reconnect attempts
     this._reconnecting = false;
     this.onEvent = null;         // (type, info) → 'reconnected' | 'lost'
-    this._serialDisconnectHandler = (e) => {
-      if (this.port && e.port === this.port && !this._closed) this._tryReconnect();
+    this._lastRxAt = 0;          // last bytes received — silent-scope deadline uses it
+    this._rxDeadlineTimer = null;
+    const reconnectIfLost = () => {
+      // Replug self-heal: after a give-up this.port is null and the old
+      // disconnect handler was a no-op — a re-enumerated scope gets one
+      // more recovery cycle, mirroring Multimeter's replug listeners.
+      if (!this.port && !this._closed && !this._reconnecting) this._tryReconnect();
     };
+    this._serialDisconnectHandler = (e) => {
+      if ((this.port && e.port === this.port) || !this.port) reconnectIfLost();
+    };
+    this._serialConnectHandler = () => reconnectIfLost();
   }
 
   static serialFilters() {
@@ -189,14 +198,40 @@ class SCPIDriver {
 
     this._closed = false;
     navigator.serial.addEventListener('disconnect', this._serialDisconnectHandler);
+    navigator.serial.addEventListener('connect', this._serialConnectHandler);
     this._startKeepAlive();
+    // Silent-scope deadline: if the scope never sends a single byte within
+    // 12 s of connect (wrong port, asleep, wedged), release it with a
+    // 'lost' event instead of sitting "connected" forever. The replug
+    // listeners stay registered, so plugging the scope back in revives it.
+    this._lastRxAt = Date.now();
+    this._armRxDeadline();
     return this.model;
+  }
+
+  _armRxDeadline() {
+    if (this._rxDeadlineTimer) clearTimeout(this._rxDeadlineTimer);
+    this._rxDeadlineTimer = setTimeout(() => {
+      this._rxDeadlineTimer = null;
+      if (this._closed || this._reconnecting || !this.port) return;
+      if (Date.now() - this._lastRxAt >= 12000) {
+        console.warn('[Scope] No SCPI data since connect — releasing the port');
+        const dead = this.port;
+        this.port = null;
+        this._buf = '';
+        this._stopKeepAlive();
+        (async () => { try { if (dead) await dead.close(); } catch (_) { } })();
+        if (this.onEvent) this.onEvent('lost', 'no-response');
+      }
+    }, 12000);
   }
 
   async disconnect() {
     this._closed = true;
     this._stopKeepAlive();
+    if (this._rxDeadlineTimer) { clearTimeout(this._rxDeadlineTimer); this._rxDeadlineTimer = null; }
     try { navigator.serial.removeEventListener('disconnect', this._serialDisconnectHandler); } catch (_) { }
+    try { navigator.serial.removeEventListener('connect', this._serialConnectHandler); } catch (_) { }
     if (this.reader) {
       try { await this.reader.cancel(); } catch (_) { }
       try { await this.reader.releaseLock(); } catch (_) { }
@@ -253,6 +288,8 @@ class SCPIDriver {
         await scope.open({ baudRate: 115200, dataBits: 8, stopBits: 1, parity: 'none' });
         this.port = scope;
         this.writer = scope.writable.getWriter();
+        this._lastRxAt = Date.now();
+        this._armRxDeadline();
         this._startReader();
         this._startKeepAlive();
         console.log('[Scope] Reconnected (attempt ' + attempt + ')');
@@ -263,6 +300,7 @@ class SCPIDriver {
     }
 
     this._reconnecting = false;
+    if (this._rxDeadlineTimer) { clearTimeout(this._rxDeadlineTimer); this._rxDeadlineTimer = null; }
     if (!this._closed && this.onEvent) this.onEvent('lost', null);
   }
 
@@ -314,14 +352,21 @@ class SCPIDriver {
     const go = async () => {
       this.reader = this.port.readable.getReader();
       const dec = new TextDecoder();
+      let linkDown = false;
       try {
         while (true) {
           const { value, done } = await this.reader.read();
-          if (done) break;
-          this._buf += dec.decode(value);
+          if (done) { linkDown = true; break; }
+          if (value) {
+            this._lastRxAt = Date.now();
+            this._buf += dec.decode(value);
+          }
         }
       } catch (_) { }
       try { this.reader.releaseLock(); } catch (_) { }
+      // Reader exited while the session is still active — the link died
+      // without a serial 'disconnect' event. Recover like the meter does.
+      if (linkDown && !this._closed && this.port) this._tryReconnect();
     };
     go();
   }

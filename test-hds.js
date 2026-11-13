@@ -431,51 +431,52 @@ Object.defineProperty(globalThis, 'navigator', {
      over raw bulk USB; BoardScope's per-query race pairing did not. The
      persistent read loop + pending-slot query must match that behavior. */
   console.log('9) v6.0.22 — USB read loop: IDN-only meter, stale packet, late reply');
-  {
-    // Raw bulk-USB meter mock: commands arrive via transferOut, replies are
-    // 64-byte-capable packets fetched by the driver's read loop via transferIn.
-    class MockUSBMeter {
-      constructor() {
-        this.vendorId = 0x5345;
-        this.productId = 0x1234;
-        this.opened = false;
-        this.closeCount = 0;
-        this._rx = [];          // queued reply packets
-        this._lastCmd = null;
-        this.writeCount = 0;
-      }
-      async open() { this.opened = true; }
-      async close() { this.opened = false; this.closeCount++; }
-      async selectConfiguration() { }
-      async claimInterface() { }
-      async transferOut(ep, data) {
-        this._lastCmd = new TextDecoder().decode(data).trim();
-        this.writeCount++;
-        this._enqueue(this._lastCmd);
-        return { status: 'ok' };
-      }
-      _enqueue(cmd) { }        // behavior hook — overridden per scenario
-      async transferIn() {
-        if (this._rx.length) {
-          const data = this._rx.shift();
-          return { status: 'ok', data: new DataView(data.buffer, data.byteOffset, data.byteLength) };
-        }
-        await sleep(20);       // nothing queued — pend briefly like real USB
-        return { status: 'ok', data: new DataView(new ArrayBuffer(0)) };
-      }
-      reply(str) { this._rx.push(new TextEncoder().encode(str + '\r\n')); }
+  // Raw bulk-USB meter mock: commands arrive via transferOut, replies are
+  // 64-byte-capable packets fetched by the driver's read loop via transferIn.
+  // Shared with section 10's mode-sync scenarios.
+  class MockUSBMeter {
+    constructor() {
+      this.vendorId = 0x5345;
+      this.productId = 0x1234;
+      this.opened = false;
+      this.closeCount = 0;
+      this._rx = [];          // queued reply packets
+      this._lastCmd = null;
+      this.writeCount = 0;
     }
+    async open() { this.opened = true; }
+    async close() { this.opened = false; this.closeCount++; }
+    async selectConfiguration() { }
+    async claimInterface() { }
+    async transferOut(ep, data) {
+      this._lastCmd = new TextDecoder().decode(data).trim();
+      this.writeCount++;
+      this._enqueue(this._lastCmd);
+      return { status: 'ok' };
+    }
+    _enqueue(cmd) { }        // behavior hook — overridden per scenario
+    async transferIn() {
+      if (this._rx.length) {
+        const data = this._rx.shift();
+        return { status: 'ok', data: new DataView(data.buffer, data.byteOffset, data.byteLength) };
+      }
+      await sleep(20);       // nothing queued — pend briefly like real USB
+      return { status: 'ok', data: new DataView(new ArrayBuffer(0)) };
+    }
+    reply(str) { this._rx.push(new TextEncoder().encode(str + '\r\n')); }
+  }
 
-    const installUSB = (dev) => {
-      navigator.usb = {
-        getDevices: async () => [dev],
-        requestDevice: async () => dev,
-        addEventListener: () => { },
-      };
-      navigator.serial.requestPort = async () => {
-        const e = new Error('no port chosen'); e.name = 'NotFoundError'; throw e;
-      };
+  const installUSB = (dev) => {
+    navigator.usb = {
+      getDevices: async () => [dev],
+      requestDevice: async () => dev,
+      addEventListener: () => { },
     };
+    navigator.serial.requestPort = async () => {
+      const e = new Error('no port chosen'); e.name = 'NotFoundError'; throw e;
+    };
+  };
+  {
 
     // A) Mirko's V11 firmware: answers ONLY *IDN? (proven working in his
     //    pyusb test) — BoardScope must connect on the IDN handshake.
@@ -558,6 +559,108 @@ Object.defineProperty(globalThis, 'navigator', {
     m10._dbg('test line');
     check('debug ring buffer records the trail',
       m10.getDebugLog().some(l => /test line/.test(l)));
+  }
+
+  /* ── 10. v6.0.23 — mode tracking on bare-number dialects (Mirko: knob
+     turns stayed in DCV). Root cause: the :DMM:CONFigure? sync was gated
+     on _scpiReadCmd === ':DMM:MEAS?', which stays null when the fast
+     dialect answers from poll #1 — the sync never ran. */
+  console.log('10) v6.0.23 — knob-turn mode sync (CONFigure + labeled probe)');
+  {
+    // A) firmware answers CONFigure: knob turn VOLTage→RESistance shows up
+    class MockKnobUSB extends MockUSBMeter {
+      constructor() {
+        super();
+        this._confCount = 0;
+      }
+      _enqueue(cmd) {
+        if (cmd === '*IDN?') this.reply('OWON,HDS242,26190843,V11.0.0');
+        else if (cmd === ':SCPI:DISP?') this.reply('scpiON');
+        else if (cmd === ':DMM:MEAS?') this.reply('3.30');
+        else if (cmd === ':DMM:CONFigure?') {
+          this._confCount++;
+          // first two syncs: voltage; after that the "knob" is on ohms
+          this.reply(this._confCount <= 2 ? 'VOLTage DC' : 'RESistance');
+        }
+      }
+    }
+    const knobDev = new MockKnobUSB();
+    installUSB(knobDev);
+    const mK = new Multimeter();
+    mK._handshakeFirstMs = 200;
+    mK._handshakeNextMs = 100;
+    mK._confSyncMs = 400;
+    mK._confQueryTimeoutMs = 150;
+    mK.setPollInterval(80);
+    const readingsK = [];
+    mK.on('reading', r => readingsK.push(r));
+    const okK = await mK.connect();
+    check('knob-meter connected', okK === true);
+    await sleep(2400); // several CONFigure syncs (400ms cadence)
+    check('mode follows knob turn via :DMM:CONFigure?',
+      readingsK.some(r => r.mode === 'OHM'),
+      readingsK.map(r => r.mode).join(','));
+    await mK.disconnect();
+  }
+  {
+    // B) CONFigure silent + :READ? labeled — the labeled probe must carry
+    //    the mode when the fast dialect gives bare numbers
+    class MockSilentConfUSB extends MockUSBMeter {
+      _enqueue(cmd) {
+        if (cmd === '*IDN?') this.reply('OWON,HDS242,26190843,V11.0.0');
+        else if (cmd === ':SCPI:DISP?') this.reply('scpiON');
+        else if (cmd === ':DMM:MEAS?') this.reply('1.00');
+        else if (cmd === ':READ?') this.reply('R=4.700kΩ');
+        // :DMM:CONFigure? — silence (pend → timeout)
+      }
+    }
+    const scDev = new MockSilentConfUSB();
+    installUSB(scDev);
+    const mS = new Multimeter();
+    mS._handshakeFirstMs = 200;
+    mS._handshakeNextMs = 100;
+    mS._confSyncMs = 250;
+    mS._confQueryTimeoutMs = 150;
+    mS.setPollInterval(80);
+    const readingsS = [];
+    mS.on('reading', r => readingsS.push(r));
+    const okS = await mS.connect();
+    check('silent-CONFigure meter connected', okS === true);
+    await sleep(3000); // 2 sync attempts + every-8th-poll labeled probe
+    check('labeled :READ? probe carries the mode (OHM, not stuck DCV)',
+      readingsS.some(r => r.mode === 'OHM'),
+      readingsS.map(r => r.mode).join(','));
+    await mS.disconnect();
+  }
+  {
+    // C) neither CONFigure nor :READ? answers — probe disables itself and
+    //    polling keeps flowing (mode stays DCV; diagnostics show why)
+    class MockDeafUSB extends MockUSBMeter {
+      _enqueue(cmd) {
+        if (cmd === '*IDN?') this.reply('OWON,HDS242,26190843,V11.0.0');
+        else if (cmd === ':SCPI:DISP?') this.reply('scpiON');
+        else if (cmd === ':DMM:MEAS?') this.reply('2.50');
+        // :DMM:CONFigure? and :READ? — silence
+      }
+    }
+    const deafDev = new MockDeafUSB();
+    installUSB(deafDev);
+    const mD = new Multimeter();
+    mD._handshakeFirstMs = 200;
+    mD._handshakeNextMs = 100;
+    mD._confSyncMs = 250;
+    mD._confQueryTimeoutMs = 150;
+    mD.setPollInterval(60);
+    const readingsD = [];
+    mD.on('reading', r => readingsD.push(r));
+    const okD = await mD.connect();
+    check('deaf-config meter connected', okD === true);
+    await sleep(7000); // 3 silent probes × 1s USB timeout + sync blocks
+    check('readings keep flowing without mode info',
+      readingsD.length >= 5, `got ${readingsD.length}`);
+    check('probe disabled itself after 3 silent tries',
+      mD._readProbeDisabled === true && mD.getDebugLog().some(l => /mode probe .* disabled/.test(l)));
+    await mD.disconnect();
   }
 
   console.log(`\n${pass} passed, ${fail} failed`);
