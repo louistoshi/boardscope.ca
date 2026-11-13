@@ -1,4 +1,4 @@
-const CACHE_NAME = 'boardscope-v6.0.22';
+const CACHE_NAME = 'boardscope-v6.0.23';
 const ASSETS_TO_CACHE = [
   '/',
   '/boardview.html',

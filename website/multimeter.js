@@ -95,10 +95,17 @@ class Multimeter {
     this._usbReadActive = false;      // persistent USB bulk-IN read loop
     this._handshakeFirstMs = 3000;    // first SCPI query after claim — V11 firmware needs ~3 s
     this._handshakeNextMs = 1200;     // subsequent handshake queries
+    this._confSyncMs = 3000;          // :DMM:CONFigure? knob-sync cadence (bare-number dialects)
+    this._confQueryTimeoutMs = 600;   // :DMM:CONFigure? query timeout
     this._reconnectHandshakeFirstMs = 2000;  // reconnect probe budgets (device just re-enumerated)
     this._reconnectHandshakeNextMs = 800;
     this._debugLog = [];              // connection diagnostics ring buffer (LOG button copies it)
     this._dbgHadReading = false;      // "first reading" diagnostic logged this session
+    this._confTries = 0;              // :DMM:CONFigure? attempts without a usable mode
+    this._confModeSeen = false;       // CONFigure answered at least once — knob sync works
+    this._readProbeTicks = 0;         // labeled-:READ? mode probe cadence (bare-number dialects)
+    this._readProbeDisabled = false;  // firmware never answers :READ? — stop probing
+    this._slowProbeFails = 0;         // consecutive silent mode probes
 
     // Event bus
     this._listeners = {};
@@ -853,11 +860,18 @@ class Multimeter {
     this._scpiReadCmd = null;
     this._scpiGarbage = 0;
     this._scpiConfTicks = 0;
+    this._confTries = 0;
+    this._confModeSeen = false;
+    this._readProbeTicks = 0;
+    this._readProbeDisabled = false;
+    this._slowProbeFails = 0;
     this._lastGoodPollAt = 0;
   }
 
   // Map a ':DMM:CONFigure?' reply (e.g. 'VOLTage DC', 'RESistance') to a
-  // mode. Unknown replies are ignored rather than guessed.
+  // mode. Unknown replies are ignored rather than guessed. Returns the
+  // mode (or null) so the caller can tell whether the firmware actually
+  // answers this query.
   _syncModeFromConfig(text) {
     const t = String(text).toLowerCase();
     let mode = null;
@@ -868,9 +882,15 @@ class Multimeter {
     else if (/curr/.test(t)) mode = /ac/.test(t) ? 'ACA' : 'DCA';
     else if (/volt/.test(t)) mode = /ac/.test(t) ? 'ACV' : 'DCV';
     else if (/duty/.test(t)) mode = 'DUTY';
-    else if (/freq/.test(t)) mode = 'FREQ';
+    else if (/freq|period/.test(t)) mode = 'FREQ';
     else if (/temp/.test(t)) mode = 'TEMP';
-    if (mode) this._lastSCPIMode = mode;
+    if (mode) {
+      if (this._lastSCPIMode !== mode) {
+        this._dbg('mode sync: ' + JSON.stringify(String(text)) + ' → ' + mode);
+      }
+      this._lastSCPIMode = mode;
+    }
+    return mode;
   }
 
   _decodeASCII(bytes) {
@@ -1010,15 +1030,30 @@ class Multimeter {
       // firmware family (some units answer ONLY that one), so probe the fast
       // dialect first and lock onto whichever replies.
       const FAST = ':DMM:MEAS?', SLOW = ':READ?';
-      const cmd = this._scpiReadCmd || FAST;
+      let cmd = this._scpiReadCmd || FAST;
+      // Mode refresh for bare-number dialects: ':DMM:MEAS?' replies carry no
+      // function label, so a knob turn would never leave DCV (tester report,
+      // V11 firmware). ':DMM:CONFigure?' fixes that — but if the firmware
+      // never answers it, interleave a labeled ':READ?' probe every 8th poll
+      // instead. The probe REPLACES the reading query for that tick.
+      if (cmd === FAST && !this._readProbeDisabled && !this._confModeSeen &&
+        this._confTries >= 2 && (++this._readProbeTicks % 8) === 0) {
+        cmd = SLOW;
+      }
       let line = await this._querySCPI(cmd, this._transport === 'usb' ? 1000 : 800);
-      if (line === null && !this._scpiReadCmd) {
+      if (line === null && cmd === FAST && !this._scpiReadCmd) {
         this._scpiReadCmd = SLOW;
         line = await this._querySCPI(this._scpiReadCmd, 1000);
         if (line === null) this._scpiReadCmd = null; // neither dialect — keep probing
       }
       const reading = line !== null ? this._parseOWONHDS(line) : null;
       if (reading) {
+        if (cmd === SLOW) {
+          // Deliberate labeled probe — a labeled reply proves ':READ?' works
+          // and carries the function; repeated failures mean it doesn't.
+          if (!this._readProbeDisabled) this._dbg('mode probe :READ? → ' + reading.mode);
+          this._readProbeDisabled = false;
+        }
         if (!this._dbgHadReading) {
           this._dbgHadReading = true;
           this._dbg('first reading: ' + reading.display + ' ' + reading.mode +
@@ -1029,14 +1064,22 @@ class Multimeter {
         this._lastGoodPollAt = Date.now();
         this._dispatchReading(this._applyCalibration(reading));
         // ':DMM:MEAS?' replies are bare numbers with no unit — sync the
-        // active function from ':DMM:CONFigure?' roughly every 5 s so mode
-        // tracking survives knob turns on that firmware (cadence scales
-        // with the poll rate instead of a fixed tick count).
-        const confEvery = Math.max(10, Math.round(5000 / this._pollIntervalMs));
-        if (this._scpiReadCmd === ':DMM:MEAS?' && ++this._scpiConfTicks >= confEvery) {
+        // active function from ':DMM:CONFigure?' roughly every 3 s so mode
+        // tracking survives knob turns. The gate is the dialect THIS poll
+        // used: v6.0.22 checked _scpiReadCmd, which stays null when the fast
+        // dialect answers from poll #1 — so the sync never ran and the mode
+        // was stuck on DCV (tester report).
+        const confEvery = Math.max(5, Math.round(this._confSyncMs / this._pollIntervalMs));
+        if (cmd === FAST && ++this._scpiConfTicks >= confEvery) {
           this._scpiConfTicks = 0;
-          const conf = await this._querySCPI(':DMM:CONFigure?', 600);
-          if (conf) this._syncModeFromConfig(conf);
+          const conf = await this._querySCPI(':DMM:CONFigure?', this._confQueryTimeoutMs);
+          this._dbg(':DMM:CONFigure? → ' + (conf === null ? 'timeout' : JSON.stringify(String(conf).slice(0, 40))));
+          if (conf && this._syncModeFromConfig(conf)) {
+            this._confModeSeen = true;
+            this._confTries = 0;
+          } else {
+            this._confTries++;
+          }
         }
       } else if (line !== null) {
         // Non-null but unparseable — the locked dialect answers with
@@ -1052,6 +1095,12 @@ class Multimeter {
             ' (sample: ' + JSON.stringify(String(line).slice(0, 40)) + ')');
         }
       } else {
+        if (cmd === SLOW && ++this._slowProbeFails >= 3) {
+          // ':READ?' never answers on this firmware — stop burning poll
+          // slots on the labeled probe; CONFigure remains the mode source.
+          this._readProbeDisabled = true;
+          this._dbg('mode probe :READ? silent 3× — disabled (mode via :DMM:CONFigure? only)');
+        }
         this._scpiFails++;
         // Judge the link by time since the last good reading, not by poll
         // count — at a 100 ms poll rate a slow-but-alive meter would rack

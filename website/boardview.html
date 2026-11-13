@@ -16132,7 +16132,8 @@
         const dsRow = document.createElement('div');
         dsRow.style.cssText = 'display:flex;gap:4px;flex-wrap:wrap;margin-bottom:6px';
         const sources = [
-          { label: '<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.125em"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg> Datasheet', url: `https://www.alldatasheet.com/search.jsp?Searchword=${encodeURIComponent(partNum)}` },
+          // alldatasheet's search endpoint is view.jsp — search.jsp 404s (tester report)
+          { label: '<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.125em"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg> Datasheet', url: `https://www.alldatasheet.com/view.jsp?Searchword=${encodeURIComponent(partNum)}` },
           { label: '🛒 LCSC', url: `https://www.lcsc.com/search?q=${encodeURIComponent(partNum)}` },
           { label: '<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.125em"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg> Octopart', url: `https://octopart.com/search?q=${encodeURIComponent(partNum)}` },
         ];
@@ -16140,7 +16141,9 @@
           const btn = document.createElement('a');
           btn.href = src.url; btn.target = '_blank'; btn.rel = 'noopener';
           btn.style.cssText = 'font-size:10px;color:var(--text3);background:var(--bg3);border:1px solid var(--border2);padding:2px 7px;border-radius:3px;text-decoration:none;white-space:nowrap;cursor:pointer';
-          btn.textContent = src.label;
+          // innerHTML, not textContent — the labels embed SVG icons, and
+          // textContent rendered the raw markup as visible text (tester report)
+          btn.innerHTML = src.label;
           btn.addEventListener('mouseover', () => btn.style.color = 'var(--accent)');
           btn.addEventListener('mouseout', () => btn.style.color = 'var(--text3)');
           dsRow.appendChild(btn);
@@ -24444,6 +24447,22 @@ Rules: 6-10 rails in power-on order. "net" is the exact schematic net name. "tol
         return { label: t, key: null };
       }
 
+      function place(x, y) {
+        // Show LEFT of the cursor (tester request: it used to sit to the
+        // right and ran off the screen edge, "detached" from the mouse),
+        // with a tight vertical gap. Hard-clamped so it can never leave
+        // the viewport, whichever way it flips.
+        const TW = tip.offsetWidth || 200, TH = tip.offsetHeight || 32;
+        let tx = x - TW - 10;
+        if (tx < 8) tx = x + 12;                    // no room on the left — flip right
+        let ty = y + 12;
+        if (ty + TH > window.innerHeight - 8) ty = y - TH - 6;  // near the bottom — flip above
+        tx = Math.max(4, Math.min(tx, window.innerWidth - TW - 4));
+        ty = Math.max(4, Math.min(ty, window.innerHeight - TH - 4));
+        tip.style.left = tx + 'px';
+        tip.style.top = ty + 'px';
+      }
+
       function show(el, x, y) {
         const raw = el.getAttribute('data-tip') || el.getAttribute('title') || '';
         if (!raw) return;
@@ -24454,15 +24473,7 @@ Rules: 6-10 rails in power-on order. "net" is the exact schematic net name. "tol
         }
         const { label, key } = parseTitle(raw);
         tip.innerHTML = label + (key ? ` <span class="tip-key">${key}</span>` : '');
-
-        // Position — prefer below, flip above if near bottom
-        const TW = tip.offsetWidth || 200;
-        const TH = tip.offsetHeight || 32;
-        let tx = x + 12, ty = y + 16;
-        if (tx + TW > window.innerWidth - 8) tx = x - TW - 4;
-        if (ty + TH > window.innerHeight - 8) ty = y - TH - 8;
-        tip.style.left = Math.max(4, tx) + 'px';
-        tip.style.top = Math.max(4, ty) + 'px';
+        place(x, y);
         tip.classList.add('show');
       }
 
@@ -24481,12 +24492,7 @@ Rules: 6-10 rails in power-on order. "net" is the exact schematic net name. "tol
 
       document.addEventListener('mousemove', e => {
         if (!tip.classList.contains('show')) return;
-        const TW = tip.offsetWidth, TH = tip.offsetHeight;
-        let tx = e.clientX + 12, ty = e.clientY + 16;
-        if (tx + TW > window.innerWidth - 8) tx = e.clientX - TW - 4;
-        if (ty + TH > window.innerHeight - 8) ty = e.clientY - TH - 8;
-        tip.style.left = Math.max(4, tx) + 'px';
-        tip.style.top = Math.max(4, ty) + 'px';
+        place(e.clientX, e.clientY);
       });
 
       document.addEventListener('mouseout', e => {
