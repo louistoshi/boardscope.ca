@@ -5,7 +5,9 @@
  * Supported hardware:
  *   Hantek 6022BE / 6022BL  — WebUSB, VID 0x04B4 PID 0x6022/0x6023
  *   OWON SDS/XDS series     — WebSerial (USB CDC), VID 0x5345
- *   OWON HDS series         — WebSerial (USB CDC)
+ *   OWON HDS200 series      — WebUSB raw bulk (5345:1234, same transport as
+ *                             the live multimeter: OUT 0x01, IN 0x81, ASCII
+ *                             SCPI lines; HDS242/HDS272/HO5xS)
  *   Rigol DS1000Z series    — WebSerial (SCPI)
  *   Any SCPI scope          — WebSerial (:WAVeform commands)
  *
@@ -126,6 +128,253 @@ class HantekDriver {
     const opts = Object.keys(HantekDriver.RANGE_CODE).map(Number).sort((a, b) => a - b);
     for (const r of opts) { if (vFullScale <= r) return HantekDriver.RANGE_CODE[r]; }
     return HantekDriver.RANGE_CODE[opts[opts.length - 1]];
+  }
+}
+
+// ── DRIVER: OWON HDS200 series (WebUSB bulk — same transport as the meter) ─
+// The HDS200 family (HDS242, HDS272, Hanmatek HO5xS rebadges; USB ID
+// 5345:1234) is a raw USB bulk device (OUT 0x01, IN 0x81) — NOT a CDC
+// serial port, so on stock Windows/Linux it never shows up in the serial
+// picker and the scope CONNECT popup listed unrelated devices only
+// (v6.0.24 tester report). The live-multimeter module proved this
+// transport: ASCII SCPI lines over the bulk pipes, a firmware that tears
+// the link down when idle, and an IDN-first session — so this driver
+// mirrors Multimeter's plumbing (persistent read loop, keep-alive poll,
+// probe-before-commit reconnect) while speaking the scope command set
+// (:WAV:DATA? …).
+class HDSBulkDriver {
+  static OWON_HDS = { vendorId: 0x5345, productId: 0x1234 };
+
+  static matches(device) {
+    return !!device && device.vendorId === HDSBulkDriver.OWON_HDS.vendorId &&
+      device.productId === HDSBulkDriver.OWON_HDS.productId;
+  }
+
+  constructor() {
+    this.dev = null;
+    this.model = 'OWON HDS';
+    this._buf = '';
+    this._readActive = false;
+    this._pending = null;        // { resolve, reject } — one query in flight
+    this._keepAliveTimer = null;
+    this._keepAliveBusy = false;
+    this._ioBusy = false;        // true during configure+capture — keep-alive stands back
+    this._closed = false;
+    this._reconnecting = false;
+    this.onEvent = null;         // (type, info) → 'reconnected' | 'lost'
+    this._lastRxAt = 0;
+    this._rxDeadlineTimer = null;
+    // Test-tunable pacing
+    this._retryDelayMs = 2000;   // reconnect loop delay
+    this._rxDeadlineMs = 12000;  // "connected but never a byte" deadline
+    this._retryAttempts = 5;
+  }
+
+  async connect(granted) {
+    const dev = granted || await navigator.usb.requestDevice({ filters: [HDSBulkDriver.OWON_HDS] });
+    await dev.open();
+    if (!dev.configuration) await dev.selectConfiguration(1);
+    await dev.claimInterface(0);
+    this.dev = dev;
+    this._closed = false;
+    this._buf = '';
+    this._startReadLoop();
+    // IDN-first session (same style the meter module proved on V11 firmware)
+    try {
+      const idn = await this.query('*IDN?', 2000);
+      if (idn) this.model = idn.trim();
+    } catch (_) { /* unnamed scope still works — keep the generic label */ }
+    this._startKeepAlive();
+    this._lastRxAt = Date.now();
+    this._armRxDeadline();
+    return this.model;
+  }
+
+  async disconnect() {
+    this._closed = true;
+    this._stopKeepAlive();
+    if (this._rxDeadlineTimer) { clearTimeout(this._rxDeadlineTimer); this._rxDeadlineTimer = null; }
+    this._failPending(new Error('disconnected'));
+    const dev = this.dev;
+    this.dev = null;
+    if (dev) { try { await dev.close(); } catch (_) { } }
+  }
+
+  setBusy(busy) {
+    // capture() brackets the whole configure+capture exchange so the
+    // keep-alive *IDN? can never interleave with :WAV:DATA?
+    this._ioBusy = !!busy;
+  }
+
+  async write(cmd) {
+    if (!this.dev || !this.dev.opened) {
+      throw new Error('USB link not open — reconnecting, try again in a moment');
+    }
+    try {
+      await this.dev.transferOut(1, new TextEncoder().encode(cmd + '\n'));
+    } catch (_) {
+      throw new Error('USB write failed — link dropped');
+    }
+  }
+
+  async query(cmd, timeoutMs = 3000) {
+    if (this._pending) throw new Error('query ' + cmd + ' while another is in flight');
+    await this.write(cmd);
+    return new Promise((resolve, reject) => {
+      const t = setTimeout(() => {
+        this._pending = null;
+        reject(new Error('SCPI timeout: ' + cmd));
+      }, timeoutMs);
+      this._pending = {
+        resolve: (line) => { clearTimeout(t); this._pending = null; resolve(line); },
+        reject: (e) => { clearTimeout(t); this._pending = null; reject(e); },
+      };
+    });
+  }
+
+  async configure(sampleRate, numPoints, channelEnabled) {
+    if (channelEnabled[0]) await this.write(':CHAN1:DISP ON');
+    else await this.write(':CHAN1:DISP OFF');
+    if (channelEnabled[1]) await this.write(':CHAN2:DISP ON');
+    else await this.write(':CHAN2:DISP OFF');
+    await this.write(`:ACQ:SAMP ${sampleRate}`);
+    await this.write(`:WAV:POIN ${numPoints}`);
+    await this.write(':WAV:FORM ASC');  // ASCII for max compatibility
+    await this.write(':SING');          // single trigger
+  }
+
+  async captureChannel(ch) {
+    await this.write(`:WAV:SOUR CHAN${ch}`);
+    const raw = await this.query(':WAV:DATA?', 8000);
+    return new Float32Array(raw.split(',').map(Number));
+  }
+
+  // ── internals: persistent bulk-IN read loop + link recovery ──────────
+  _startReadLoop() {
+    if (this._readActive) return;
+    this._readActive = true;
+    (async () => {
+      let died = false;
+      while (this.dev && this.dev.opened && !this._closed) {
+        try {
+          const res = await this.dev.transferIn(1, 4096);  // bulk IN 0x81
+          if (res.status === 'ok' && res.data && res.data.byteLength) {
+            this._lastRxAt = Date.now();
+            this._buf += new TextDecoder().decode(res.data);
+            this._drainLines();
+          } else {
+            await new Promise(r => setTimeout(r, 5));  // empty/stall — don't spin
+          }
+        } catch (_) { died = true; break; }  // closed or re-enumerated
+      }
+      this._readActive = false;
+      if (died && !this._closed && this.dev) this._tryReconnect();
+    })();
+  }
+
+  _drainLines() {
+    while (true) {
+      const nl = this._buf.indexOf('\n');
+      if (nl < 0) return;
+      const line = this._buf.slice(0, nl).replace(/\r/g, '');
+      this._buf = this._buf.slice(nl + 1);
+      if (!line) continue;
+      if (this._pending) {
+        const p = this._pending;
+        this._pending = null;
+        p.resolve(line);
+      }
+      // scope mode never sends unsolicited lines — extras are dropped
+    }
+  }
+
+  _failPending(err) {
+    if (this._pending) {
+      const p = this._pending;
+      this._pending = null;
+      try { p.reject(err); } catch (_) { }
+    }
+  }
+
+  _startKeepAlive() {
+    this._stopKeepAlive();
+    this._keepAliveTimer = setInterval(async () => {
+      if (this._ioBusy || this._keepAliveBusy || this._reconnecting || !this.dev) return;
+      this._keepAliveBusy = true;
+      try { await this.query('*IDN?', 1500); }
+      catch (_) { /* unanswered polls are fine — drops raise the disconnect path */ }
+      finally { this._keepAliveBusy = false; }
+    }, 2000);
+  }
+
+  _stopKeepAlive() {
+    if (this._keepAliveTimer) { clearInterval(this._keepAliveTimer); this._keepAliveTimer = null; }
+  }
+
+  _armRxDeadline() {
+    if (this._rxDeadlineTimer) clearTimeout(this._rxDeadlineTimer);
+    this._rxDeadlineTimer = setTimeout(() => {
+      this._rxDeadlineTimer = null;
+      if (this._closed || this._reconnecting || !this.dev) return;
+      if (Date.now() - this._lastRxAt >= this._rxDeadlineMs) {
+        console.warn('[Scope] HDS: no SCPI data since connect — releasing it');
+        const dead = this.dev;
+        this.dev = null;
+        this._buf = '';
+        this._failPending(new Error('link lost'));
+        (async () => { try { if (dead) await dead.close(); } catch (_) { } })();
+        if (this.onEvent) this.onEvent('lost', 'no-response');
+      }
+    }, this._rxDeadlineMs);
+  }
+
+  // The firmware drops the USB link when idle and re-enumerates as a fresh
+  // device — reopen it without user action, mirroring Multimeter._tryReconnectHDS.
+  // Every attempt PROBES before committing: a claimed-but-silent scope is
+  // released again (holding the claim detaches the kernel driver and hides
+  // the device from every picker — the v6.0.20 meter regression).
+  async _tryReconnect() {
+    if (this._reconnecting || this._closed) return;
+    this._reconnecting = true;
+    this._stopKeepAlive();
+    console.warn('[Scope] HDS USB link dropped — trying to recover');
+    const dead = this.dev;
+    this.dev = null;
+    this._buf = '';
+    this._failPending(new Error('link lost'));
+    try { if (dead) await dead.close(); } catch (_) { }
+
+    for (let attempt = 1; attempt <= this._retryAttempts; attempt++) {
+      await new Promise(r => setTimeout(r, this._retryDelayMs));
+      if (this._closed) { this._reconnecting = false; return; }
+      try {
+        const devices = await navigator.usb.getDevices();
+        const dev = devices.find(d => HDSBulkDriver.matches(d));
+        if (!dev) continue;
+        await dev.open();
+        if (!dev.configuration) await dev.selectConfiguration(1);
+        await dev.claimInterface(0);
+        this.dev = dev;
+        this._buf = '';
+        this._startReadLoop();
+        await this.query('*IDN?', 1500);  // probe before committing
+        this._lastRxAt = Date.now();
+        this._armRxDeadline();
+        this._startKeepAlive();
+        console.log('[Scope] HDS reconnected (attempt ' + attempt + ')');
+        if (this.onEvent) this.onEvent('reconnected', attempt);
+        this._reconnecting = false;
+        return;
+      } catch (_) {
+        // Probe failed or device not back yet — release whatever we grabbed
+        this._failPending(new Error('link lost'));
+        const grabbed = this.dev;
+        this.dev = null;
+        if (grabbed) { try { await grabbed.close(); } catch (_) { } }
+      }
+    }
+    this._reconnecting = false;
+    if (!this._closed && this.onEvent) this.onEvent('lost', null);
   }
 }
 
@@ -432,7 +681,8 @@ class Oscilloscope {
     // Connection state
     this.device = null;    // WebUSB device (Hantek)
     this._scpi = null;    // SCPIDriver (OWON/Rigol)
-    this._driver = null;    // 'hantek' | 'scpi' | null
+    this._hds = null;     // HDSBulkDriver (OWON HDS200 raw USB bulk)
+    this._driver = null;    // 'hantek' | 'scpi' | 'hds' | null
     this.connected = false;
     this.capturing = false;
     this.demoMode = false;   // true when no real hardware — shows animated waveform
@@ -470,14 +720,52 @@ class Oscilloscope {
 
   // ── CONNECTION ────────────────────────────────────────────────────────
   async connect() {
-    // Try WebUSB first (Hantek)
+    // Try WebUSB first (Hantek vendor-USB; OWON HDS200 bulk)
     if ('usb' in navigator) {
       try {
         const filters = [
           ...HantekDriver.filters(),
+          HDSBulkDriver.OWON_HDS,
           { vendorId: 0x1AB1 }, // Rigol (WebUSB fallback)
         ];
         const dev = await navigator.usb.requestDevice({ filters });
+
+        // OWON HDS200 picked — raw USB bulk, a driver of its own (same
+        // transport the live-multimeter module proved). Without this route
+        // the CONNECT popup listed unrelated devices only: the HDS is not
+        // a serial port and was in no WebUSB filter before v6.0.24.
+        if (HDSBulkDriver.matches(dev)) {
+          this._hds = new HDSBulkDriver();
+          this._hds.onEvent = (type) => {
+            if (type === 'reconnected') {
+              this.emit('connected', { device: this._hds.model, driver: 'hds', reconnected: true });
+            } else if (type === 'lost') {
+              this.connected = false;
+              this.emit('disconnected');
+              this.emit('error', { message: 'Scope connection lost — unplug/replug the scope, then CONNECT again.' });
+            }
+          };
+          try {
+            const model = await this._hds.connect(dev);
+            this._driver = 'hds';
+            this.connected = true;
+            this.demoMode = false;
+            this.emit('connected', { device: model, driver: 'hds' });
+            console.log('[Scope] OWON HDS connected (USB bulk):', model);
+            return true;
+          } catch (err) {
+            this._hds = null;
+            const busy = /claim|busy|opened|invalid|in use/i.test(String((err && (err.message || err.name)) || ''));
+            this.emit('error', {
+              message: busy
+                ? 'The HDS would not open — the Multimeter window may still hold it. Press DISCONNECT there, then CONNECT again.'
+                : 'Could not open the OWON HDS: ' + ((err && (err.message || err.name)) || err),
+              error: err,
+            });
+            return false;
+          }
+        }
+
         await dev.open();
         await dev.selectConfiguration(1);
         await dev.claimInterface(0);
@@ -552,6 +840,10 @@ class Oscilloscope {
       await this._scpi.disconnect();
       this._scpi = null;
     }
+    if (this._driver === 'hds' && this._hds) {
+      await this._hds.disconnect();
+      this._hds = null;
+    }
 
     this._driver = null;
     this.connected = false;
@@ -590,6 +882,18 @@ class Oscilloscope {
           ch2 = this.channelEnabled[1] ? await this._scpi.captureChannel(2) : new Float32Array(numSamples);
         } finally {
           this._scpi.setBusy(false);
+        }
+
+      } else if (this._driver === 'hds') {
+        // Same exchange bracketing as the SCPI driver — the HDS keep-alive
+        // poll must not interleave with :WAV:DATA?
+        this._hds.setBusy(true);
+        try {
+          await this._hds.configure(this.sampleRate, numSamples, this.channelEnabled);
+          ch1 = this.channelEnabled[0] ? await this._hds.captureChannel(1) : new Float32Array(numSamples);
+          ch2 = this.channelEnabled[1] ? await this._hds.captureChannel(2) : new Float32Array(numSamples);
+        } finally {
+          this._hds.setBusy(false);
         }
 
       } else {
@@ -1131,7 +1435,8 @@ if (typeof window !== 'undefined') {
   window.OwonMeterProtocol = OwonMeterProtocol;
   window.Oscilloscope = Oscilloscope;
   window.SCPIDriver = SCPIDriver;
+  window.HDSBulkDriver = HDSBulkDriver;
 }
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { Oscilloscope, HantekDriver, SCPIDriver, OwonMeterProtocol };
+  module.exports = { Oscilloscope, HantekDriver, SCPIDriver, HDSBulkDriver, OwonMeterProtocol };
 }

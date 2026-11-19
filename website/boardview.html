@@ -31060,11 +31060,19 @@ Rules:
           }
           try {
             G_scope = new Oscilloscope();
+            // Surface driver-level events: the HDS bulk driver reports busy
+            // hardware and link losses with specific hints (v6.0.24)
+            G_scope.on('error', (e) => setStatus('Oscilloscope: ' + (e?.message || 'error')));
+            G_scope.on('disconnected', () => {
+              connectBtn.textContent = 'CONNECT';
+              connectBtn.classList.remove('active');
+            });
             const ok = await G_scope.connect();
             if (ok) {
               connectBtn.textContent = 'DISCONNECT';
               connectBtn.classList.add('active');
-              setStatus('Oscilloscope connected: ' + (G_scope.device?.productName || 'device'));
+              setStatus('Oscilloscope connected: ' + (G_scope.device?.productName ||
+                G_scope._hds?.model || G_scope._scpi?.model || 'device'));
             } else {
               G_scope = null;
               setStatus('Oscilloscope connection failed');

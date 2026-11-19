@@ -590,6 +590,7 @@ Object.defineProperty(globalThis, 'navigator', {
     mK._handshakeFirstMs = 200;
     mK._handshakeNextMs = 100;
     mK._confSyncMs = 400;
+    mK._confProvenMs = 400; // v6.0.24 split: proven cadence is its own knob
     mK._confQueryTimeoutMs = 150;
     mK.setPollInterval(80);
     const readingsK = [];
@@ -661,6 +662,245 @@ Object.defineProperty(globalThis, 'navigator', {
     check('probe disabled itself after 3 silent tries',
       mD._readProbeDisabled === true && mD.getDebugLog().some(l => /mode probe .* disabled/.test(l)));
     await mD.disconnect();
+  }
+
+  /* ── 11. v6.0.24 — Mirko round 2: Ω→DCV never switched, AC never showed,
+     knob updates took 2-3 s. Root causes: the CONFigure mapper matched the
+     literal word 'volt' only (terse/echo/range-style voltage replies fell
+     through and kept the old mode), the AC/DC flavor had no source when the
+     echo lacks a qualifier, and the sync cadence was a flat 3 s. */
+  console.log('11) v6.0.24 — CONFigure mapping variants, AC/DC flavor, ~1s sync');
+  {
+    // A) direct mapping table — every plausible reply spelling
+    const mV = new Multimeter();
+    const cases = [
+      // long SCPI forms
+      ['VOLTage DC', 'DCV'], ['VOLTage AC', 'ACV'],
+      ['CURRent DC', 'DCA'], ['CURRent AC', 'ACA'],
+      ['RESistance', 'OHM'], ['CAPacitance', 'CAP'], ['DIODe', 'DIODE'],
+      ['CONTinuity', 'CONT'], ['FREQuency', 'FREQ'], ['DUTY', 'DUTY'],
+      ['TEMPerature', 'TEMP'],
+      // terse echo styles that v6.0.23 fell through on (Ω→DCV bug)
+      ['DCV', 'DCV'], ['ACV', 'ACV'], ['V DC', 'DCV'], ['V AC', 'ACV'],
+      ['VDC', 'DCV'], ['VAC', 'ACV'], ['DC', 'DCV'], ['AC', 'ACV'],
+      // range-style replies (pyusb reference parses these shapes too)
+      ['20V', 'DCV'], ['200mV', 'DCV'], ['20MOhm', 'OHM'],
+      ['20MΩ', 'OHM'], ['20nF', 'CAP'],
+      // current range style
+      ['50mA', 'DCA'], ['5A', 'DCA'],
+      // qualifier + value echo
+      ['VOLTage DC,+3.2800E+00', 'DCV'],
+      ['VOLTage AC,+2.3000E+02', 'ACV'],
+      // traps: 'capacitance' contains 'ac' — must NOT read as AC
+      ['CAPacitance', 'CAP'], ['20nF,AC-range', 'CAP'],
+      // unknown replies stay unmapped
+      ['AUTO', null], ['scpion', null], ['OWON,HDS242,26190843,V11.0.0', null],
+    ];
+    for (const [reply, want] of cases) {
+      mV._scpiFlavor = { volt: null, curr: null };
+      mV._acProbeWanted = false;
+      mV._lastSCPIMode = null;
+      const got = mV._syncModeFromConfig(reply);
+      check(`CONFigure ${JSON.stringify(reply)} → ${want}`,
+        got === want && (want === null || mV._lastSCPIMode === want),
+        `got ${got} / last=${mV._lastSCPIMode}`);
+    }
+    check('qualifier-less voltage queues a flavor probe',
+      mV._syncModeFromConfig('20V') === 'DCV' && mV._acProbeWanted === true);
+    check('qualified voltage does not queue a probe',
+      (mV._syncModeFromConfig('VOLTage AC') === 'ACV') && mV._acProbeWanted === false);
+  }
+  {
+    // B) end-to-end: knob Ω → range-style '20V' echo (no qualifier) → DCV
+    //    shows; SELECT→AC with no qualifier → flavor probe via labeled
+    //    :READ? ('Va=…') upgrades to ACV; further qualifier-less syncs keep
+    //    AC (no DCV flapping)
+    class MockRangeEchoUSB extends MockUSBMeter {
+      constructor() { super(); this.stage = 'ohm'; }
+      _enqueue(cmd) {
+        if (cmd === '*IDN?') this.reply('OWON,HDS242,26190843,V11.0.0');
+        else if (cmd === ':SCPI:DISP?') this.reply('scpiON');
+        else if (cmd === ':DMM:MEAS?') this.reply('3.30');
+        else if (cmd === ':DMM:CONFigure?') {
+          if (this.stage === 'ohm') this.reply('RESistance');
+          else if (this.stage === 'dcv') this.reply('20V');
+          else this.reply('VOLTage'); // SELECT pressed — echo lost the qualifier
+        } else if (cmd === ':READ?') {
+          this.reply(this.stage === 'acv' ? 'Va=230.0V' : 'V=3.30V');
+        }
+      }
+    }
+    const reDev = new MockRangeEchoUSB();
+    installUSB(reDev);
+    const mR = new Multimeter();
+    mR._handshakeFirstMs = 200;
+    mR._handshakeNextMs = 100;
+    mR._confSyncMs = 240;
+    mR._confProvenMs = 240;
+    mR._confQueryTimeoutMs = 150;
+    mR.setPollInterval(80);
+    const modesR = [];
+    mR.on('reading', r => modesR.push(r.mode));
+    const okR = await mR.connect();
+    check('range-echo meter connected', okR === true);
+    await sleep(1200);
+    check('OHM shown', modesR.some(md => md === 'OHM'), modesR.join(','));
+    // knob → V position; firmware echoes range-style '20V' (no qualifier)
+    reDev.stage = 'dcv';
+    const t0 = Date.now();
+    await sleep(1400);
+    check(`Ω→DCV via range-style echo (v6.0.23 bug), shown in ${Date.now() - t0}ms`,
+      modesR.some(md => md === 'DCV'), modesR.join(','));
+    // SELECT → AC; echo 'VOLTage' has no qualifier — labeled probe resolves
+    reDev.stage = 'acv';
+    await sleep(1800);
+    check('AC shown via flavor probe (Va label)', modesR.some(md => md === 'ACV'),
+      modesR.join(','));
+    const acIdx = modesR.indexOf('ACV');
+    await sleep(1200);
+    check('AC persists — no DCV flap on qualifier-less syncs',
+      !modesR.slice(acIdx + 1).includes('DCV'), modesR.join(','));
+    await mR.disconnect();
+  }
+  {
+    // C) explicit qualifier: SELECT→AC reflects on the next CONFigure sync
+    //    with no probe round-trip
+    class MockQualifiedUSB extends MockUSBMeter {
+      constructor() { super(); this.ac = false; }
+      _enqueue(cmd) {
+        if (cmd === '*IDN?') this.reply('OWON,HDS242,26190843,V11.0.0');
+        else if (cmd === ':SCPI:DISP?') this.reply('scpiON');
+        else if (cmd === ':DMM:MEAS?') this.reply('230.0');
+        else if (cmd === ':DMM:CONFigure?') this.reply(this.ac ? 'VOLTage AC' : 'VOLTage DC');
+        else if (cmd === ':READ?') this.reply('V=230.0V');
+      }
+    }
+    const qDev = new MockQualifiedUSB();
+    installUSB(qDev);
+    const mQ = new Multimeter();
+    mQ._handshakeFirstMs = 200;
+    mQ._handshakeNextMs = 100;
+    mQ._confSyncMs = 240;
+    mQ._confProvenMs = 240;
+    mQ._confQueryTimeoutMs = 150;
+    mQ.setPollInterval(80);
+    const modesQ = [];
+    mQ.on('reading', r => modesQ.push(r.mode));
+    const okQ = await mQ.connect();
+    check('qualified meter connected', okQ === true);
+    await sleep(1000);
+    check('DCV shown', modesQ.some(md => md === 'DCV'), modesQ.join(','));
+    qDev.ac = true;
+    const tQ = Date.now();
+    await sleep(1200);
+    check(`SELECT→AC shows within ${Date.now() - tQ}ms of the sync`,
+      modesQ.some(md => md === 'ACV'), modesQ.join(','));
+    check('no flavor probe needed for qualified echoes', mQ._acProbeWanted === false);
+    await mQ.disconnect();
+  }
+
+  /* ── 12. v6.0.24 — scope module: OWON HDS via WebUSB bulk (Mirko: the
+     Oscilloscope CONNECT popup only showed his keyboard/mouse — the HDS is
+     a raw bulk device and was in neither the WebUSB filters nor the serial
+     picker). */
+  console.log('12) v6.0.24 — scope module HDSBulkDriver (chooser + capture + recovery)');
+  {
+    class MockHDSScope {
+      constructor() {
+        this.vendorId = 0x5345;
+        this.productId = 0x1234;
+        this.opened = false;
+        this.openCount = 0;
+        this._rx = [];
+        this.commands = [];
+        this.failNextTransferIn = false;
+        this.wave = '0.1,0.2,0.3,-0.4';
+      }
+      async open() { this.openCount++; this.opened = true; }
+      async close() { this.opened = false; }
+      async selectConfiguration() { }
+      async claimInterface() { }
+      async transferOut(ep, data) {
+        const cmd = new TextDecoder().decode(data).trim();
+        this.commands.push(cmd);
+        if (cmd === '*IDN?') this.reply('OWON,HDS242,26190843,V11.0.0');
+        else if (cmd === ':WAV:DATA?') this.reply(this.wave);
+        return { status: 'ok' };
+      }
+      reply(str) { this._rx.push(new TextEncoder().encode(str + '\r\n')); }
+      replySplit(a, b) {
+        this._rx.push(new TextEncoder().encode(a));
+        this._rx.push(new TextEncoder().encode(b));
+      }
+      async transferIn() {
+        if (this.failNextTransferIn) { this.failNextTransferIn = false; throw new Error('link dead'); }
+        if (this._rx.length) {
+          const data = this._rx.shift();
+          return { status: 'ok', data: new DataView(data.buffer, data.byteOffset, data.byteLength) };
+        }
+        await sleep(5);
+        return { status: 'ok', data: new DataView(new ArrayBuffer(0)) };
+      }
+    }
+
+    const { Oscilloscope, HDSBulkDriver } = require('./oscilloscope.js');
+    check('HDSBulkDriver matches 5345:1234', HDSBulkDriver.matches({ vendorId: 0x5345, productId: 0x1234 }));
+    check('HDSBulkDriver rejects other VIDs', !HDSBulkDriver.matches({ vendorId: 0x04B4, productId: 0x6022 }));
+
+    // A) the chooser must OFFER the HDS and the connection must land on it
+    const scopeDev = new MockHDSScope();
+    let lastFilters = null;
+    navigator.usb = {
+      getDevices: async () => [scopeDev],
+      requestDevice: async (opts) => { lastFilters = opts && opts.filters; return scopeDev; },
+      addEventListener: () => { },
+    };
+    const osc = new Oscilloscope();
+    osc.on('error', e => console.log('   [scope error]', e.message));
+    const ok = await osc.connect();
+    check('scope module connects to the HDS via WebUSB', ok === true);
+    check('chooser filters include the HDS VID:PID',
+      lastFilters && lastFilters.some(f => f.vendorId === 0x5345 && f.productId === 0x1234),
+      lastFilters && JSON.stringify(lastFilters));
+    check('routed to the hds bulk driver', osc._driver === 'hds');
+    check('IDN handshake named the model', osc._hds.model.includes('HDS242'), osc._hds.model);
+    const wf = await osc.capture(0.001);
+    check('capture produced a waveform via :WAV:DATA?',
+      wf && wf.driver === 'hds' && wf.ch1.length === 4 && Math.abs(wf.ch1[1] - 0.2) < 1e-5,
+      wf && `${wf.driver} n=${wf.ch1.length}`);
+    check('scope configure commands sent',
+      scopeDev.commands.some(c => c.startsWith(':WAV:POIN')) && scopeDev.commands.includes(':SING'));
+    await osc.disconnect();
+    check('device released on disconnect', scopeDev.opened === false);
+
+    // B) split bulk packets reassemble into one reply
+    const dev2 = new MockHDSScope();
+    navigator.usb = { getDevices: async () => [dev2], requestDevice: async () => dev2, addEventListener: () => { } };
+    const osc2 = new Oscilloscope();
+    osc2.on('error', e => console.log('   [scope error]', e.message));
+    await osc2.connect();
+    dev2.replySplit('0.5,0.', '6,0.7\n');  // one :WAV:DATA? line in two packets
+    const wf2 = await osc2.capture(0.001);
+    check('split bulk packets reassemble', wf2 && wf2.ch1.length === 3 && Math.abs(wf2.ch1[2] - 0.7) < 1e-5,
+      wf2 && `n=${wf2.ch1.length}`);
+    await osc2.disconnect();
+
+    // C) firmware link drop → self-heal on the fast retry path
+    const dev3 = new MockHDSScope();
+    navigator.usb = { getDevices: async () => [dev3], requestDevice: async () => dev3, addEventListener: () => { } };
+    const osc3 = new Oscilloscope();
+    const evts3 = [];
+    osc3.on('connected', e => evts3.push(e));
+    osc3.on('disconnected', () => evts3.push({ lost: true }));
+    osc3.on('error', e => console.log('   [scope error]', e.message));
+    await osc3.connect();
+    osc3._hds._retryDelayMs = 20;
+    dev3.failNextTransferIn = true;
+    await sleep(400);
+    check('HDS link drop self-heals (reconnected event)',
+      evts3.some(e => e.reconnected === true) && osc3.connected === true,
+      JSON.stringify(evts3));
+    await osc3.disconnect();
   }
 
   console.log(`\n${pass} passed, ${fail} failed`);

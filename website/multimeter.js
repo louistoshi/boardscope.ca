@@ -21,6 +21,10 @@
  *              automatically). Responses are ASCII lines: 'V=28.00mV',
  *              'F=60.96kHz', 'R=4.7kΩ', 'OL', or bare scientific notation
  *              ('5.02E-5', base units, keeps last mode).
+ *              Knob turns are tracked via ':DMM:CONFigure?' (~1 s cadence)
+ *              with a tolerant reply parser (long SCPI forms, terse echoes
+ *              like 'DCV'/'V AC', range-style '20V'/'20MΩ') plus an AC/DC
+ *              flavor probe when the echo carries no qualifier.
  *              The meter must be in Multimeter mode on its front panel.
  *              Firmware drops the USB link when idle, so the driver keeps
  *              a 500 ms poll running and auto-reconnects (matching VID:PID)
@@ -95,7 +99,8 @@ class Multimeter {
     this._usbReadActive = false;      // persistent USB bulk-IN read loop
     this._handshakeFirstMs = 3000;    // first SCPI query after claim — V11 firmware needs ~3 s
     this._handshakeNextMs = 1200;     // subsequent handshake queries
-    this._confSyncMs = 3000;          // :DMM:CONFigure? knob-sync cadence (bare-number dialects)
+    this._confSyncMs = 3000;          // :DMM:CONFigure? sync cadence while unproven (test-tunable)
+    this._confProvenMs = 1000;        // cadence once the firmware answers — knob sync ~1 s
     this._confQueryTimeoutMs = 600;   // :DMM:CONFigure? query timeout
     this._reconnectHandshakeFirstMs = 2000;  // reconnect probe budgets (device just re-enumerated)
     this._reconnectHandshakeNextMs = 800;
@@ -106,6 +111,13 @@ class Multimeter {
     this._readProbeTicks = 0;         // labeled-:READ? mode probe cadence (bare-number dialects)
     this._readProbeDisabled = false;  // firmware never answers :READ? — stop probing
     this._slowProbeFails = 0;         // consecutive silent mode probes
+    // AC/DC flavor per split family ('volt'/'curr'), learned from explicit
+    // qualifiers ('VOLTage AC') or labeled :READ? probes. Qualifier-less
+    // CONFigure echoes keep it — defaulting DC on every sync would flick an
+    // AC selection straight back to DCV (tester report, HDS242).
+    this._scpiFlavor = { volt: null, curr: null };
+    this._acProbeWanted = false;      // resolve flavor with a labeled :READ? probe
+    this._acProbeSent = false;        // probe in flight — its reply settles the flavor
 
     // Event bus
     this._listeners = {};
@@ -865,31 +877,73 @@ class Multimeter {
     this._readProbeTicks = 0;
     this._readProbeDisabled = false;
     this._slowProbeFails = 0;
+    this._scpiFlavor = { volt: null, curr: null };
+    this._acProbeWanted = false;
+    this._acProbeSent = false;
     this._lastGoodPollAt = 0;
   }
 
-  // Map a ':DMM:CONFigure?' reply (e.g. 'VOLTage DC', 'RESistance') to a
-  // mode. Unknown replies are ignored rather than guessed. Returns the
-  // mode (or null) so the caller can tell whether the firmware actually
-  // answers this query.
+  // Map a ':DMM:CONFigure?' reply to a mode. Firmware spellings vary more
+  // than the SCPI long forms suggest: besides 'VOLTage DC' / 'RESistance' /
+  // 'CAPacitance' / 'DIODe' / 'CONTinuity', terse echoes ('DCV', 'V DC',
+  // 'VAC') and range-style replies ('20V', '20MOhm', '20nF') show up — a
+  // literal-'volt' match only recognized the long form, which is why the
+  // knob out of Ω/diode/cap never left the old mode on the tester's unit
+  // while every other transition worked (v6.0.24 tester report). Unknown
+  // replies are ignored rather than guessed. Returns the mode (or null) so
+  // the caller can tell whether the firmware actually answers this query.
   _syncModeFromConfig(text) {
     const t = String(text).toLowerCase();
-    let mode = null;
-    if (/cont|bee/.test(t)) mode = 'CONT';
-    else if (/dio/.test(t)) mode = 'DIODE';
-    else if (/cap/.test(t)) mode = 'CAP';
-    else if (/res|ohm/.test(t)) mode = 'OHM';
-    else if (/curr/.test(t)) mode = /ac/.test(t) ? 'ACA' : 'DCA';
-    else if (/volt/.test(t)) mode = /ac/.test(t) ? 'ACV' : 'DCV';
-    else if (/duty/.test(t)) mode = 'DUTY';
-    else if (/freq|period/.test(t)) mode = 'FREQ';
-    else if (/temp/.test(t)) mode = 'TEMP';
-    if (mode) {
-      if (this._lastSCPIMode !== mode) {
-        this._dbg('mode sync: ' + JSON.stringify(String(text)) + ' → ' + mode);
+    // Function family first, most specific word wins. 'capacitance'
+    // contains the substring 'ac', so the CAP branch must run before any
+    // AC/DC sniffing; ditto 'continuity' before 'curr'-ish noise.
+    let family = null;
+    if (/cont|bee/.test(t)) family = 'CONT';
+    else if (/dio/.test(t)) family = 'DIODE';
+    // range-style capacitance echoes ('20nF', '225uF') carry no 'cap' word
+    else if (/cap|[0-9][0-9.]*[kmnuµ]?f\b/.test(t)) family = 'CAP';
+    // Ω lowercases to ω (U+03C9) — both spellings must count here
+    else if (/res|ohm|Ω|ω|Ω/.test(t)) family = 'OHM';
+    else if (/freq|period/.test(t)) family = 'FREQ';
+    else if (/duty/.test(t)) family = 'DUTY';
+    else if (/temp/.test(t)) family = 'TEMP';
+    else if (/curr|aca|dca|[0-9][km]?a\b|\ba\b/.test(t)) family = 'CURR';
+    // bare 'ac'/'dc' echoes are the voltage position on this dial family
+    else if (/volt|acv|dcv|vac|vdc|\bac\b|\bdc\b|[0-9][km]?v\b|\bv\b/.test(t)) family = 'VOLT';
+    if (!family) return null;
+    let mode;
+    this._acProbeWanted = false; // stays cleared unless the split-family branch re-queues it
+
+    // Leaving a split family clears its learned flavor — re-selecting V
+    // must not inherit the AC the probe confirmed before the knob went to Ω.
+    if (family === 'VOLT') this._scpiFlavor.curr = null;
+    else if (family === 'CURR') this._scpiFlavor.volt = null;
+    else { this._scpiFlavor.volt = null; this._scpiFlavor.curr = null; }
+
+    if (family === 'VOLT' || family === 'CURR') {
+      const key = family === 'VOLT' ? 'volt' : 'curr';
+      const ac = /\bac\b|acv|vac|aca|aac|\bva\b|\bia\b/.test(t);
+      const dc = /\bdc\b|dcv|vdc|dca|direct/.test(t);
+      if (ac) this._scpiFlavor[key] = 'ac';
+      else if (dc) this._scpiFlavor[key] = 'dc';
+      else {
+        // No qualifier in the echo ('VOLTage' bare, range-style '20V'):
+        // DC is the safe default, and a labeled :READ? probe settles the
+        // real flavor on the next poll — SELECT-to-AC carries no qualifier
+        // on some firmware, and without the probe AC would never show up.
+        this._acProbeWanted = !this._readProbeDisabled;
       }
-      this._lastSCPIMode = mode;
+      const flavor = this._scpiFlavor[key] || 'dc';
+      mode = family === 'VOLT' ? (flavor === 'ac' ? 'ACV' : 'DCV')
+        : (flavor === 'ac' ? 'ACA' : 'DCA');
+    } else {
+      mode = family;
     }
+    if (this._lastSCPIMode !== mode) {
+      this._dbg('mode sync: ' + JSON.stringify(String(text)) + ' → ' + mode +
+        (this._acProbeWanted ? ' (flavor probe queued)' : ''));
+    }
+    this._lastSCPIMode = mode;
     return mode;
   }
 
@@ -1040,6 +1094,15 @@ class Multimeter {
         this._confTries >= 2 && (++this._readProbeTicks % 8) === 0) {
         cmd = SLOW;
       }
+      // Targeted flavor probe: the CONFigure sync just hit a qualifier-less
+      // voltage/current echo ('VOLTage' bare, range-style '20V') — DC is
+      // assumed until one labeled query tells us the SELECT button's
+      // AC/DC state. Runs once per sync, replacing that tick's reading.
+      if (cmd === FAST && this._acProbeWanted && !this._readProbeDisabled) {
+        this._acProbeWanted = false;
+        cmd = SLOW;
+        this._acProbeSent = true;
+      }
       let line = await this._querySCPI(cmd, this._transport === 'usb' ? 1000 : 800);
       if (line === null && cmd === FAST && !this._scpiReadCmd) {
         this._scpiReadCmd = SLOW;
@@ -1053,6 +1116,18 @@ class Multimeter {
           // and carries the function; repeated failures mean it doesn't.
           if (!this._readProbeDisabled) this._dbg('mode probe :READ? → ' + reading.mode);
           this._readProbeDisabled = false;
+          this._acProbeSent = false;
+          // Settle the AC/DC flavor from a real (non-OL) labeled reading —
+          // OL keeps _lastSCPIMode and would report a stale flavor.
+          if (!reading.ol && (reading.mode === 'ACV' || reading.mode === 'DCV' ||
+            reading.mode === 'ACA' || reading.mode === 'DCA')) {
+            const fam = reading.mode === 'ACV' || reading.mode === 'DCV' ? 'volt' : 'curr';
+            const want = reading.mode.startsWith('AC') ? 'ac' : 'dc';
+            if (this._scpiFlavor[fam] !== want) {
+              this._dbg('flavor ' + fam + ': ' + (this._scpiFlavor[fam] || 'unknown') + ' → ' + want);
+            }
+            this._scpiFlavor[fam] = want;
+          }
         }
         if (!this._dbgHadReading) {
           this._dbgHadReading = true;
@@ -1064,12 +1139,16 @@ class Multimeter {
         this._lastGoodPollAt = Date.now();
         this._dispatchReading(this._applyCalibration(reading));
         // ':DMM:MEAS?' replies are bare numbers with no unit — sync the
-        // active function from ':DMM:CONFigure?' roughly every 3 s so mode
-        // tracking survives knob turns. The gate is the dialect THIS poll
-        // used: v6.0.22 checked _scpiReadCmd, which stays null when the fast
+        // active function from ':DMM:CONFigure?' so mode tracking survives
+        // knob turns. Cadence: ~1 s once the firmware proved it answers the
+        // query (the tester measured 2-3 s at the old flat 3 s cadence and
+        // asked for less), 3 s while unproven so a silent query can't eat a
+        // poll slot every second. The gate is the dialect THIS poll used:
+        // v6.0.22 checked _scpiReadCmd, which stays null when the fast
         // dialect answers from poll #1 — so the sync never ran and the mode
         // was stuck on DCV (tester report).
-        const confEvery = Math.max(5, Math.round(this._confSyncMs / this._pollIntervalMs));
+        const confEvery = Math.max(2, Math.round(
+          (this._confModeSeen ? this._confProvenMs : this._confSyncMs) / this._pollIntervalMs));
         if (cmd === FAST && ++this._scpiConfTicks >= confEvery) {
           this._scpiConfTicks = 0;
           const conf = await this._querySCPI(':DMM:CONFigure?', this._confQueryTimeoutMs);
@@ -1299,12 +1378,22 @@ class Multimeter {
     }
     unit = unit.replace(/ohm/i, 'Ω').replace(/^H[Zz]$/, 'Hz');
 
+    // Flavor spelled into the unit ('Va=230Vac', 'I=1.500Adc') — peel it off
+    // so 'Vac' doesn't fall through to "function unchanged"
+    let unitFlavor = null;
+    const uf = unit.match(/^(V|A)(AC|DC)$/i);
+    if (uf) { unitFlavor = uf[2].toLowerCase(); unit = uf[1]; }
+
     const l = label;
     const isDiode = /^d(io)?$/.test(l);
     let mode;
     if (unit === 'Ω') mode = /bee|con/.test(l) ? 'CONT' : (isDiode ? 'DIODE' : 'OHM');
-    else if (unit === 'V') mode = /ac|^va$/.test(l) ? 'ACV' : (isDiode ? 'DIODE' : 'DCV');
-    else if (unit === 'A') mode = /ac|^ia$|^aa$/.test(l) ? 'ACA' : 'DCA';
+    else if (unit === 'V') {
+      mode = (unitFlavor === 'ac' || /ac|^va$/.test(l)) ? 'ACV' : (isDiode ? 'DIODE' : 'DCV');
+    }
+    else if (unit === 'A') {
+      mode = (unitFlavor === 'ac' || /ac|^ia$|^aa$/.test(l)) ? 'ACA' : 'DCA';
+    }
     else if (unit === 'F') mode = 'CAP';
     else if (unit === 'Hz') mode = 'FREQ';
     else if (unit === '°C' || unit === 'C') mode = 'TEMP';
