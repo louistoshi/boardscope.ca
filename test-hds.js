@@ -903,6 +903,111 @@ Object.defineProperty(globalThis, 'navigator', {
     await osc3.disconnect();
   }
 
+  /* ── 13. v6.0.25 — Mirko round 3: "when i select AC/DC it stay stuck in
+     the last mode selected (cap/res)". An unmapped-but-nonempty CONFigure
+     reply was silently ignored, so the display kept the last mapped mode;
+     and once :READ? probing had been disabled by 3 timeouts nothing could
+     ever recover it. Now an unmapped reply queues a labeled :READ? probe
+     (the reading's function label settles the mode), a disabled probe
+     re-arms with a bounded budget, and OL probe replies stop the queue. */
+  console.log('13) v6.0.25 — unmapped CONFigure echo: labeled rescue probe, re-arm, OL bound');
+  {
+    // A) end-to-end: CAP → knob to V + SELECT→AC, CONFigure replies 'AUTO'
+    //    (names no function) — the labeled :READ? must carry ACV
+    class MockAutoEchoUSB extends MockUSBMeter {
+      constructor() { super(); this.stage = 'cap'; }
+      _enqueue(cmd) {
+        if (cmd === '*IDN?') this.reply('OWON,HDS242,26190843,V11.0.0');
+        else if (cmd === ':SCPI:DISP?') this.reply('scpiON');
+        else if (cmd === ':DMM:MEAS?') this.reply('3.30');
+        else if (cmd === ':DMM:CONFigure?') {
+          if (this.stage === 'cap') this.reply('CAPacitance');
+          else this.reply('AUTO'); // unmapped spelling — names no function
+        } else if (cmd === ':READ?') {
+          this.reply(this.stage === 'acv' ? 'Va=230.0V' : 'V=3.30V');
+        }
+      }
+    }
+    const aDev = new MockAutoEchoUSB();
+    installUSB(aDev);
+    const mA = new Multimeter();
+    mA._handshakeFirstMs = 200;
+    mA._handshakeNextMs = 100;
+    mA._confSyncMs = 240;
+    mA._confProvenMs = 240;
+    mA._confQueryTimeoutMs = 150;
+    mA.setPollInterval(80);
+    const modesA = [];
+    mA.on('reading', r => modesA.push(r.mode));
+    const okA = await mA.connect();
+    check('auto-echo meter connected', okA === true);
+    await sleep(1200);
+    check('CAP shown first', modesA.some(md => md === 'CAP'), modesA.join(','));
+    aDev.stage = 'acv';
+    const tA = Date.now();
+    await sleep(2000);
+    check(`unmapped echo rescued by labeled probe — ACV in ${Date.now() - tA}ms, not stuck on CAP`,
+      modesA.some(md => md === 'ACV'), modesA.join(','));
+    check('mode probe logged for the unmapped echo',
+      mA.getDebugLog().some(l => /mode probe :READ\? → ACV/.test(l)));
+    await mA.disconnect();
+  }
+  {
+    // B) direct queue/re-arm semantics
+    const mP = new Multimeter();
+    mP._syncModeFromConfig('AUTO');
+    check('unmapped reply queues a mode probe', mP._modeProbeWanted === true);
+    mP._syncModeFromConfig('CAPacitance');
+    check('mapped reply clears the queued probe', mP._modeProbeWanted === false);
+    mP._probeOls = 3;
+    mP._syncModeFromConfig('AUTO');
+    check('OL-stuck probe replies stop re-queueing', mP._modeProbeWanted === false);
+    const mR2 = new Multimeter();
+    mR2._readProbeDisabled = true;
+    mR2._syncModeFromConfig('AUTO');
+    check('disabled probe re-arms on unmapped reply (bounded)',
+      mR2._readProbeDisabled === false && mR2._modeProbeWanted === true && mR2._probeRearmLeft === 2);
+    mR2._readProbeDisabled = true;
+    mR2._syncModeFromConfig('AUTO');
+    mR2._readProbeDisabled = true;
+    mR2._syncModeFromConfig('AUTO');
+    mR2._readProbeDisabled = true;
+    mR2._syncModeFromConfig('AUTO');
+    check('re-arm budget exhausts — probes stay off',
+      mR2._readProbeDisabled === true && mR2._modeProbeWanted === false && mR2._probeRearmLeft === 0);
+  }
+  {
+    // C) CONFigure permanently unmapped + :READ? replies OL — probes must
+    //    stop re-queueing after 3 uninformative replies; readings keep flowing
+    class MockAutoOLUSB extends MockUSBMeter {
+      _enqueue(cmd) {
+        if (cmd === '*IDN?') this.reply('OWON,HDS242,26190843,V11.0.0');
+        else if (cmd === ':SCPI:DISP?') this.reply('scpiON');
+        else if (cmd === ':DMM:MEAS?') this.reply('3.30');
+        else if (cmd === ':DMM:CONFigure?') this.reply('AUTO');
+        else if (cmd === ':READ?') this.reply('OL');
+      }
+    }
+    const oDev = new MockAutoOLUSB();
+    installUSB(oDev);
+    const mO = new Multimeter();
+    mO._handshakeFirstMs = 200;
+    mO._handshakeNextMs = 100;
+    mO._confSyncMs = 240;
+    mO._confProvenMs = 240;
+    mO._confQueryTimeoutMs = 150;
+    mO.setPollInterval(80);
+    let oReadings = 0;
+    mO.on('reading', () => oReadings++);
+    const okO = await mO.connect();
+    check('auto+OL meter connected', okO === true);
+    await sleep(2500);
+    check('OL probe replies counted to the bound', mO._probeOls >= 3, `ols=${mO._probeOls}`);
+    check('probe queue stopped at the OL bound', mO._modeProbeWanted === false);
+    check('readings keep flowing through the OL probes', oReadings >= 5, `got ${oReadings}`);
+    await mO.disconnect();
+  }
+
   console.log(`\n${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);
 })();

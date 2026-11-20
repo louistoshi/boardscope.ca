@@ -118,6 +118,9 @@ class Multimeter {
     this._scpiFlavor = { volt: null, curr: null };
     this._acProbeWanted = false;      // resolve flavor with a labeled :READ? probe
     this._acProbeSent = false;        // probe in flight — its reply settles the flavor
+    this._modeProbeWanted = false;    // unmapped CONFigure echo — find the mode from a labeled probe
+    this._probeOls = 0;               // consecutive OL labeled-probe replies (uninformative)
+    this._probeRearmLeft = 3;         // :READ? re-arm budget after a 3-strike disable
 
     // Event bus
     this._listeners = {};
@@ -880,7 +883,22 @@ class Multimeter {
     this._scpiFlavor = { volt: null, curr: null };
     this._acProbeWanted = false;
     this._acProbeSent = false;
+    this._modeProbeWanted = false;
+    this._probeOls = 0;
+    this._probeRearmLeft = 3;
     this._lastGoodPollAt = 0;
+  }
+
+  // Give the labeled :READ? probe another chance when CONFigure alone can't
+  // answer what we need — an unmapped echo (no function name) or a
+  // qualifier-less V/A echo while probing is off (no AC/DC flavor). Bounded:
+  // a truly :READ?-dead firmware must not get its poll slots eaten forever.
+  _rearmProbe(reason) {
+    if (!this._readProbeDisabled || this._probeRearmLeft <= 0) return false;
+    this._probeRearmLeft--;
+    this._readProbeDisabled = false;
+    this._dbg(reason + ' — re-arming :READ? probe (' + this._probeRearmLeft + ' re-arms left)');
+    return true;
   }
 
   // Map a ':DMM:CONFigure?' reply to a mode. Firmware spellings vary more
@@ -890,8 +908,11 @@ class Multimeter {
   // literal-'volt' match only recognized the long form, which is why the
   // knob out of Ω/diode/cap never left the old mode on the tester's unit
   // while every other transition worked (v6.0.24 tester report). Unknown
-  // replies are ignored rather than guessed. Returns the mode (or null) so
-  // the caller can tell whether the firmware actually answers this query.
+  // replies are never guessed, but they DO queue a labeled :READ? probe so
+  // the reading's function label rescues the mode (v6.0.25 tester report —
+  // an unmapped echo stranded the display on the last mapped mode).
+  // Returns the mode (or null) so the caller can tell whether the firmware
+  // actually answers this query.
   _syncModeFromConfig(text) {
     const t = String(text).toLowerCase();
     // Function family first, most specific word wins. 'capacitance'
@@ -910,9 +931,20 @@ class Multimeter {
     else if (/curr|aca|dca|[0-9][km]?a\b|\ba\b/.test(t)) family = 'CURR';
     // bare 'ac'/'dc' echoes are the voltage position on this dial family
     else if (/volt|acv|dcv|vac|vdc|\bac\b|\bdc\b|[0-9][km]?v\b|\bv\b/.test(t)) family = 'VOLT';
-    if (!family) return null;
+    if (!family) {
+      // A real reply that names no function we know: the mapper can't track
+      // the knob on this firmware state, and ignoring it left the display
+      // stuck on the last mapped mode (v6.0.25 tester report — SELECT
+      // AC/DC stayed on cap/res). Queue one labeled :READ? probe; the
+      // reading's function label settles the mode. Skipped while probes
+      // are disabled (re-armed below, bounded) or stuck replying OL.
+      this._rearmProbe('unmapped CONFigure reply ' + JSON.stringify(String(text).slice(0, 40)));
+      this._modeProbeWanted = !this._readProbeDisabled && this._probeOls < 3;
+      return null;
+    }
     let mode;
     this._acProbeWanted = false; // stays cleared unless the split-family branch re-queues it
+    this._modeProbeWanted = false; // the echo just mapped — no rescue probe needed
 
     // Leaving a split family clears its learned flavor — re-selecting V
     // must not inherit the AC the probe confirmed before the knob went to Ω.
@@ -931,7 +963,11 @@ class Multimeter {
         // DC is the safe default, and a labeled :READ? probe settles the
         // real flavor on the next poll — SELECT-to-AC carries no qualifier
         // on some firmware, and without the probe AC would never show up.
-        this._acProbeWanted = !this._readProbeDisabled;
+        // A run of OL probe replies is uninformative — stop re-queueing.
+        // If probing was disabled by timeouts, the flavor is unresolvable
+        // from CONFigure alone — spend one bounded re-arm on it.
+        this._rearmProbe('qualifier-less ' + key + ' echo ' + JSON.stringify(String(text).slice(0, 40)));
+        this._acProbeWanted = !this._readProbeDisabled && this._probeOls < 3;
       }
       const flavor = this._scpiFlavor[key] || 'dc';
       mode = family === 'VOLT' ? (flavor === 'ac' ? 'ACV' : 'DCV')
@@ -1094,12 +1130,16 @@ class Multimeter {
         this._confTries >= 2 && (++this._readProbeTicks % 8) === 0) {
         cmd = SLOW;
       }
-      // Targeted flavor probe: the CONFigure sync just hit a qualifier-less
-      // voltage/current echo ('VOLTage' bare, range-style '20V') — DC is
-      // assumed until one labeled query tells us the SELECT button's
-      // AC/DC state. Runs once per sync, replacing that tick's reading.
-      if (cmd === FAST && this._acProbeWanted && !this._readProbeDisabled) {
+      // Targeted probe: the CONFigure sync hit a qualifier-less
+      // voltage/current echo ('VOLTage' bare, range-style '20V') or a
+      // reply the mapper can't read at all — DC is assumed / the old mode
+      // kept until one labeled query tells us the SELECT button's AC/DC
+      // state or the knob's actual function. Runs once per sync,
+      // replacing that tick's reading.
+      if (cmd === FAST && !this._readProbeDisabled &&
+        (this._acProbeWanted || this._modeProbeWanted)) {
         this._acProbeWanted = false;
+        this._modeProbeWanted = false;
         cmd = SLOW;
         this._acProbeSent = true;
       }
@@ -1117,6 +1157,9 @@ class Multimeter {
           if (!this._readProbeDisabled) this._dbg('mode probe :READ? → ' + reading.mode);
           this._readProbeDisabled = false;
           this._acProbeSent = false;
+          // An OL reply keeps the previous mode/flavor — uninformative. A
+          // run of them must not keep the per-sync probe queue spinning.
+          if (reading.ol) this._probeOls++; else this._probeOls = 0;
           // Settle the AC/DC flavor from a real (non-OL) labeled reading —
           // OL keeps _lastSCPIMode and would report a stale flavor.
           if (!reading.ol && (reading.mode === 'ACV' || reading.mode === 'DCV' ||
