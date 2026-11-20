@@ -9,10 +9,12 @@ const path = require('path');
 const zlib = require('zlib');
 
 let failures = 0;
+let skips = 0;
 function check(name, cond, detail) {
   if (cond) console.log('  ✓ ' + name);
   else { failures++; console.log('  ✗ ' + name + (detail ? ' — ' + detail : '')); }
 }
+function skip(name, why) { skips++; console.log('  - ' + name + (why ? ' — ' + why : '')); }
 const S = 'test-files/samples/';
 function load(f) { return fs.readFileSync(S + f); }
 function sane(name, r, minComps) {
@@ -151,13 +153,17 @@ check('  junk rejected', BP.gerber('hello world').error !== undefined);
 
 /* ── 9. FZ (RC6 + zlib round-trip with real key) ── */
 console.log('FZ (ASUS):');
-// parse real key from the public mirror (same file OpenBoardView points users at)
+// Real key, acquired below inside the async block the same way the app does
+// at runtime (boardview.html fzKeyFor): /tmp cache first, then the public
+// mirrors. macOS wipes /tmp periodically, so the cache alone made this
+// section fail 4 checks on any machine that hadn't re-fetched the key by
+// hand. Key-dependent checks SKIP (not fail) when no source is reachable;
+// running without a key is itself covered by the FZ_KEY_REQUIRED check.
 let keyWords = null;
-try {
-  const keyTxt = fs.existsSync('/tmp/fzkey.md') ? fs.readFileSync('/tmp/fzkey.md', 'utf8') : '';
-  keyWords = BP.fzParseKeyHex(keyTxt);
-} catch (e) { /* offline */ }
-check('  44-word key fetched & parity-valid', BP.fzCheckKey(keyWords), 'key source unavailable or parity failed');
+const FZ_KEY_MIRRORS = [
+  'https://raw.githubusercontent.com/cryptonek/illegal-numbers/main/FZkey.md',
+  'https://raw.githubusercontent.com/yliu-d/illegal-numbers/main/FZkey.md',
+];
 
 // build a synthetic fz: plaintext content -> zlib -> RC6-encrypt -> container
 function encFz(contentText) {
@@ -183,6 +189,29 @@ const fzContent = [
 ].join('\n');
 // async block
 (async () => {
+  // key: /tmp cache → public mirrors → cache the fetched copy back to /tmp
+  try {
+    const cached = fs.existsSync('/tmp/fzkey.md') ? fs.readFileSync('/tmp/fzkey.md', 'utf8') : '';
+    const w = BP.fzParseKeyHex(cached);
+    if (w && BP.fzCheckKey(w)) keyWords = w;
+  } catch (_) { /* unreadable cache */ }
+  if (!keyWords) {
+    for (const url of FZ_KEY_MIRRORS) {
+      try {
+        const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
+        const txt = await res.text();
+        const w = BP.fzParseKeyHex(txt);
+        if (w && BP.fzCheckKey(w)) {
+          keyWords = w;
+          try { fs.writeFileSync('/tmp/fzkey.md', txt); } catch (_) { /* read-only /tmp */ }
+          break;
+        }
+      } catch (_) { /* mirror unreachable */ }
+    }
+  }
+  if (keyWords) check('  44-word key fetched & parity-valid', BP.fzCheckKey(keyWords));
+  else skip('44-word key', 'no /tmp cache and mirrors unreachable (offline?)');
+
   const plain = encFz(fzContent);
   const bytes = new Uint8Array(plain);
   r = await BP.fzParse(bytes, keyWords);
@@ -211,8 +240,9 @@ const fzContent = [
   const fzDir = 'test-files/samples/fz';
   if (fs.existsSync(fzDir)) {
     for (const f of fs.readdirSync(fzDir)) {
+      if (!keyWords) { skip('real ' + f, 'no FZ key'); continue; }
       const bytes = new Uint8Array(fs.readFileSync(path.join(fzDir, f)));
-      const rr = keyWords ? await BP.fzParse(bytes, keyWords) : { error: 'no key' };
+      const rr = await BP.fzParse(bytes, keyWords);
       const n = (rr.comps || []).length;
       check('  real ' + f + ': ' + n + ' comps', n > 100, rr.error);
     }
@@ -247,7 +277,8 @@ const fzContent = [
   check('  fz ext', td('garbage', new Uint8Array(100), 'board.fz') === 'fz');
   check('  bdv ext', td('garbage', new Uint8Array(100), 'board.bdv') === 'bdv');
 
-  console.log(failures ? `\n${failures} FAILURES` : '\nALL TESTS PASSED');
+  const skipNote = skips ? ` (${skips} skipped — see '-' lines)` : '';
+  console.log(failures ? `\n${failures} FAILURES${skipNote}` : `\nALL TESTS PASSED${skipNote}`);
   process.exit(failures ? 1 : 0);
 })();
 
