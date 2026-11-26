@@ -14,7 +14,7 @@ echo "================================"
 # "notarytool" --apple-id <email> --team-id QWV8X6H5C8 --password <app-specific-password>)
 USE_KEYCHAIN=0
 if [ -z "$APPLEID" ] || [ -z "$APPLEID_PASSWORD" ]; then
-    if security find-generic-password -s "notarytool" >/dev/null 2>&1; then
+    if xcrun notarytool history --keychain-profile "notarytool" >/dev/null 2>&1; then
         USE_KEYCHAIN=1
         echo "Using keychain profile 'notarytool'"
     else
@@ -37,32 +37,31 @@ fi
 
 echo "Notarizing: $DMG_PATH"
 
-# Submit for notarization
+# Submit for notarization — stream output live (a $(...) capture under set -e
+# swallows the error output when submit fails, which cost a 50-min debug round)
 echo "Submitting app for notarization..."
 if [ "$USE_KEYCHAIN" = "1" ]; then
-    NOTARY_OUTPUT=$(xcrun notarytool submit "$DMG_PATH" \
+    xcrun notarytool submit "$DMG_PATH" \
         --keychain-profile "notarytool" \
-        --wait 2>&1)
+        --wait
 else
     echo "Using Apple ID: $APPLEID"
-    NOTARY_OUTPUT=$(xcrun notarytool submit "$DMG_PATH" \
+    xcrun notarytool submit "$DMG_PATH" \
         --apple-id "$APPLEID" \
         --password "$APPLEID_PASSWORD" \
         --team-id "QWV8X6H5C8" \
-        --wait 2>&1)
+        --wait
 fi
 
-echo "$NOTARY_OUTPUT"
-
 # Check if submission was successful
-if echo "$NOTARY_OUTPUT" | grep -q "Accepted"; then
+if [ $? -eq 0 ]; then
     echo -e "${GREEN}✓ Notarization successful!${NC}"
-    
+
     # Staple the ticket
     echo "Stapling notarization ticket..."
     xcrun stapler staple "$DMG_PATH"
     echo -e "${GREEN}✓ Stapling complete!${NC}"
 else
-    echo "Notarization details:"
-    echo "$NOTARY_OUTPUT"
+    echo "Notarization failed — see output above"
+    exit 1
 fi
