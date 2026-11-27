@@ -27,8 +27,9 @@ if [ -z "$APPLEID" ] || [ -z "$APPLEID_PASSWORD" ]; then
     fi
 fi
 
-# Newest DMG in dist/ — was hardcoded to a 5.4.1 path and failed on every later release
-DMG_PATH=$(ls -t dist/BoardScope-*-arm64.dmg 2>/dev/null | head -1)
+# Newest DMG in dist/ — was hardcoded to a 5.4.1 path and failed on every later
+# release; the first fix only matched *-arm64.dmgs and silently skipped the x64 build
+DMG_PATH=$(ls -t dist/BoardScope-*.dmg 2>/dev/null | grep -v blockmap | head -1)
 
 if [ -z "$DMG_PATH" ] || [ ! -f "$DMG_PATH" ]; then
     echo "ERROR: no BoardScope-*-arm64.dmg found in dist/"
